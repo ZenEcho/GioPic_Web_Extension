@@ -103,8 +103,9 @@ export default {
     version: '版本 {version}',
     share: '分享',
     shareAll: '分享全部',
-    import: '导入配置',
+    import: '导入节点',
     importTitle: '导入节点配置',
+    selectFile: '选择文件',
     importPlaceholder: '请粘贴 JSON 配置内容...',
     importSuccess: '成功导入 {count} 个节点',
     importFailed: '导入失败，格式错误',
@@ -122,8 +123,8 @@ export default {
     }
   },
   config: {
-    addTitle: '添加配置',
-    editTitle: '编辑配置',
+    addTitle: '添加节点',
+    editTitle: '编辑节点',
     cors: {
       title: '{type} CORS 设置',
       desc: '配置跨域资源共享规则，解决浏览器跨域访问问题',

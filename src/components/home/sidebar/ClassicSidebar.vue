@@ -166,7 +166,7 @@ const {
             <div class="mt-4 flex gap-3 flex-shrink-0">
                 <button @click="handleImport"
                     class="rounded-lg flex-1 py-3 border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-400 font-medium hover:border-primary hover:text-primary   flex items-center justify-center gap-2">
-                    <div class="i-ph-file-arrow-up w-4 h-4" />
+                    <div class="i-ph-download-simple w-4 h-4" />
                     {{ t('home.import') }}
                 </button>
                 <button @click="emit('add')"
