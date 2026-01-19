@@ -141,17 +141,17 @@ const toggleSelection = (id: string) => {
                         </div>
 
                         <!-- Text Info -->
-                        <div class="flex-1 min-w-0  text-left">
-                            <h3 class="font-bold  truncate text-base leading-tight mb-1" 
+                        <div class="flex-1 min-w-0 text-left ">
+                            <h3 class="font-bold  truncate text-base leading-tight m-0 " 
                             :title="config.name"
-                            :class=" configStore.selectedIds.includes(config.id)?'text-primary':'text-gray-900 dark:text-gray-100'"
+                            :class=" configStore.selectedIds.includes(config.id)?'text-primary':'text-gray-700 dark:text-gray-100'"
                             >
                                 {{ config.name }}
                             </h3>
                             <div class="flex items-center gap-2">
                                 <span
-                                 :class=" configStore.selectedIds.includes(config.id)?'text-primary':'text-gray-900 dark:text-gray-100'"
-                                    class="px-2.5 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wider bg-gray-100 text-gray-500 dark:bg-gray-700/50 dark:text-gray-400 border border-gray-200 dark:border-gray-700">
+                                 :class=" configStore.selectedIds.includes(config.id)?'text-primary':'text-gray-400 dark:text-gray-100'"
+                                    class=" py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wider bg-gray-100 text-gray-500 dark:bg-gray-700/50 dark:text-gray-400 border border-gray-200 dark:border-gray-700">
                                     {{ config.type }}
                                 </span>
                             </div>
