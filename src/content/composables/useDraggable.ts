@@ -69,6 +69,7 @@ export function useDraggable(
         const elHeight = targetEl.value.offsetHeight
         
         // 如果元素尚未可见或未测量，跳过
+        // 注意：某些情况下 offsetWidth 可能为 0 但我们仍需限制位置（例如防止负值），但通常还是依赖尺寸
         if (!elWidth || !elHeight) return
 
         let { x, y } = position.value
@@ -86,11 +87,16 @@ export function useDraggable(
 
         // 标准限制 (如果超出边界则推回)
         // 我们在边缘应用 padding
+        // 注意：优先保证左上角可见性，如果窗口太小，允许右下角溢出
         if (newX < paddingLeft) newX = paddingLeft
-        else if (newX + elWidth > windowWidth - paddingRight) newX = windowWidth - elWidth - paddingRight
+        else if (windowWidth > elWidth + paddingLeft + paddingRight && newX + elWidth > windowWidth - paddingRight) {
+             newX = windowWidth - elWidth - paddingRight
+        }
         
         if (newY < paddingTop) newY = paddingTop
-        else if (newY + elHeight > windowHeight - paddingBottom) newY = windowHeight - elHeight - paddingBottom
+        else if (windowHeight > elHeight + paddingTop + paddingBottom && newY + elHeight > windowHeight - paddingBottom) {
+             newY = windowHeight - elHeight - paddingBottom
+        }
 
         if (newX !== x || newY !== y) {
             position.value = { x: newX, y: newY }

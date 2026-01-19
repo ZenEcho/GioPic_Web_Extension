@@ -30,7 +30,7 @@ export default {
   home: {
     nodes: 'Nodes',
     nodeList: {
-      emptyDescription: 'Upload images after configuring nodes.<br>Supports multiple storage strategy combinations.',
+      emptyDescription: 'Upload images after configuring nodes. Supports multiple storage strategy combinations.',
     },
     myImages: 'My Images',
     sidebar: {
@@ -40,7 +40,8 @@ export default {
       nativeNotSupported: 'Native sidebar not supported in this browser',
       closeDialog: {
         title: 'Close Floating Ball',
-        session: 'Close for this session',
+        close: 'Close until next refresh',
+        session: 'Disable for this session',
         site: 'Disable on current site',
         permanent: 'Permanently disable',
         settingsHint: '(Can be enabled in Settings)',
@@ -85,7 +86,7 @@ export default {
       deleteSelectedConfirm: 'Are you sure you want to delete {count} selected items?',
     },
     upload: {
-      selectNodeWarning: 'Please select at least one node on the left',
+       selectNodeWarning: 'Please select a node',
       configNotFound: 'Config not found',
       uploadFailed: 'Upload failed',
       uploadAll: 'Upload All',
@@ -110,6 +111,40 @@ export default {
     importSuccess: 'Successfully imported {count} nodes',
     importFailed: 'Import failed, format error',
     importNoData: 'No valid config recognized',
+    onboarding: {
+      title: 'Welcome to GioPic',
+      subtitle: 'Choose your preferred layout',
+      classic: {
+        title: 'Classic',
+        desc: 'Left nav, right content, comprehensive view'
+      },
+      console: {
+        title: 'Console',
+        desc: 'IDE-like console style, for developers'
+      },
+      center: {
+        title: 'Center',
+        desc: 'Centered content, focused on core features'
+      },
+      simple: {
+        title: 'Simple',
+        desc: 'Minimalist style, core upload only'
+      },
+      start: 'Get Started',
+      preview: 'Preview',
+      restore: 'Return to Selection',
+      config: {
+        title: 'Node Config',
+        subtitle: 'You can configure upload nodes now or later',
+        create: 'Create Node',
+        createDesc: 'Manually enter config',
+        import: 'Import Node',
+        importDesc: 'Paste JSON config',
+        later: 'Configure Later',
+        laterDesc: 'Enter main interface',
+        skip: 'Skip Tutorial'
+      }
+    }
   },
   config: {
     addTitle: 'Add Node',
@@ -209,9 +244,9 @@ export default {
       simple: 'Simple Layout',
     },
     desktopLink: {
-      title: 'Desktop Link',
+      title: 'Desktop Link (beta)',
       description: 'Use WebSocket to receive URLs from desktop app and auto insert',
-      enabled: 'Enable Desktop Link',
+      enabled: 'Enable Desktop Link (beta)',
       statusLabel: 'Connection Status',
       status: {
         disabled: 'Disabled',
@@ -263,6 +298,12 @@ export default {
     about: {
       developer: 'Developer',
       openSource: 'Open Source'
+    },
+    dangerZone: {
+      title: 'Danger Zone',
+      reset: 'Reset Extension',
+      resetConfirm: 'This will clear all configurations, history, and settings. This action cannot be undone. Continue?',
+      resetSuccess: 'Reset successful, page will reload',
     }
   },
   background: {
@@ -284,6 +325,7 @@ export default {
     img: 'IMG',
     copyUrl: 'Copy URL',
     copyFormat: 'Copy Format',
+    empty: 'No pending uploads',
     status: {
       done: 'DONE',
       err: 'ERR',

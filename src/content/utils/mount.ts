@@ -29,13 +29,21 @@ export function mountComponent(
         styleEl.setAttribute('href', browser.runtime.getURL('content/content.css'))
         mountTarget.appendChild(styleEl)
         
+        // Add Tailwind/UnoCSS Reset manually for Shadow DOM
+        const resetStyle = document.createElement('style')
+        resetStyle.textContent = `
+          :host { line-height: 1.5; -webkit-text-size-adjust: 100%; tab-size: 4; font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji"; font-feature-settings: normal; font-variation-settings: normal; }
+          *, ::before, ::after { box-sizing: border-box; border-width: 0; border-style: solid; border-color: #e5e7eb; }
+        `
+        mountTarget.appendChild(resetStyle)
+
         // Sync Naive UI / UnoCSS styles
         syncStyles(mountTarget)
         setupStyleObserver(mountTarget)
     }
 
     mountTarget.appendChild(root)
-    document.body.appendChild(container)
+    document.documentElement.appendChild(container)
 
     let app
     if (useProvider) {

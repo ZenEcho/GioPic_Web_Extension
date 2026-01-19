@@ -1,5 +1,28 @@
 /* GioPic Content Script Custom Styles */
 /* Naive UI styles are injected via JS, this file is for extra custom overrides if needed */
+
+/* Reset base styles within Shadow DOM to prevent inheritance if Shadow DOM is open (though we use closed) */
+/* Or if style leaks in */
+
+:host {
+  all: initial;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+  line-height: 1.5;
+  font-size: 14px;
+  color: #374151;
+  box-sizing: border-box;
+}
+
+:host * {
+  box-sizing: border-box;
+}
+
 button {
-  border: none ;
+  border: none;
+  background: none;
+  padding: 0;
+  margin: 0;
+  font: inherit;
+  cursor: pointer;
+  outline: none;
 }

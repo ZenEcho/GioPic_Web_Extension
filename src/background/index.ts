@@ -72,8 +72,8 @@ browser.action.onClicked.addListener(async (tab) => {
         browser.windows.create({
             type: "popup",
             url: POPUP_URL,
-            width: 1200,
-            height: 750
+            width: 1280,
+            height: 800
         })
     }
 })

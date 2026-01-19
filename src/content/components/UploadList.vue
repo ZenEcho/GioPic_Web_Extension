@@ -1,69 +1,60 @@
 <template>
-    <div class="fixed inset-0 pointer-events-none z-[2147483646]" v-if='uploads.length > 0'>
-        <div ref="containerRef"
-            class="absolute w-[380px] pointer-events-auto backdrop-blur-md bg-white/95 dark:bg-gray-800/95 shadow-2xl rounded-xl overflow-hidden flex flex-col font-sans text-sm border border-gray-200 dark:border-gray-700/50 transition-shadow duration-300"
-            :class="{ dark: isDark }" :style="{ left: (position.x - 8) + 'px', top: position.y + 'px' }">
+    <Transition name="fade">
+        <div v-if="isVisible" class="fixed inset-0 pointer-events-none z-[2147483646] " >
+            <div ref="containerRef"
+                class="absolute w-[380px] pointer-events-auto backdrop-blur-md bg-white/95 dark:bg-gray-800/95 shadow-2xl rounded-xl overflow-hidden flex flex-col font-sans text-sm border border-gray-200 dark:border-gray-700/50 transition-shadow duration-300"
+                :class="{ dark: isDark }" :style="{ left: (position.x - 8) + 'px', top: position.y + 'px' }">
             <!-- Header -->
-            <div ref="headerRef"
-                class="bg-gradient-to-r from-blue-600 to-indigo-600 px-4 py-3 flex justify-between items-center select-none">
-                <div class="flex items-center gap-2 text-white">
-                    <svg class="w-4 h-4 opacity-80" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                            d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12">
-                        </path>
-                    </svg>
-                    <span class="font-bold tracking-wide text-sm">{{ t('uploadList.title') }}</span>
-                    <span class="bg-white/20 px-1.5 py-0.5 rounded text-[10px] font-bold min-w-[20px] text-center">{{
-                        uploads.length }}</span>
-                </div>
-                <div class="flex items-center gap-1.5">
-                    <!-- Theme Toggle -->
-                    <button @click="toggleTheme"
-                        class="bg-white/20 text-white/90 hover:text-white transition-colors p-1 rounded hover:bg-white/30"
-                        :title="isDark ? t('settings.lightMode') : t('settings.darkMode')">
-                        <svg v-if="isDark" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z">
-                            </path>
-                        </svg>
-                        <svg v-else class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z">
-                            </path>
-                        </svg>
-                    </button>
-                    <!-- Lang Toggle -->
-                    <button @click="toggleLocale"
-                        class="bg-white/20 text-white/90 hover:text-white transition-colors p-1 rounded hover:bg-white/30"
-                        :title="t('settings.language')">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z">
-                            </path>
-                        </svg>
-                    </button>
-                    <div class="w-px h-3 bg-white/20 mx-0.5"></div>
-                    <select v-model="copyFormat"
-                        class="bg-white/20 hover:bg-white/30 text-white text-[10px] font-bold border-none rounded outline-none cursor-pointer py-1 px-1.5 transition-colors focus:ring-1 focus:ring-white/50"
-                        :title="t('uploadList.copyFormat')">
-                        <option v-for="fmt in COPY_FORMATS" :key="fmt" :value="fmt"
-                            class="text-gray-800 dark:text-gray-200 bg-white dark:bg-gray-800">
-                            {{ FORMAT_LABELS[fmt] || fmt }}
-                        </option>
-                    </select>
-                    <button @click="clearCompleted"
-                        class="bg-white/20 text-white/70 hover:text-white transition-colors p-1 rounded hover:bg-white/10"
-                        :title="t('uploadList.clearCompleted')">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                d="M6 18L18 6M6 6l12 12"></path>
-                        </svg>
-                    </button>
-                </div>
-            </div>
+           <div ref="headerRef"
+    class="px-4 py-2.5 flex justify-between items-center select-none cursor-move transition-colors duration-300
+           bg-gradient-to-r from-blue-600 to-indigo-600 
+           dark:from-slate-800 dark:to-slate-900 border-b dark:border-slate-700/50">
+    
+    <div class="flex items-center gap-2 text-white/95 dark:text-slate-200">
+        <div class="i-ph-cloud-arrow-up-bold text-lg opacity-90"></div>
+        <span class="font-bold tracking-wide text-sm">{{ t('uploadList.title') }}</span>
+        <span class="bg-white/20 dark:bg-slate-700/50 px-1.5 py-0.5 rounded text-[10px] font-bold min-w-[20px] text-center border border-white/10">
+            {{ uploads.length }}
+        </span>
+    </div>
+
+    <div class="flex items-center gap-1.5">
+        <button @click="toggleTheme"
+            class="bg-white/10 hover:bg-white/20 dark:bg-slate-700/40 dark:hover:bg-slate-700/60 text-white/90 hover:text-white transition-all p-1.5 rounded-lg active:scale-95"
+            :title="isDark ? t('settings.lightMode') : t('settings.darkMode')">
+            <div v-if="isDark" class="i-ph-sun-bold text-sm"></div>
+            <div v-else class="i-ph-moon-bold text-sm"></div>
+        </button>
+
+        <div class="w-px h-3 bg-white/20 dark:bg-slate-700 mx-0.5"></div>
+
+        <select v-model="copyFormat"
+            class="bg-white/10 hover:bg-white/20 dark:bg-slate-700/40 dark:hover:bg-slate-700/60 text-white text-[10px] font-bold border-none rounded-lg outline-none cursor-pointer py-1 px-1.5 transition-colors focus:ring-1 focus:ring-white/50 dark:focus:ring-slate-500"
+            :title="t('uploadList.copyFormat')">
+            <option v-for="fmt in COPY_FORMATS" :key="fmt" :value="fmt"
+                class="text-gray-800 dark:text-gray-200 bg-white dark:bg-slate-800">
+                {{ FORMAT_LABELS[fmt] || fmt }}
+            </option>
+        </select>
+
+        <button @click="clearCompleted"
+            class="bg-white/10 hover:bg-white/20 dark:bg-slate-700/40 dark:hover:bg-slate-700/60 text-white/70 hover:text-white transition-colors p-1.5 rounded-lg active:scale-95"
+            :title="t('uploadList.clearCompleted')">
+            <div class="i-ph-trash-bold text-sm"></div>
+        </button>
+
+        <div class="w-px h-3 bg-white/20 dark:bg-slate-700 mx-0.5"></div>
+
+        <button @click="closeList"
+            class="bg-white/10 hover:bg-white/20 dark:bg-slate-700/40 dark:hover:bg-slate-700/60 text-white/90 hover:text-white transition-colors p-1.5 rounded-lg active:scale-95"
+            :title="t('common.collapse')">
+            <div class="i-ph-x-bold text-sm"></div>
+        </button>
+    </div>
+</div>
 
             <!-- List -->
-            <div class="max-h-[300px] overflow-y-auto p-2 space-y-2 custom-scrollbar bg-gray-50/50 dark:bg-gray-900/20">
+            <div v-if='uploads.length > 0' class="max-h-[300px] overflow-y-auto p-2 space-y-2 custom-scrollbar bg-gray-50/50 dark:bg-gray-900/20">
                 <TransitionGroup name="list">
                     <div v-for="item in uploads" :key="item.id"
                         class="group bg-white dark:bg-gray-800 p-3 rounded-lg border border-gray-100 dark:border-gray-700 shadow-sm hover:shadow-md transition-all duration-200">
@@ -152,8 +143,19 @@
                     </div>
                 </TransitionGroup>
             </div>
+            <!-- v-if='uploads.length > 0' -->
+            <div v-else class="flex-1 flex flex-col items-center justify-center py-12 px-6 dark:bg-gray-900/20">
+                <div class="w-16 h-16 rounded-full bg-gray-50 dark:bg-gray-800/50 flex items-center justify-center mb-4">
+                    <div class="i-ph-cloud-slash text-gray-300 dark:text-gray-600 text-3xl"></div>
+                </div>
+                <div class="text-gray-400 dark:text-gray-500 font-medium text-sm">{{ t('uploadList.empty') }}</div>
+                <div class="text-gray-300 dark:text-gray-600 text-[11px] mt-1 text-center">
+                    {{ t('home.nodeList.emptyDescription').replace('<br>', ' ') }}
+                </div>
+            </div>
         </div>
     </div>
+    </Transition>
 </template>
 
 <script setup lang="ts">
@@ -166,16 +168,16 @@ import { formatLink, copyToClipboard as copyText, COPY_FORMATS, FORMAT_LABELS } 
 const { t, locale } = useI18n()
 
 const isDark = ref(false)
+const isVisible = ref(false)
 
 const toggleTheme = () => {
     isDark.value = !isDark.value
     browser.storage.local.set({ 'giopic-dark-mode': String(isDark.value) })
 }
 
-const toggleLocale = () => {
-    const newLocale = locale.value === 'zh-CN' ? 'en-US' : 'zh-CN'
-    locale.value = newLocale
-    browser.storage.local.set({ 'giopic-locale': newLocale })
+const closeList = () => {
+    isVisible.value = false
+    browser.storage.local.set({ 'giopic-show-upload-list': false })
 }
 
 // Listen to storage changes for sync with other extension parts
@@ -186,6 +188,9 @@ browser.storage.onChanged.addListener((changes, area) => {
         }
         if (changes['giopic-locale']) {
             locale.value = changes['giopic-locale'].newValue as string
+        }
+        if (changes['giopic-show-upload-list']) {
+            isVisible.value = !!changes['giopic-show-upload-list'].newValue
         }
     }
 })
@@ -214,11 +219,20 @@ const initialY = window.innerHeight - 400
 
 const { position } = useDraggable(containerRef, headerRef, { x: initialX, y: initialY })
 
+// Persist position
+watch(position, (newPos) => {
+    browser.storage.local.set({ 'giopic-upload-list-position': newPos })
+})
+
 const handleMessage = (message: any) => {
     if (message.type === 'UPLOAD_EVENT') {
         const { event, id, payload } = message.data
 
         if (event === 'start') {
+            // Auto show when upload starts
+            isVisible.value = true
+            browser.storage.local.set({ 'giopic-show-upload-list': true })
+
             uploads.value.unshift({
                 id,
                 filename: payload.filename,
@@ -275,7 +289,7 @@ const handleInject = (url?: string) => {
 
 onMounted(() => {
     browser.runtime.onMessage.addListener(handleMessage)
-    browser.storage.local.get(['copyFormat', 'giopic-dark-mode', 'giopic-locale']).then((res) => {
+    browser.storage.local.get(['copyFormat', 'giopic-dark-mode', 'giopic-locale', 'giopic-show-upload-list', 'giopic-upload-list-position']).then((res) => {
         if (res.copyFormat) {
             copyFormat.value = res.copyFormat as string
         }
@@ -284,6 +298,12 @@ onMounted(() => {
         }
         if (res['giopic-locale']) {
             locale.value = res['giopic-locale'] as string
+        }
+        if (res['giopic-show-upload-list'] !== undefined) {
+            isVisible.value = !!res['giopic-show-upload-list']
+        }
+        if (res['giopic-upload-list-position']) {
+            position.value = res['giopic-upload-list-position'] as { x: number, y: number }
         }
     })
 })
@@ -335,5 +355,17 @@ onUnmounted(() => {
 
 .list-leave-active {
     position: absolute;
+}
+
+/* Fade Transition for main container */
+.fade-enter-active,
+.fade-leave-active {
+    transition: opacity 0.2s ease, transform 0.2s ease;
+}
+
+.fade-enter-from,
+.fade-leave-to {
+    opacity: 0;
+    transform: scale(0.95);
 }
 </style>

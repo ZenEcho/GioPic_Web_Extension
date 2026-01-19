@@ -4,6 +4,8 @@ import { useThemeStore, themeColors } from '@/stores/theme'
 import { computed, ref, onMounted, onBeforeUnmount } from 'vue'
 import browser from 'webextension-polyfill'
 import SidebarSettings from './SidebarSettings.vue'
+import { useMessage, useDialog } from 'naive-ui'
+import { db } from '@/utils/storage'
 
 type DesktopLinkStatusType = 'disabled' | 'disconnected' | 'connecting' | 'connected' | 'error'
 
@@ -17,6 +19,8 @@ const emit = defineEmits<{
 
 const { t, locale } = useI18n()
 const themeStore = useThemeStore()
+const message = useMessage()
+const dialog = useDialog()
 
 const primaryColor = computed(() => themeStore.themeOverrides?.common?.primaryColor || '#409eff')
 const openMode = ref('tab')
@@ -117,6 +121,19 @@ const isChecking = ref(false)
 const hasUpdate = ref(false)
 const checkError = ref(false)
 
+const openModeIcons: Record<string, string> = {
+    tab: 'i-ph-browser',
+    window: 'i-ph-app-window',
+    action: 'i-ph-monitor'
+}
+
+const uiModeIcons: Record<string, string> = {
+    classic: 'i-ph-layout',
+    console: 'i-ph-terminal-window',
+    center: 'i-ph-columns',
+    simple: 'i-ph-square'
+}
+
 onMounted(() => {
     try {
         const manifest = browser.runtime.getManifest()
@@ -169,16 +186,47 @@ async function checkVersion() {
         isChecking.value = false
     }
 }
+
+async function handleResetExtension() {
+    dialog.warning({
+        title: t('settings.dangerZone.title'),
+        content: t('settings.dangerZone.resetConfirm'),
+        positiveText: t('common.confirm'),
+        negativeText: t('common.cancel'),
+        onPositiveClick: async () => {
+            try {
+                // Clear IndexedDB
+                await db.clear()
+                // Clear localStorage
+                localStorage.clear()
+                // Clear browser.storage.local
+                await browser.storage.local.clear()
+                
+                message.success(t('settings.dangerZone.resetSuccess'))
+                
+                // Reload page after a short delay
+                setTimeout(() => {
+                    window.location.reload()
+                }, 1000)
+            } catch (e) {
+                console.error('Reset failed', e)
+                message.error(t('common.error'))
+            }
+        }
+    })
+}
 </script>
 
 <template>
     <n-modal :show="show" @update:show="(val: boolean) => emit('update:show', val)" preset="card"
-        :title="t('settings.title')" class="w-full max-w-xl rounded-2xl" :segmented="false">
+        :title="t('settings.title')" class="w-full max-w-2xl rounded-2xl" :segmented="false">
         <div class="space-y-6">
             <div class="grid gap-4 md:grid-cols-2">
                 <!-- 外观设置 -->
                 <div>
-                    <div class="text-sm font-bold text-gray-500 mb-2">{{ t('settings.appearance') }}</div>
+                    <div class="text-sm font-bold text-gray-500 mb-2 flex items-center gap-1">
+                        <div class="i-ph-palette" /> {{ t('settings.appearance') }}
+                    </div>
                     <div class="flex gap-2 ">
                         <button
                             class="giopic-link-btn giopic-link-btn-primary flex-1 py-2 border font-medium text-sm flex items-center justify-center gap-2"
@@ -199,15 +247,17 @@ async function checkVersion() {
 
                 <!-- 语言设置 -->
                 <div>
-                    <div class="text-sm font-bold text-gray-500 mb-2">{{ t('settings.language') }}</div>
+                    <div class="text-sm font-bold text-gray-500 mb-2 flex items-center gap-1">
+                        <div class="i-ph-translate" /> {{ t('settings.language') }}
+                    </div>
                     <div class="flex gap-2">
-                        <button class="giopic-link-btn giopic-link-btn-primary flex-1 py-2 border font-medium text-sm"
+                        <button class="giopic-link-btn giopic-link-btn-primary flex-1 py-2 border font-medium text-sm flex items-center justify-center gap-2"
                             :class="locale === 'zh-CN' ? 'text-white' : 'border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'"
                             :style="locale === 'zh-CN' ? { backgroundColor: primaryColor } : {}"
                             @click="changeLocale('zh-CN')">
                             中文
                         </button>
-                        <button class="giopic-link-btn giopic-link-btn-primary flex-1 py-2 border font-medium text-sm"
+                        <button class="giopic-link-btn giopic-link-btn-primary flex-1 py-2 border font-medium text-sm flex items-center justify-center gap-2"
                             :class="locale === 'en-US' ? 'text-white' : 'border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'"
                             :style="locale === 'en-US' ? { backgroundColor: primaryColor } : {}"
                             @click="changeLocale('en-US')">
@@ -217,35 +267,41 @@ async function checkVersion() {
                 </div>
                 <!-- 打开方式设置 -->
                 <div>
-                    <div class="text-sm font-bold text-gray-500 mb-2">{{ t('settings.openMode') }}</div>
+                    <div class="text-sm font-bold text-gray-500 mb-2 flex items-center gap-1">
+                        <div class="i-ph-arrow-square-out" /> {{ t('settings.openMode') }}
+                    </div>
                     <div class="flex gap-2">
                         <button v-for="mode in ['tab', 'window', 'action']" :key="mode"
-                            class="flex-1 py-2 rounded-lg border transition-all font-medium text-sm"
+                            class="flex-1 py-2 rounded-lg border transition-all font-medium text-sm flex items-center justify-center gap-2"
                             :class="openMode === mode ? 'text-white' : 'border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'"
                             :style="openMode === mode ? { backgroundColor: primaryColor } : {}"
                             @click="setOpenMode(mode)">
-                            {{ t(`settings.openModes.${mode}`) }}
+                            <div :class="openModeIcons[mode]" /> {{ t(`settings.openModes.${mode}`) }}
                         </button>
                     </div>
                 </div>
 
                 <!-- 界面布局 -->
                 <div>
-                    <div class="text-sm font-bold text-gray-500 mb-2">{{ t('settings.uiMode') }}</div>
+                    <div class="text-sm font-bold text-gray-500 mb-2 flex items-center gap-1">
+                        <div class="i-ph-layout" /> {{ t('settings.uiMode') }}
+                    </div>
                     <div class="grid grid-cols-2 gap-2">
                         <button v-for="mode in ['classic', 'console', 'center', 'simple']" :key="mode"
-                            class="giopic-link-btn giopic-link-btn-primary flex-1 py-2 border font-medium text-sm rounded-lg transition-all"
+                            class="giopic-link-btn giopic-link-btn-primary flex-1 py-2 border font-medium text-sm rounded-lg transition-all flex items-center justify-center gap-2"
                             :class="themeStore.uiMode === mode ? 'text-white' : 'border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'"
                             :style="themeStore.uiMode === mode ? { backgroundColor: primaryColor } : {}"
                             @click="themeStore.setUiMode(mode as any)">
-                            {{ t(`settings.uiModes.${mode}`) }}
+                            <div :class="uiModeIcons[mode]" /> {{ t(`settings.uiModes.${mode}`) }}
                         </button>
                     </div>
                 </div>
 
                 <!-- 侧边栏设置 -->
                 <div>
-                    <div class="text-sm font-bold text-gray-500 mb-2">{{ t('settings.sidebar') }}</div>
+                    <div class="text-sm font-bold text-gray-500 mb-2 flex items-center gap-1">
+                        <div class="i-ph-sidebar" /> {{ t('settings.sidebar') }}
+                    </div>
                     <button
                         class="giopic-link-btn giopic-link-btn-primary w-full py-2 border font-medium text-sm flex items-center justify-center gap-2"
                         :class="'border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'"
@@ -256,10 +312,12 @@ async function checkVersion() {
 
                 <!-- 主题色设置 -->
                 <div class="md:col-span-2">
-                    <div class="text-sm font-bold text-gray-500 mb-2">{{ t('settings.theme') }}</div>
+                    <div class="text-sm font-bold text-gray-500 mb-2 flex items-center gap-1">
+                        <div class="i-ph-swatches" /> {{ t('settings.theme') }}
+                    </div>
                     <div class=" flex items-center  gap-2">
                         <button v-for="(color, key) in themeColors" :key="key"
-                            class="giopic-icon-btn w-8 h-8 rounded-full"
+                            class="giopic-icon-btn w-8 h-8 rounded-full flex items-center justify-center"
                             :style="{ backgroundColor: color.primary }" @click="themeStore.setThemeColor(key)">
                             <div v-if="themeStore.currentColor === key"
                                 class="i-ph-check text-white text-lg font-bold" />
@@ -270,7 +328,9 @@ async function checkVersion() {
             <div class="grid gap-4 md:grid-cols-2">
                 <!-- 自动化设置 -->
                 <div>
-                    <div class="text-sm font-bold text-gray-500 mb-2">{{ t('settings.automation') }}</div>
+                    <div class="text-sm font-bold text-gray-500 mb-2 flex items-center gap-1">
+                        <div class="i-ph-magic-wand" /> {{ t('settings.automation') }}
+                    </div>
                     <div
                         class="flex items-center justify-between p-3 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-700/30">
                         <span class="text-sm font-medium text-gray-700 dark:text-gray-200">{{ t('settings.autoInject')
@@ -280,7 +340,9 @@ async function checkVersion() {
                 </div>
                 <!-- 桌面联动 -->
                 <div>
-                    <div class="text-sm font-bold text-gray-500 mb-2">{{ t('settings.desktopLink.title') }}</div>
+                    <div class="text-sm font-bold text-gray-500 mb-2 flex items-center gap-1">
+                        <div class="i-ph-desktop" /> {{ t('settings.desktopLink.title') }}
+                    </div>
                     <div
                         class="space-y-2 p-3 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-700/30">
                         <div class="flex items-center justify-between">
@@ -303,7 +365,9 @@ async function checkVersion() {
             </div>
             <!-- 版本 -->
             <div>
-                <div class="text-sm font-bold text-gray-500 mb-2">{{ t('settings.version.title') }}</div>
+                <div class="text-sm font-bold text-gray-500 mb-2 flex items-center gap-1">
+                    <div class="i-ph-info" /> {{ t('settings.version.title') }}
+                </div>
                 <div class="p-3 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-700/30">
                     <div class="flex items-center justify-between" :class="latestVersion ? 'mb-2' : ''">
                         <span class="text-sm font-medium text-gray-700 dark:text-gray-200">
@@ -349,6 +413,20 @@ async function checkVersion() {
                             </a>
                         </div>
                     </div>
+                </div>
+            </div>
+
+            <!-- 危险区域 -->
+            <div class="md:col-span-2">
+                <div class="text-sm font-bold text-red-500 mb-2 flex items-center gap-1">
+                    <div class="i-ph-warning-circle" /> {{ t('settings.dangerZone.title') }}
+                </div>
+                <div class="p-3 rounded-lg border border-red-200 dark:border-red-900/50 bg-red-50 dark:bg-red-900/20">
+                    <button
+                        class="w-full py-2 bg-red-500 hover:bg-red-600 text-white rounded-lg font-medium text-sm transition-colors flex items-center justify-center gap-2"
+                        @click="handleResetExtension">
+                        <div class="i-ph-trash" /> {{ t('settings.dangerZone.reset') }}
+                    </button>
                 </div>
             </div>
         </div>

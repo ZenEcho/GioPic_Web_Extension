@@ -30,7 +30,7 @@ export default {
   home: {
     nodes: '分发节点',
     nodeList: {
-      emptyDescription: '配置分发节点后即可开始上传。<br>支持多种存储策略组合。',
+      emptyDescription: '配置分发节点后即可开始上传。支持多种存储策略组合。',
     },
     myImages: '我的图片',
     sidebar: {
@@ -40,7 +40,8 @@ export default {
       nativeNotSupported: '当前浏览器不支持原生侧边栏或 API 不可用',
       closeDialog: {
         title: '关闭悬浮球',
-        session: '本次关闭直到下次访问',
+        close: '本次关闭直到下次刷新',
+        session: '当前标签页禁用',
         site: '当前网站禁用',
         permanent: '永久禁用',
         settingsHint: '(可在设置页开启)',
@@ -85,7 +86,7 @@ export default {
       deleteSelectedConfirm: '确定要删除选中的 {count} 项吗？',
     },
     upload: {
-      selectNodeWarning: '请先在左侧选择至少一个分发节点',
+      selectNodeWarning: '请选择一个分发节点',
       configNotFound: '配置不存在',
       uploadFailed: '上传失败',
       uploadAll: '全部上传',
@@ -110,6 +111,40 @@ export default {
     importSuccess: '成功导入 {count} 个节点',
     importFailed: '导入失败，格式错误',
     importNoData: '未识别到有效配置',
+    onboarding: {
+      title: '欢迎使用 GioPic',
+      subtitle: '请选择您喜欢的界面布局',
+      classic: {
+        title: '经典布局',
+        desc: '左侧导航，右侧内容，功能全面展示'
+      },
+      console: {
+        title: '控制台布局',
+        desc: '类似 IDE 的控制台风格，适合开发者'
+      },
+      center: {
+        title: '中心布局',
+        desc: '内容居中，专注核心功能'
+      },
+      simple: {
+        title: '极简布局',
+        desc: '极简风格，仅保留最核心的上传功能'
+      },
+      start: '开始使用',
+      preview: '预览效果',
+      restore: '恢复面板',
+      config: {
+        title: '节点配置',
+        subtitle: '您可以现在配置上传节点，或稍后配置',
+        create: '新建节点',
+        createDesc: '手动输入配置信息',
+        import: '导入节点',
+        importDesc: '粘贴 JSON 配置',
+        later: '稍后配置',
+        laterDesc: '直接进入主界面',
+        skip: '跳过教程'
+      }
+    }
   },
   uploadList: {
     title: '上传列表',
@@ -117,6 +152,7 @@ export default {
     clearCompleted: '清除已完成',
     img: '图片',
     copyUrl: '复制链接',
+    empty: '暂无待处理上传',
     status: {
       done: '完成',
       err: '错误',
@@ -220,9 +256,9 @@ export default {
       simple: '极简布局',
     },
     desktopLink: {
-      title: '桌面联动',
+      title: '桌面联动 (beta)',
       description: '通过 WebSocket 与桌面端通信，上传成功后自动插入链接',
-      enabled: '启用桌面联动',
+      enabled: '启用桌面联动 (beta)',
       statusLabel: '连接状态',
       status: {
         disabled: '未启用',
@@ -274,6 +310,12 @@ export default {
     about: {
       developer: '开发者',
       openSource: '开源地址'
+    },
+    dangerZone: {
+      title: '危险区域',
+      reset: '重置扩展',
+      resetConfirm: '此操作将清空所有配置、历史记录和设置，且不可恢复。确定要继续吗？',
+      resetSuccess: '重置成功，页面将重新加载',
     }
   },
   background: {

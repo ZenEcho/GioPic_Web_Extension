@@ -177,13 +177,14 @@ async function initDesktopLinkOnStartup() {
     } catch {
         desktopEnabled = false
     }
-    if (desktopEnabled) {
-        connectDesktopWebSocket()
+    
+    if (desktopEnabled) { // 启动时如果已开启则尝试连接
+        connectDesktopWebSocket() // 启动时尝试连接
     } else {
         desktopStatus = 'disabled'
         desktopLastError = undefined
     }
-    broadcastDesktopLinkStatus()
+    broadcastDesktopLinkStatus() // 初始化时广播状态
 }
 
 export {

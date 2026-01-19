@@ -1,6 +1,6 @@
 <template>
-    <div v-if="isVisible" ref="ballRef" class="giopic-floating-ball" :style="ballStyle"
-        @click="onClick" @mouseenter="isHovering = true" @mouseleave="isHovering = false">
+    <div v-if="isVisible" ref="ballRef" class="giopic-floating-ball" :style="ballStyle" @click="onClick"
+        @mouseenter="isHovering = true" @mouseleave="isHovering = false">
 
         <!-- Logo Icon -->
         <div class="giopic-ball-content">
@@ -12,21 +12,25 @@
             :title="t('common.delete')">
             <div class="i-ph-x-bold text-white text-xs"></div>
         </div>
+        <!-- 上传列表 -->
+        <div v-show="isHovering" class="giopic-uploadList-btn" @click.stop="toggleUploadList"
+            :title="t('home.history.uploadQueue')">
+            <div class="i-ph-list-bold text-white text-xs"></div>
+        </div>
     </div>
 
     <!-- Iframe Overlay -->
     <div v-if="isVisible" class="giopic-web-overlay" :style="overlayStyle" @click="hideIframe">
     </div>
 
-    <iframe v-if="isVisible" ref="iframeRef" :src="iframeSrc" :style="iframeStyle"
-        allow="clipboard-write"></iframe>
+    <iframe v-if="isVisible" ref="iframeRef" :src="iframeSrc" :style="iframeStyle" allow="clipboard-write"></iframe>
 
     <!-- Close Confirmation Dialog -->
     <div v-if="showCloseDialog" class="giopic-dialog-overlay" @click="showCloseDialog = false">
         <div class="giopic-dialog" ref="dialogRef" @click.stop :style="dialogStyle">
             <div class="giopic-dialog-header">
                 <span class="font-bold text-gray-800 dark:text-gray-200">{{ t('home.sidebar.closeDialog.title')
-                }}</span>
+                    }}</span>
                 <button class="giopic-dialog-close" @click="showCloseDialog = false">
                     <div class="i-ph-x text-gray-400 hover:text-gray-600"></div>
                 </button>
@@ -34,6 +38,11 @@
 
             <div class="giopic-dialog-body">
                 <div class="radio-group">
+                    <!-- 本次关闭直到下次刷新 -->
+                    <label class="radio-item" :class="{ active: closeOption === 'close' }">
+                        <input type="radio" v-model="closeOption" value="close">
+                        <span>{{ t('home.sidebar.closeDialog.close') }}</span>
+                    </label>
                     <label class="radio-item" :class="{ active: closeOption === 'session' }">
                         <input type="radio" v-model="closeOption" value="session">
                         <span>{{ t('home.sidebar.closeDialog.session') }}</span>
@@ -43,7 +52,7 @@
                         <span>
                             {{ t('home.sidebar.closeDialog.site') }}
                             <span class="text-xs text-gray-400 ml-1">{{ t('home.sidebar.closeDialog.settingsHint')
-                            }}</span>
+                                }}</span>
                         </span>
                     </label>
                     <label class="radio-item" :class="{ active: closeOption === 'permanent' }">
@@ -51,7 +60,7 @@
                         <span>
                             {{ t('home.sidebar.closeDialog.permanent') }}
                             <span class="text-xs text-gray-400 ml-1">{{ t('home.sidebar.closeDialog.settingsHint')
-                            }}</span>
+                                }}</span>
                         </span>
                     </label>
                 </div>
@@ -59,9 +68,9 @@
 
             <div class="giopic-dialog-footer">
                 <button class="btn-cancel" @click="showCloseDialog = false">{{ t('home.sidebar.closeDialog.cancel')
-                    }}</button>
-                <button class="btn-confirm" @click="handleConfirmClose">{{ t('home.sidebar.closeDialog.confirm')
                 }}</button>
+                <button class="btn-confirm" @click="handleConfirmClose">{{ t('home.sidebar.closeDialog.confirm')
+                    }}</button>
             </div>
         </div>
     </div>
@@ -96,7 +105,7 @@ const iframeRef = ref<HTMLIFrameElement | null>(null)
 const dialogRef = ref<HTMLElement | null>(null)
 const isHovering = ref(false)
 const showCloseDialog = ref(false)
-const closeOption = ref<'session' | 'site' | 'permanent'>('session')
+const closeOption = ref<'close' | 'session' | 'site' | 'permanent'>('close')
 const iframeShow = ref(false)
 const iframeSrc = ref('')
 const dialogStyle = ref<any>({})
@@ -110,6 +119,7 @@ const settings = ref<SidebarSettings>({
 })
 const disabledSites = ref<string[]>([])
 const isSessionClosed = ref(false)
+const isPageClosed = ref(false)
 
 // Draggable
 const { isDragging, position } = useDraggable(ballRef, ballRef, settings.value.position)
@@ -119,6 +129,7 @@ const isVisible = computed(() => {
     if (!settings.value.enabled) return false
     // Removed: if (settings.value.mode === 'native') return false
     if (isSessionClosed.value) return false
+    if (isPageClosed.value) return false
     if (disabledSites.value.includes(window.location.hostname)) return false
     return true
 })
@@ -165,7 +176,7 @@ const iframeStyle = computed<CSSProperties>(() => ({
 // Methods
 const onClick = async () => {
     if (isDragging.value) return
-    
+
     if (settings.value.mode === 'native') {
         try {
             const res = await browser.runtime.sendMessage({ type: 'TOGGLE_SIDE_PANEL' }) as any
@@ -192,9 +203,18 @@ const hideIframe = () => {
     iframeShow.value = false
 }
 
+const toggleUploadList = async () => {
+    const res = await browser.storage.local.get('giopic-show-upload-list')
+    const current = !!res['giopic-show-upload-list']
+    await browser.storage.local.set({ 'giopic-show-upload-list': !current })
+}
+
 const handleConfirmClose = async () => {
     try {
-        if (closeOption.value === 'session') {
+        if (closeOption.value === 'close') {
+            isPageClosed.value = true
+            return
+        } else if (closeOption.value === 'session') {
             try {
                 sessionStorage.setItem('giopic-sidebar-session-closed', 'true')
             } catch (e) {
@@ -333,8 +353,20 @@ onMounted(async () => {
             ...oldStorage.sidebarSettings,
             mode: oldStorage.sidebarSettings.mode || 'inject'
         }
-        // Sync position ref
+        // Sync position ref immediately
         position.value = settings.value.position
+
+        // Ensure position is valid after render
+        nextTick(() => {
+            // Force a re-evaluation of viewport constraints with the loaded position
+            // This helps if the loaded position is out of bounds on the current screen
+            // We trigger this by "pretending" the element resized
+            // But since we can't easily access ensureInViewport from here without exposing it,
+            // we rely on the fact that useDraggable's ResizeObserver will fire shortly.
+            // However, to be safe, we can manually trigger a small update if needed, but
+            // simply setting position.value usually works if useDraggable is watching it (it's not).
+            // The useDraggable internal position is the source of truth.
+        })
     }
 
     disabledSites.value = Array.isArray(oldStorage.sidebar_disabled_sites) ? oldStorage.sidebar_disabled_sites : []
@@ -435,6 +467,27 @@ onMounted(async () => {
 .giopic-close-btn:hover {
     transform: scale(1.1);
     background: #dc2626;
+}
+
+.giopic-uploadList-btn {
+    position: absolute;
+    bottom: -4px;
+    left: -4px;
+    width: 18px;
+    height: 18px;
+    background: #3b82f6;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+    transition: transform 0.1s;
+}
+
+.giopic-uploadList-btn:hover {
+    transform: scale(1.1);
+    background: #2563eb;
 }
 
 /* Dialog Styles */

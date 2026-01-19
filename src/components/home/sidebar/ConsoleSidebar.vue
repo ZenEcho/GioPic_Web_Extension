@@ -70,9 +70,13 @@ async function toggleCollapse() {
         <div class="p-4 border-b border-gray-100 dark:border-gray-700 flex items-center"
             :class="isCollapsed ? 'justify-center' : 'justify-between'">
             <div class="flex items-center gap-2">
-                <div 
+                <!-- <div 
                     class="w-8 h-8 rounded-lg bg-gradient-to-br from-primary to-primary/70 flex items-center justify-center shadow-sm flex-shrink-0">
                     <div class="i-ph-image-square text-sm" />
+                </div> -->
+                <div
+                    class="w-8 h-8 rounded-lg bg-gradient-to-br from-primary to-primary/70 flex items-center justify-center  shadow-sm">
+                    <img src="@/assets/icons/logo64.png" alt="logo" class="h-6 hidden md:block">
                 </div>
                 <span v-show="!isCollapsed"
                     class="text-sm font-bold text-gray-700 dark:text-gray-200 whitespace-nowrap transition-opacity duration-200">{{
@@ -257,7 +261,7 @@ async function toggleCollapse() {
                         @click="handleShareAll" :title="t('home.shareAll')">
                         <div class="i-ph-share-network text-sm" />
                     </button>
-                    <button  v-show="!isCollapsed"
+                    <button v-show="!isCollapsed"
                         class="w-8 h-8 rounded-md flex items-center justify-center text-gray-400 hover:text-primary hover:bg-primary/10 transition-all"
                         @click="handleImport" :title="t('home.import')">
                         <div class="i-ph-download-simple text-sm" />

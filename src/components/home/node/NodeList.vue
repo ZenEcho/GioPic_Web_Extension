@@ -112,7 +112,8 @@ const toggleSelection = (id: string) => {
                     <div class="i-ph-plugs text-5xl text-gray-300 dark:text-gray-600" />
                 </div>
                 <h3 class="text-lg font-bold text-gray-900 dark:text-gray-100 mb-2">{{ t('home.noNodes') }}</h3>
-                <p class="text-sm text-gray-500 dark:text-gray-400 max-w-[280px] leading-relaxed mb-8" v-html="t('home.nodeList.emptyDescription')">
+                <p class="text-sm text-gray-500 dark:text-gray-400 max-w-[280px] leading-relaxed mb-8">
+                    {{ t('home.nodeList.emptyDescription') }}
                 </p>
                 <button
                     class="h-11 px-6 rounded-2xl bg-primary text-white font-bold hover:bg-primary-hover shadow-xl shadow-primary/20 transition-all duration-300 transform hover:-translate-y-0.5"
