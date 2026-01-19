@@ -18,7 +18,7 @@
                     </n-radio-group>
                 </div>
 
-                <div class="space-y-2" v-if="settings.mode !== 'native'">
+                <div class="space-y-2">
                     <div class="flex justify-between">
                         <label>{{ t('settings.sidebarSetting.opacity') }}</label>
                         <span>{{ settings.opacity }}%</span>

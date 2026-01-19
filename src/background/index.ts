@@ -86,8 +86,15 @@ browser.runtime.onInstalled.addListener(async (details) => {
     if (details.reason === 'install') {
         await browser.storage.local.set({
             'giopic-auto-inject': true,
+            'giopic-dark-mode': true,
             'giopic-locale': 'zh-CN',
-            'open-mode': 'tab'
+            'open-mode': 'tab',
+            sidebarSettings: {
+                enabled: true,
+                mode: 'inject',
+                opacity: 80,
+            },
+            sidebar_disabled_sites: []
         })
     }
 })
