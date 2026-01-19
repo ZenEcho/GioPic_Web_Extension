@@ -8,6 +8,42 @@ import type { DriveConfig } from '@/types'
 import { getDesktopLinkStatus, setDesktopLinkEnabled } from './desktopLink'
 
 const authTokenCache: Record<string, string> = {}
+const sidePanelOpenByTab: Record<number, boolean> = {}
+const SIDE_PANEL_STATE_KEY = 'giopic-sidepanel-open-tabs'
+
+async function setSidePanelOpenState(tabId: number, open: boolean) {
+    try {
+        const prev = await browser.storage.local.get(SIDE_PANEL_STATE_KEY)
+        const current = prev[SIDE_PANEL_STATE_KEY] as Record<string, boolean> | undefined
+        const next = { ...(current && typeof current === 'object' ? current : {}) }
+        next[String(tabId)] = open
+        await browser.storage.local.set({ [SIDE_PANEL_STATE_KEY]: next })
+    } catch { }
+}
+
+browser.storage.local.get(SIDE_PANEL_STATE_KEY).then((res) => {
+    const raw = res[SIDE_PANEL_STATE_KEY] as Record<string, boolean> | undefined
+    if (raw && typeof raw === 'object') {
+        for (const [k, v] of Object.entries(raw)) {
+            const tabId = Number(k)
+            if (Number.isFinite(tabId)) sidePanelOpenByTab[tabId] = Boolean(v)
+        }
+    }
+}).catch(() => { })
+
+browser.storage.onChanged.addListener((changes, area) => {
+    if (area !== 'local') return
+    const change = changes[SIDE_PANEL_STATE_KEY]
+    if (!change) return
+    const raw = change.newValue as Record<string, boolean> | undefined
+    for (const k of Object.keys(sidePanelOpenByTab)) delete sidePanelOpenByTab[Number(k)]
+    if (raw && typeof raw === 'object') {
+        for (const [k, v] of Object.entries(raw)) {
+            const tabId = Number(k)
+            if (Number.isFinite(tabId)) sidePanelOpenByTab[tabId] = Boolean(v)
+        }
+    }
+})
 
 // 定义抓取规则接口
 interface TokenCaptureRule {
@@ -111,7 +147,96 @@ export async function handleMessage(message: any, sender: Runtime.MessageSender)
         return getDesktopLinkStatus()
     } else if (message.type === 'DESKTOP_LINK_SET_ENABLED') {
         await setDesktopLinkEnabled(Boolean(message.enabled))
+    } else if (message.type === 'OPEN_SIDE_PANEL') {
+        return await openSidePanel(sender)
+    } else if (message.type === 'CLOSE_SIDE_PANEL') {
+        return await closeSidePanel(sender)
+    } else if (message.type === 'TOGGLE_SIDE_PANEL') {
+        return await toggleSidePanel(sender)
     }
+}
+
+async function openSidePanel(sender: Runtime.MessageSender) {
+    const tabId = sender.tab?.id
+    if (!tabId) return { success: false, error: 'No tab ID found' }
+
+    const chromeSidePanel = (globalThis as any).chrome?.sidePanel
+    if (chromeSidePanel?.open) {
+        try {
+            await chromeSidePanel.open({ tabId })
+            sidePanelOpenByTab[tabId] = true
+            await setSidePanelOpenState(tabId, true)
+            return { success: true }
+        } catch (e: any) {
+            try {
+                const windowId = sender.tab?.windowId
+                if (windowId) {
+                    await chromeSidePanel.open({ windowId })
+                    sidePanelOpenByTab[tabId] = true
+                    await setSidePanelOpenState(tabId, true)
+                    return { success: true }
+                }
+            } catch { }
+            return { success: false, error: e?.message || 'Unknown error' }
+        }
+    }
+
+    if ((browser as any).sidebarAction?.open) {
+        try {
+            await (browser as any).sidebarAction.open()
+            sidePanelOpenByTab[tabId] = true
+            await setSidePanelOpenState(tabId, true)
+            return { success: true }
+        } catch (e: any) {
+            return { success: false, error: e?.message || 'Unknown error' }
+        }
+    }
+
+    return { success: false, error: 'API not supported' }
+}
+
+async function closeSidePanel(sender: Runtime.MessageSender) {
+    const tabId = sender.tab?.id
+    if (!tabId) return { success: false, error: 'No tab ID found' }
+
+    const chromeSidePanel = (globalThis as any).chrome?.sidePanel
+    if (chromeSidePanel?.close) {
+        try {
+            await chromeSidePanel.close({ tabId })
+            sidePanelOpenByTab[tabId] = false
+            await setSidePanelOpenState(tabId, false)
+            return { success: true }
+        } catch (e: any) {
+            return { success: false, error: e?.message || 'Unknown error' }
+        }
+    }
+
+    if (chromeSidePanel?.setOptions) {
+        try {
+            await chromeSidePanel.setOptions({ tabId, enabled: false })
+            sidePanelOpenByTab[tabId] = false
+            await setSidePanelOpenState(tabId, false)
+            return { success: true }
+        } catch (e: any) {
+            return { success: false, error: e?.message || 'Unknown error' }
+        }
+    }
+
+    return { success: false, error: 'API not supported' }
+}
+
+async function toggleSidePanel(sender: Runtime.MessageSender) {
+    const tabId = sender.tab?.id
+    if (!tabId) return { success: false, error: 'No tab ID found' }
+
+    if (sidePanelOpenByTab[tabId]) {
+        const res = await closeSidePanel(sender)
+        if (res?.success) sidePanelOpenByTab[tabId] = false
+        return res
+    }
+    const res = await openSidePanel(sender)
+    if (res?.success) sidePanelOpenByTab[tabId] = true
+    return res
 }
 
 async function handleFetchImageBlob(message: any) {

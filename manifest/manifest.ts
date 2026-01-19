@@ -65,8 +65,7 @@ export async function getManifest() {
             "notifications",
             "cookies",
             "webRequest",
-            "declarativeNetRequestWithHostAccess",
-            "declarativeNetRequestFeedback"
+            ...(isFirefox ? [] : ["declarativeNetRequestWithHostAccess", "declarativeNetRequestFeedback", "sidePanel"]),
         ],
         host_permissions: [
             "*://*/*",
@@ -80,12 +79,22 @@ export async function getManifest() {
 
     // 添加火狐浏览器特定设置
     if (isFirefox) {
-        // manifest.browser_specific_settings = {
-        //     gecko: {
-        //         id: "your-extension-id@mozilla.org",
-        //         strict_min_version: "42.0"
-        //     }
-        // }
+        manifest.sidebar_action = {
+            default_panel: "index.html",
+            default_icon: "assets/icons/logo64.png",
+            default_title: "GioPic",
+        }
+        manifest.browser_specific_settings = {
+            gecko: {
+                id: "giopic@fileup.dev",
+                strict_min_version: "109.0"
+            }
+        }
+    } else {
+        // @ts-ignore
+        manifest.side_panel = {
+            default_path: "index.html",
+        }
     }
 
     return manifest

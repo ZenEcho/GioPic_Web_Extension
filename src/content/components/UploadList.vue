@@ -1,112 +1,159 @@
 <template>
-    <div class="fixed inset-0 pointer-events-none z-[2147483646]" :class="{ dark: isDark }" v-if='uploads.length > 0' >
-        <div 
-            ref="containerRef"
+    <div class="fixed inset-0 pointer-events-none z-[2147483646]" v-if='uploads.length > 0'>
+        <div ref="containerRef"
             class="absolute w-[380px] pointer-events-auto backdrop-blur-md bg-white/95 dark:bg-gray-800/95 shadow-2xl rounded-xl overflow-hidden flex flex-col font-sans text-sm border border-gray-200 dark:border-gray-700/50 transition-shadow duration-300"
-            :style="{ left: position.x + 'px', top: position.y + 'px' }"
-        >
+            :class="{ dark: isDark }" :style="{ left: (position.x - 8) + 'px', top: position.y + 'px' }">
             <!-- Header -->
-            <div 
-                ref="headerRef"
-                class="bg-gradient-to-r from-blue-600 to-indigo-600 px-4 py-3 flex justify-between items-center select-none"
-            >
+            <div ref="headerRef"
+                class="bg-gradient-to-r from-blue-600 to-indigo-600 px-4 py-3 flex justify-between items-center select-none">
                 <div class="flex items-center gap-2 text-white">
-                    <svg class="w-4 h-4 opacity-80" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path></svg>
+                    <svg class="w-4 h-4 opacity-80" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12">
+                        </path>
+                    </svg>
                     <span class="font-bold tracking-wide text-sm">{{ t('uploadList.title') }}</span>
-                    <span class="bg-white/20 px-1.5 py-0.5 rounded text-[10px] font-bold min-w-[20px] text-center">{{ uploads.length }}</span>
+                    <span class="bg-white/20 px-1.5 py-0.5 rounded text-[10px] font-bold min-w-[20px] text-center">{{
+                        uploads.length }}</span>
                 </div>
                 <div class="flex items-center gap-1.5">
                     <!-- Theme Toggle -->
-                    <button @click="toggleTheme" class="bg-white/20 text-white/90 hover:text-white transition-colors p-1 rounded hover:bg-white/30" :title="isDark ? t('settings.lightMode') : t('settings.darkMode')">
-                         <svg v-if="isDark" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"></path></svg>
-                         <svg v-else class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"></path></svg>
+                    <button @click="toggleTheme"
+                        class="bg-white/20 text-white/90 hover:text-white transition-colors p-1 rounded hover:bg-white/30"
+                        :title="isDark ? t('settings.lightMode') : t('settings.darkMode')">
+                        <svg v-if="isDark" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z">
+                            </path>
+                        </svg>
+                        <svg v-else class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z">
+                            </path>
+                        </svg>
                     </button>
                     <!-- Lang Toggle -->
-                    <button @click="toggleLocale" class="bg-white/20 text-white/90 hover:text-white transition-colors p-1 rounded hover:bg-white/30" :title="t('settings.language')">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                    <button @click="toggleLocale"
+                        class="bg-white/20 text-white/90 hover:text-white transition-colors p-1 rounded hover:bg-white/30"
+                        :title="t('settings.language')">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z">
+                            </path>
+                        </svg>
                     </button>
                     <div class="w-px h-3 bg-white/20 mx-0.5"></div>
-                    <select 
-                        v-model="copyFormat"
+                    <select v-model="copyFormat"
                         class="bg-white/20 hover:bg-white/30 text-white text-[10px] font-bold border-none rounded outline-none cursor-pointer py-1 px-1.5 transition-colors focus:ring-1 focus:ring-white/50"
-                        :title="t('uploadList.copyFormat')" 
-                    >
-                        <option v-for="fmt in COPY_FORMATS" :key="fmt" :value="fmt" class="text-gray-800 dark:text-gray-200 bg-white dark:bg-gray-800">
+                        :title="t('uploadList.copyFormat')">
+                        <option v-for="fmt in COPY_FORMATS" :key="fmt" :value="fmt"
+                            class="text-gray-800 dark:text-gray-200 bg-white dark:bg-gray-800">
                             {{ FORMAT_LABELS[fmt] || fmt }}
                         </option>
                     </select>
-                    <button @click="clearCompleted" class="bg-white/20 text-white/70 hover:text-white transition-colors p-1 rounded hover:bg-white/10" :title="t('uploadList.clearCompleted')">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                    <button @click="clearCompleted"
+                        class="bg-white/20 text-white/70 hover:text-white transition-colors p-1 rounded hover:bg-white/10"
+                        :title="t('uploadList.clearCompleted')">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M6 18L18 6M6 6l12 12"></path>
+                        </svg>
                     </button>
                 </div>
             </div>
 
             <!-- List -->
             <div class="max-h-[300px] overflow-y-auto p-2 space-y-2 custom-scrollbar bg-gray-50/50 dark:bg-gray-900/20">
-            <TransitionGroup name="list">
-                <div v-for="item in uploads" :key="item.id" class="group bg-white dark:bg-gray-800 p-3 rounded-lg border border-gray-100 dark:border-gray-700 shadow-sm hover:shadow-md transition-all duration-200">
-                    <div class="flex items-center gap-3">
-                        <!-- Thumbnail -->
-                        <div class="w-10 h-10 rounded-lg bg-gray-100 dark:bg-gray-700 flex-shrink-0 overflow-hidden flex items-center justify-center border border-gray-200 dark:border-gray-600 relative">
-                            <img v-if="item.thumbUrl" :src="item.thumbUrl" class="w-full h-full object-cover" />
-                            <span v-else class="text-[10px] text-gray-400 font-medium">{{ t('uploadList.img') }}</span>
-                            
-                            <!-- Success Overlay -->
-                            <div v-if="item.status === 'success'" class="absolute inset-0 bg-green-500/20 flex items-center justify-center">
-                                <div class="bg-green-500 rounded-full p-0.5">
-                                    <svg class="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path></svg>
+                <TransitionGroup name="list">
+                    <div v-for="item in uploads" :key="item.id"
+                        class="group bg-white dark:bg-gray-800 p-3 rounded-lg border border-gray-100 dark:border-gray-700 shadow-sm hover:shadow-md transition-all duration-200">
+                        <div class="flex items-center gap-3">
+                            <!-- Thumbnail -->
+                            <div
+                                class="w-10 h-10 rounded-lg bg-gray-100 dark:bg-gray-700 flex-shrink-0 overflow-hidden flex items-center justify-center border border-gray-200 dark:border-gray-600 relative">
+                                <img v-if="item.thumbUrl" :src="item.thumbUrl" class="w-full h-full object-cover" />
+                                <span v-else class="text-[10px] text-gray-400 font-medium">{{ t('uploadList.img')
+                                }}</span>
+
+                                <!-- Success Overlay -->
+                                <div v-if="item.status === 'success'"
+                                    class="absolute inset-0 bg-green-500/20 flex items-center justify-center">
+                                    <div class="bg-green-500 rounded-full p-0.5">
+                                        <svg class="w-3 h-3 text-white" fill="none" stroke="currentColor"
+                                            viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3"
+                                                d="M5 13l4 4L19 7"></path>
+                                        </svg>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Info -->
+                            <div class="flex-1 min-w-0">
+                                <div class="flex justify-between items-start">
+                                    <div class="truncate font-medium text-gray-700 dark:text-gray-200 text-xs pr-2"
+                                        :title="item.filename">{{ item.filename }}</div>
+                                    <!-- Status Text -->
+                                    <div class="flex-shrink-0 text-[10px] font-bold">
+                                        <span v-if="item.status === 'success'"
+                                            class="text-green-600 dark:text-green-400">{{ t('uploadList.status.done')
+                                            }}</span>
+                                        <span v-else-if="item.status === 'error'" class="text-red-500">{{
+                                            t('uploadList.status.err') }}</span>
+                                        <span v-else class="text-blue-500">{{ Math.round(item.progress) }}%</span>
+                                    </div>
+                                </div>
+                                <div
+                                    class="text-[10px] text-gray-400 dark:text-gray-500 truncate mt-0.5 flex items-center gap-1">
+                                    <span class="w-1.5 h-1.5 rounded-full" :class="{
+                                        'bg-blue-500 animate-pulse': item.status === 'uploading',
+                                        'bg-green-500': item.status === 'success',
+                                        'bg-red-500': item.status === 'error'
+                                    }"></span>
+                                    {{ item.configName }}
                                 </div>
                             </div>
                         </div>
-                        
-                        <!-- Info -->
-                        <div class="flex-1 min-w-0">
-                            <div class="flex justify-between items-start">
-                                <div class="truncate font-medium text-gray-700 dark:text-gray-200 text-xs pr-2" :title="item.filename">{{ item.filename }}</div>
-                                <!-- Status Text -->
-                                <div class="flex-shrink-0 text-[10px] font-bold">
-                                    <span v-if="item.status === 'success'" class="text-green-600 dark:text-green-400">{{ t('uploadList.status.done') }}</span>
-                                    <span v-else-if="item.status === 'error'" class="text-red-500">{{ t('uploadList.status.err') }}</span>
-                                    <span v-else class="text-blue-500">{{ Math.round(item.progress) }}%</span>
-                                </div>
-                            </div>
-                            <div class="text-[10px] text-gray-400 dark:text-gray-500 truncate mt-0.5 flex items-center gap-1">
-                                <span class="w-1.5 h-1.5 rounded-full" :class="{
-                                    'bg-blue-500 animate-pulse': item.status === 'uploading',
-                                    'bg-green-500': item.status === 'success',
-                                    'bg-red-500': item.status === 'error'
-                                }"></span>
-                                {{ item.configName }}
-                            </div>
+
+                        <!-- Progress Bar -->
+                        <div v-if="item.status === 'uploading'"
+                            class="mt-2 w-full h-1 bg-gray-100 dark:bg-gray-700 rounded-full overflow-hidden">
+                            <div class="h-full bg-gradient-to-r from-blue-400 to-indigo-500 transition-all duration-300 ease-out shadow-[0_0_10px_rgba(59,130,246,0.5)]"
+                                :style="{ width: item.progress + '%' }"></div>
+                        </div>
+
+                        <!-- Error Msg -->
+                        <div v-if="item.status === 'error'"
+                            class="mt-2 text-[10px] text-red-500 bg-red-50 dark:bg-red-900/20 px-2 py-1 rounded truncate border border-red-100 dark:border-red-900/30">
+                            {{ item.error }}
+                        </div>
+
+                        <!-- Actions -->
+                        <div v-if="item.status === 'success'" class="mt-2 flex justify-end gap-2">
+                            <button @click="handleInject(item.url)"
+                                class="text-[10px] bg-gray-50 hover:bg-gray-100 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-600 dark:text-gray-300 px-2 py-1 rounded border border-gray-200 dark:border-gray-600 flex items-center gap-1 transition-all active:scale-95"
+                                :title="t('common.inject')">
+                                <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+                                </svg>
+                                {{ t('common.inject') }}
+                            </button>
+                            <button @click="copyToClipboard(item.url)"
+                                class="text-[10px] bg-gray-50 hover:bg-gray-100 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-600 dark:text-gray-300 px-2 py-1 rounded border border-gray-200 dark:border-gray-600 flex items-center gap-1 transition-all active:scale-95">
+                                <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z">
+                                    </path>
+                                </svg>
+                                {{ t('uploadList.copyUrl') }}
+                            </button>
                         </div>
                     </div>
-                    
-                    <!-- Progress Bar -->
-                    <div v-if="item.status === 'uploading'" class="mt-2 w-full h-1 bg-gray-100 dark:bg-gray-700 rounded-full overflow-hidden">
-                        <div class="h-full bg-gradient-to-r from-blue-400 to-indigo-500 transition-all duration-300 ease-out shadow-[0_0_10px_rgba(59,130,246,0.5)]" :style="{ width: item.progress + '%' }"></div>
-                    </div>
-
-                    <!-- Error Msg -->
-                    <div v-if="item.status === 'error'" class="mt-2 text-[10px] text-red-500 bg-red-50 dark:bg-red-900/20 px-2 py-1 rounded truncate border border-red-100 dark:border-red-900/30">
-                        {{ item.error }}
-                    </div>
-
-                    <!-- Actions -->
-                    <div v-if="item.status === 'success'" class="mt-2 flex justify-end gap-2">
-                        <button @click="handleInject(item.url)" class="text-[10px] bg-gray-50 hover:bg-gray-100 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-600 dark:text-gray-300 px-2 py-1 rounded border border-gray-200 dark:border-gray-600 flex items-center gap-1 transition-all active:scale-95" :title="t('common.inject')">
-                            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
-                            {{ t('common.inject') }}
-                        </button>
-                         <button @click="copyToClipboard(item.url)" class="text-[10px] bg-gray-50 hover:bg-gray-100 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-600 dark:text-gray-300 px-2 py-1 rounded border border-gray-200 dark:border-gray-600 flex items-center gap-1 transition-all active:scale-95">
-                            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>
-                            {{ t('uploadList.copyUrl') }}
-                        </button>
-                    </div>
-                </div>
-            </TransitionGroup>
+                </TransitionGroup>
+            </div>
         </div>
     </div>
-</div>
 </template>
 
 <script setup lang="ts">
@@ -162,7 +209,7 @@ const containerRef = useTemplateRef<HTMLElement>('containerRef')
 const headerRef = useTemplateRef<HTMLElement>('headerRef')
 
 // Width is 380px, adding 20px margin from right = 400
-const initialX = window.innerWidth - 400
+const initialX = (document.documentElement.clientWidth || window.innerWidth) - 400
 const initialY = window.innerHeight - 400
 
 const { position } = useDraggable(containerRef, headerRef, { x: initialX, y: initialY })
@@ -170,7 +217,7 @@ const { position } = useDraggable(containerRef, headerRef, { x: initialX, y: ini
 const handleMessage = (message: any) => {
     if (message.type === 'UPLOAD_EVENT') {
         const { event, id, payload } = message.data
-        
+
         if (event === 'start') {
             uploads.value.unshift({
                 id,
@@ -233,10 +280,10 @@ onMounted(() => {
             copyFormat.value = res.copyFormat as string
         }
         if (res['giopic-dark-mode']) {
-             isDark.value = res['giopic-dark-mode'] === 'true'
+            isDark.value = res['giopic-dark-mode'] === 'true'
         }
         if (res['giopic-locale']) {
-             locale.value = res['giopic-locale'] as string
+            locale.value = res['giopic-locale'] as string
         }
     })
 })
@@ -255,16 +302,20 @@ onUnmounted(() => {
 .custom-scrollbar::-webkit-scrollbar {
     width: 4px;
 }
+
 .custom-scrollbar::-webkit-scrollbar-track {
     background: transparent;
 }
+
 .custom-scrollbar::-webkit-scrollbar-thumb {
     background: #cbd5e1;
     border-radius: 2px;
 }
+
 .dark .custom-scrollbar::-webkit-scrollbar-thumb {
     background: #475569;
 }
+
 .custom-scrollbar::-webkit-scrollbar-thumb:hover {
     background: #94a3b8;
 }
@@ -273,16 +324,16 @@ onUnmounted(() => {
 .list-move,
 .list-enter-active,
 .list-leave-active {
-  transition: all 0.3s ease;
+    transition: all 0.3s ease;
 }
 
 .list-enter-from,
 .list-leave-to {
-  opacity: 0;
-  transform: translateX(20px);
+    opacity: 0;
+    transform: translateX(20px);
 }
 
 .list-leave-active {
-  position: absolute;
+    position: absolute;
 }
 </style>

@@ -1,6 +1,6 @@
 export default {
   app: {
-    name: 'GIOPIC',
+    name: 'GioPic',
     nameSuffix: 'SYNC',
   },
   providers: {
@@ -34,14 +34,24 @@ export default {
     },
     myImages: 'My Images',
     sidebar: {
-        upload: 'Upload Image',
-        history: 'History',
-        nodes: 'Nodes',
+      upload: 'Upload Image',
+      history: 'History',
+      nodes: 'Nodes',
+      nativeNotSupported: 'Native sidebar not supported in this browser',
+      closeDialog: {
+        title: 'Close Floating Ball',
+        session: 'Close for this session',
+        site: 'Disable on current site',
+        permanent: 'Permanently disable',
+        settingsHint: '(Can be enabled in Settings)',
+        cancel: 'Cancel',
+        confirm: 'Confirm',
+      },
     },
     nav: {
-        upload: 'Upload',
-        history: 'History',
-        config: 'Config',
+      upload: 'Upload',
+      history: 'History',
+      config: 'Config',
     },
     addNode: 'Add Node',
     createFirstNode: 'Create First Node',
@@ -181,7 +191,7 @@ export default {
     theme: 'Theme Color',
     appearance: 'Appearance',
     darkMode: 'Dark Mode',
-    lightMode: 'Dark Mode',
+    lightMode: 'Light Mode',
     openMode: 'Open Mode',
     uiMode: 'UI Mode',
     automation: 'Automation',
@@ -220,6 +230,9 @@ export default {
     sidebarSetting: {
       title: 'Sidebar Settings',
       switch: 'Sidebar',
+      mode: 'Mode',
+      inject: 'Browser Inject',
+      native: 'Browser Sidebar',
       width: 'Width',
       height: 'Height',
       location: 'Location',
@@ -230,7 +243,10 @@ export default {
       positionRight: 'Right',
       reset: 'Reset',
       save: 'Save',
-      saveSuccess: 'Saved Successfully'
+      saveSuccess: 'Saved Successfully',
+      disabledSites: 'Disabled Sites',
+      noDisabledSites: 'No disabled sites',
+      remove: 'Remove',
     },
     version: {
       title: 'About Version',
@@ -272,28 +288,28 @@ export default {
       err: 'ERR',
     }
   },
-   detector: {
-     foundTitle: 'Found: {appName} Configurable Image Host',
-     lskyContent: 'Click [Create Token] button, then on [Success] page click [Add to {appName}] button to load into {appName} extension.',
-     lskyOpenContent: 'Enter email and password, then click [Add to {appName}] button to configure extension.',
-     easyimagesOpenContent: 'Enter email and password, then click [Add to {appName}] button to configure extension.',
-     cheveretoContent: 'Click [Regenerate Key] button, then on [Success] page click [Add to {appName}] button to load into {appName} extension.',
-     best16Content: 'Click [Add to {appName}] button to load into {appName} extension.',
-     
-     addToApp: 'Add to {appName}',
-     ignore: 'Don\'t ask again for this site',
-     permissionTitle: 'Permission Request',
-     permissionContentLine1: 'Allow [{appName}] to use this site\'s cookie to get token?',
-     permissionContentLine2: 'Note: This involves privacy. Ignore if you disagree.',
-     allowAndGet: 'Allow and Get Token',
-     reject: 'Cancel',
-     email: 'Email',
-     password: 'Password',
-     failed: 'Failed',
-     failedContent: 'Check developer console (F12) for details',
-     configName: 'Config',
-     getTokenFailed: 'Failed to get Token, please click [Create Token] button first',
-     addSuccess: 'Added Successfully',
-     addFailed: 'Add Failed',
-   }
- }
+  detector: {
+    foundTitle: 'Found: {appName} Configurable Image Host',
+    lskyContent: 'Click [Create Token] button, then on [Success] page click [Add to {appName}] button to load into {appName} extension.',
+    lskyOpenContent: 'Enter email and password, then click [Add to {appName}] button to configure extension.',
+    easyimagesOpenContent: 'Enter email and password, then click [Add to {appName}] button to configure extension.',
+    cheveretoContent: 'Click [Regenerate Key] button, then on [Success] page click [Add to {appName}] button to load into {appName} extension.',
+    best16Content: 'Click [Add to {appName}] button to load into {appName} extension.',
+
+    addToApp: 'Add to {appName}',
+    ignore: 'Don\'t ask again for this site',
+    permissionTitle: 'Permission Request',
+    permissionContentLine1: 'Allow [{appName}] to use this site\'s cookie to get token?',
+    permissionContentLine2: 'Note: This involves privacy. Ignore if you disagree.',
+    allowAndGet: 'Allow and Get Token',
+    reject: 'Cancel',
+    email: 'Email',
+    password: 'Password',
+    failed: 'Failed',
+    failedContent: 'Check developer console (F12) for details',
+    configName: 'Config',
+    getTokenFailed: 'Failed to get Token, please click [Create Token] button first',
+    addSuccess: 'Added Successfully',
+    addFailed: 'Add Failed',
+  }
+}

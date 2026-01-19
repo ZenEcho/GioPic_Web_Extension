@@ -1,89 +1,94 @@
 <template>
-    <n-modal :show="show" @update:show="(val: boolean) => emit('update:show', val)" class="w-[500px]" preset="card" :title="t('settings.sidebarSetting.title')"
-        :bordered="false">
-        <div class="flex flex-row relative">
-            <div class="w-[125px]">
-                <span v-if="sidebarData.position == 'Left'" class="bg-slate-500 flex absolute"
-                    :style="{ width: sidebarData.width + 'px', height: sidebarData.height + '%', opacity: sidebarData.opacity / 100, top: calculateHeight(sidebarData.height, sidebarData.location) + '%' }"></span>
-            </div>
-            <div class="w-[250px]">
-                <!-- //开启关闭 -->
-                <div class="py-2">
-                    <label for="width">{{ t('settings.sidebarSetting.switch') }}：</label>
-                    <n-switch v-model:value="sidebarData.status" class="ml-2" />
+    <n-modal :show="show" @update:show="(val: boolean) => emit('update:show', val)" class="w-[500px]" preset="card"
+        :title="t('settings.sidebarSetting.title')" :bordered="false">
+
+        <div class="flex flex-col gap-6">
+            <!-- Switch & Opacity -->
+            <div class="space-y-4">
+                <div class="flex items-center justify-between">
+                    <label class="font-medium">{{ t('settings.sidebarSetting.switch') }}</label>
+                    <n-switch v-model:value="settings.enabled" />
                 </div>
-                <div class="py-2">
-                    <label for="width">{{ t('settings.sidebarSetting.width') }}:{{ sidebarData.width }}px</label>
-                    <n-slider :default-value="0" v-model:value="sidebarData.width" :min="1" :step="1" />
-                </div>
-                <div class="py-2">
-                    <label for="height">{{ t('settings.sidebarSetting.height') }}:{{ sidebarData.height }}%</label>
-                    <n-slider :default-value="0" v-model:value="sidebarData.height" :min="1" :step="1" />
-                </div>
-                <div class="py-2">
-                    <label for="location">{{ t('settings.sidebarSetting.location') }}:{{ sidebarData.location }}%</label>
-                    <n-slider :default-value="0" v-model:value="sidebarData.location" @update:value="updateLocation"
-                        :min="0" :step="1" />
-                </div>
-                <div class="py-2">
-                    <label for="opacity">{{ t('settings.sidebarSetting.opacity') }}:{{ sidebarData.opacity }}</label>
-                    <n-slider :default-value="5" v-model:value="sidebarData.opacity" :step="1" :min="5" />
-                </div>
-                <div class="py-2">
-                    <label for="closeTime">{{ t('settings.sidebarSetting.closeTime') }}:{{ sidebarData.closeTime }}s</label>
-                    <n-slider :default-value="2" v-model:value="sidebarData.closeTime" :step="1" :min="2" />
-                </div>
-                <div class="py-2">
-                    <label for="position">{{ t('settings.sidebarSetting.position') }}:</label>
-                    <n-radio-group v-model:value="sidebarData.position" class="ml-[20px]">
-                        <n-radio value="Left">{{ t('settings.sidebarSetting.positionLeft') }}</n-radio>
-                        <n-radio value="Right">{{ t('settings.sidebarSetting.positionRight') }}</n-radio>
+
+                <div class="flex items-center justify-between">
+                    <label class="font-medium">{{ t('settings.sidebarSetting.mode') }}</label>
+                    <n-radio-group v-model:value="settings.mode" size="small">
+                        <n-radio-button value="inject">{{ t('settings.sidebarSetting.inject') }}</n-radio-button>
+                        <n-radio-button value="native">{{ t('settings.sidebarSetting.native') }}</n-radio-button>
                     </n-radio-group>
                 </div>
+
+                <div class="space-y-2" v-if="settings.mode !== 'native'">
+                    <div class="flex justify-between">
+                        <label>{{ t('settings.sidebarSetting.opacity') }}</label>
+                        <span>{{ settings.opacity }}%</span>
+                    </div>
+                    <n-slider v-model:value="settings.opacity" :min="10" :max="100" :step="5" />
+                </div>
             </div>
-            <div class="w-[125px] ">
-                <span v-if="sidebarData.position == 'Right'" class="bg-slate-500 flex absolute right-0"
-                    :style="{ width: sidebarData.width + 'px', height: sidebarData.height + '%', opacity: sidebarData.opacity / 100, top: calculateHeight(sidebarData.height, sidebarData.location) + '%' }"></span>
+
+            <!-- Disabled Sites -->
+            <div class="border-t pt-4 dark:border-gray-700">
+                <h4 class="font-medium mb-3">{{ t('settings.sidebarSetting.disabledSites') }}</h4>
+
+                <div v-if="disabledSites.length === 0"
+                    class="text-gray-400 text-sm italic text-center py-4 bg-gray-50 dark:bg-gray-800 rounded">
+                    {{ t('settings.sidebarSetting.noDisabledSites') }}
+                </div>
+
+                <div v-else class="max-h-[200px] overflow-y-auto space-y-2 custom-scrollbar">
+                    <div v-for="site in disabledSites" :key="site"
+                        class="flex items-center justify-between p-2 bg-gray-50 dark:bg-gray-800 rounded border border-gray-100 dark:border-gray-700">
+                        <span class="text-sm truncate flex-1 mr-2">{{ site }}</span>
+                        <button @click="removeSite(site)"
+                            class="text-xs text-red-500 hover:text-red-600 px-2 py-1 rounded hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors">
+                            {{ t('settings.sidebarSetting.remove') }}
+                        </button>
+                    </div>
+                </div>
             </div>
         </div>
+
         <template #footer>
             <div class="flex flex-row justify-end">
-                <!-- 重置按钮 -->
-                <n-button type="info" class="mr-2" @click="resetSidebarData">{{ t('settings.sidebarSetting.reset') }}</n-button>
-                <!-- 保存按钮 -->
-                <n-button type="primary" class="ml-2" @click="save">{{ t('settings.sidebarSetting.save') }}</n-button>
+                <n-button type="warning" size="small" @click="resetSettings">{{ t('settings.sidebarSetting.reset')
+                }}</n-button>
             </div>
         </template>
     </n-modal>
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from "vue";
+import { ref, onMounted, onUnmounted, watch } from "vue";
 import { useMessage } from 'naive-ui';
 import browser from "webextension-polyfill";
 import { useI18n } from "vue-i18n";
 
-interface UploadAreaType {
-    status: boolean;
-    width: number;
-    height: number;
-    location: number;
+interface SidebarSettings {
+    enabled: boolean;
+    mode?: 'inject' | 'native';
+    position: { x: number; y: number };
     opacity: number;
-    closeTime: number;
-    position: 'Left' | 'Right';
+}
+
+interface LegacyUploadArea {
+    status?: boolean
+    location?: number
+    opacity?: number
+    position?: 'Left' | 'Right'
 }
 
 const { t } = useI18n();
 const message = useMessage();
-const sidebarData = ref<UploadAreaType>({
-    status: true,
-    width: 32,
-    height: 30,
-    location: 34,
-    opacity: 30,
-    closeTime: 2,
-    position: 'Right',
+
+const settings = ref<SidebarSettings>({
+    enabled: true,
+    mode: 'inject',
+    position: { x: window.innerWidth - 60, y: window.innerHeight * 0.4 },
+    opacity: 80
 });
+
+const disabledSites = ref<string[]>([]);
 
 const props = defineProps<{
     show: boolean
@@ -94,45 +99,79 @@ const emit = defineEmits<{
     (e: 'save'): void;
 }>();
 
-const save = async (): Promise<void> => {
-    await browser.storage.local.set({ uploadArea: sidebarData.value });
-    emit('save');
-    // 通知
+// Auto-save watcher
+watch([settings, disabledSites], async () => {
+    await browser.storage.local.set({
+        sidebarSettings: JSON.parse(JSON.stringify(settings.value)),
+        sidebar_disabled_sites: JSON.parse(JSON.stringify(disabledSites.value))
+    });
+}, { deep: true });
 
-    message.success(t('settings.sidebarSetting.saveSuccess'));
-}
-
-const resetSidebarData = (): void => {
-    sidebarData.value = {
-        status: true,
-        width: 32,
-        height: 30,
-        location: 34,
-        opacity: 30,
-        closeTime: 2,
-        position: 'Right',
+const resetSettings = (): void => {
+    settings.value = {
+        enabled: true,
+        mode: 'inject',
+        position: { x: window.innerWidth - 60, y: window.innerHeight * 0.4 },
+        opacity: 80
     };
 };
 
-const calculateHeight = (height: number, value: number): number => {
-    return height + value > 100 ? 100 - height : value;
-};
-
-const updateLocation = (value: number): void => {
-    if (sidebarData.value.height + value <= 100) {
-        sidebarData.value.location = value;
-    } else {
-        sidebarData.value.location = Math.trunc(100 - sidebarData.value.height);
-    }
+const removeSite = (site: string) => {
+    disabledSites.value = disabledSites.value.filter(s => s !== site);
 };
 
 onMounted(async () => {
-    const res = await browser.storage.local.get("uploadArea");
-    if (res.uploadArea) {
-        sidebarData.value = res.uploadArea as UploadAreaType;
-    } else {
-        // Initialize default if not exists
-        await browser.storage.local.set({ uploadArea: sidebarData.value });
+    const res = await browser.storage.local.get(['uploadArea', 'sidebarSettings', 'sidebar_disabled_sites']) as {
+        uploadArea?: LegacyUploadArea
+        sidebarSettings?: SidebarSettings
+        sidebar_disabled_sites?: string[]
+    };
+
+    // Migration Logic (Same as WebSidebar to ensure consistency if Settings opened first)
+    if (res.uploadArea && !res.sidebarSettings) {
+        const old = res.uploadArea;
+        settings.value = {
+            enabled: old.status !== false,
+            mode: 'inject',
+            position: {
+                x: old.position === 'Left' ? 20 : window.innerWidth - 60,
+                y: ((old.location || 40) / 100) * window.innerHeight
+            },
+            opacity: old.opacity || 80
+        };
+        // We don't save immediately here to avoid conflict, only on save()
+    } else if (res.sidebarSettings) {
+        settings.value = {
+            ...res.sidebarSettings,
+            mode: res.sidebarSettings.mode || 'inject'
+        };
     }
+
+    if (Array.isArray(res.sidebar_disabled_sites)) {
+        disabledSites.value = res.sidebar_disabled_sites;
+    }
+
+    const handleStorageChange = (changes: Record<string, any>, area: string) => {
+        if (area !== 'local') return
+        if (changes.sidebarSettings) {
+            const next = changes.sidebarSettings.newValue as SidebarSettings | undefined
+            if (next && typeof next === 'object') {
+                settings.value = {
+                    ...next,
+                    mode: next.mode || 'inject'
+                }
+            }
+        }
+        if (changes.sidebar_disabled_sites) {
+            const next = changes.sidebar_disabled_sites.newValue as unknown
+            disabledSites.value = Array.isArray(next) ? (next as string[]) : []
+        }
+    }
+
+    browser.storage.onChanged.addListener(handleStorageChange)
+
+    onUnmounted(() => {
+        browser.storage.onChanged.removeListener(handleStorageChange)
+    })
 });
 </script>

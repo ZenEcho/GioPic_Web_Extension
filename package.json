@@ -9,12 +9,14 @@
     "node": "^20.19.0 || >=22.12.0"
   },
   "scripts": {
-    "dev": "cross-env NODE_ENV=development npm-run-all clear prepare --parallel dev:*",
+    "dev": "cross-env NODE_ENV=development npm-run-all clear prepare --parallel dev:main dev:bg dev:content dev:page",
+    "dev:firefox": "cross-env NODE_ENV=development EXTENSION=firefox npm-run-all clear prepare --parallel dev:main dev:bg dev:content dev:page",
     "dev:main": "vite",
     "dev:bg": "vite build --config vite.config.bg.ts --watch",
     "dev:content": "vite build --config vite.config.content.ts --watch",
     "dev:page": "vite build --config vite.config.page.ts --watch",
-    "build": "cross-env NODE_ENV=production npm-run-all clear prepare --parallel build:*",
+    "build": "cross-env NODE_ENV=production npm-run-all clear prepare --parallel build:web build:ext build:check",
+    "build:firefox": "cross-env NODE_ENV=production EXTENSION=firefox npm-run-all clear prepare --parallel build:web build:ext build:check",
     "build:web": "vite build",
     "build:ext": "vite build --config vite.config.bg.ts && vite build --config vite.config.content.ts && vite build --config vite.config.page.ts",
     "build:check": "vue-tsc --build",

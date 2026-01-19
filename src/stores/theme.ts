@@ -58,7 +58,8 @@ export const useThemeStore = defineStore('theme', () => {
       if (mode === 'true') isDark.value = true
   })
 
-  db.get<UiMode>('giopic-ui-mode').then(mode => {
+  browser.storage.local.get('giopic-ui-mode').then(res => {
+      const mode = res['giopic-ui-mode']
       if (mode === 'classic' || mode === 'console' || mode === 'center' || mode === 'simple') {
         uiMode.value = mode
       }
@@ -109,7 +110,7 @@ export const useThemeStore = defineStore('theme', () => {
 
   function setUiMode(mode: UiMode) {
     uiMode.value = mode
-    db.set('giopic-ui-mode', mode)
+    browser.storage.local.set({ 'giopic-ui-mode': mode })
   }
 
   return {

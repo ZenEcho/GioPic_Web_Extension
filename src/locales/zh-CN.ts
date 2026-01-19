@@ -1,6 +1,6 @@
 export default {
   app: {
-    name: 'GIOPIC ',
+    name: 'GioPic ',
     nameSuffix: 'SYNC',
   },
   providers: {
@@ -34,14 +34,24 @@ export default {
     },
     myImages: '我的图片',
     sidebar: {
-        upload: '上传图片',
-        history: '历史',
-        nodes: '分发节点',
+      upload: '上传图片',
+      history: '历史',
+      nodes: '分发节点',
+      nativeNotSupported: '当前浏览器不支持原生侧边栏或 API 不可用',
+      closeDialog: {
+        title: '关闭悬浮球',
+        session: '本次关闭直到下次访问',
+        site: '当前网站禁用',
+        permanent: '永久禁用',
+        settingsHint: '(可在设置页开启)',
+        cancel: '取消',
+        confirm: '确定',
+      },
     },
     nav: {
-        upload: '上传',
-        history: '历史',
-        config: '配置',
+      upload: '上传',
+      history: '历史',
+      config: '配置',
     },
     addNode: '添加节点',
     createFirstNode: '创建第一个节点',
@@ -99,6 +109,17 @@ export default {
     importSuccess: '成功导入 {count} 个节点',
     importFailed: '导入失败，格式错误',
     importNoData: '未识别到有效配置',
+  },
+  uploadList: {
+    title: '上传列表',
+    copyFormat: '复制格式',
+    clearCompleted: '清除已完成',
+    img: '图片',
+    copyUrl: '复制链接',
+    status: {
+      done: '完成',
+      err: '错误',
+    }
   },
   config: {
     addTitle: '添加配置',
@@ -220,6 +241,9 @@ export default {
     sidebarSetting: {
       title: '设置侧边栏',
       switch: '侧边栏',
+      mode: '模式',
+      inject: '浏览器注入',
+      native: '浏览器侧边栏',
       width: '宽',
       height: '高',
       location: '位置',
@@ -230,7 +254,10 @@ export default {
       positionRight: '右',
       reset: '重置',
       save: '保存',
-      saveSuccess: '保存成功'
+      saveSuccess: '保存成功',
+      disabledSites: '禁用站点',
+      noDisabledSites: '没有禁用站点',
+      remove: '移除'
     },
     version: {
       title: '关于版本',
@@ -260,17 +287,6 @@ export default {
     uploadResult: '成功: {success}, 失败: {fail}',
     uploadFailed: 'GioPic 上传失败',
     unknownError: '未知错误'
-  },
-  uploadList: {
-    title: '上传列表',
-    clearCompleted: '清除已完成',
-    img: '图',
-    copyUrl: '复制链接',
-    copyFormat: '复制格式',
-    status: {
-      done: '完成',
-      err: '错误',
-    }
   },
   detector: {
     foundTitle: '发现：{appName} 可配置图床',

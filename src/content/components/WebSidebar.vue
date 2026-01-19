@@ -1,288 +1,562 @@
 <template>
-    <div v-if="uploadAreaData?.status" v-show="!iframeShow" ref="uploadAreaRef" class="giopic-web-handle"
-        :data-side="uploadAreaData?.position"
-        :style="sidebarStyle" @mousedown="handleMouseDown" @click="handleClick" title="按住拖动">
-        <div class="giopic-web-handle__glow"></div>
-        <div class="giopic-web-handle__inner"></div>
-        <div class="giopic-web-handle__label">GioPic</div>
+    <div v-if="isVisible" ref="ballRef" class="giopic-floating-ball" :style="ballStyle"
+        @click="onClick" @mouseenter="isHovering = true" @mouseleave="isHovering = false">
+
+        <!-- Logo Icon -->
+        <div class="giopic-ball-content">
+            <img :src="logoUrl" class="giopic-logo" alt="GioPic" draggable="false" />
+        </div>
+
+        <!-- Close Button (visible on hover) -->
+        <div v-show="isHovering" class="giopic-close-btn" @click.stop="showCloseDialog = true"
+            :title="t('common.delete')">
+            <div class="i-ph-x-bold text-white text-xs"></div>
+        </div>
     </div>
 
-    <div v-if="uploadAreaData?.status" v-show="iframeShow" class="giopic-web-overlay" :style="overlayStyle"
-        @click="hideIframe"></div>
+    <!-- Iframe Overlay -->
+    <div v-if="isVisible" class="giopic-web-overlay" :style="overlayStyle" @click="hideIframe">
+    </div>
 
-    <iframe v-if="uploadAreaData?.status" v-show="iframeShow" ref="iframeRef" :src="iframeSrc" :style="iframeStyle"
+    <iframe v-if="isVisible" ref="iframeRef" :src="iframeSrc" :style="iframeStyle"
         allow="clipboard-write"></iframe>
+
+    <!-- Close Confirmation Dialog -->
+    <div v-if="showCloseDialog" class="giopic-dialog-overlay" @click="showCloseDialog = false">
+        <div class="giopic-dialog" ref="dialogRef" @click.stop :style="dialogStyle">
+            <div class="giopic-dialog-header">
+                <span class="font-bold text-gray-800 dark:text-gray-200">{{ t('home.sidebar.closeDialog.title')
+                }}</span>
+                <button class="giopic-dialog-close" @click="showCloseDialog = false">
+                    <div class="i-ph-x text-gray-400 hover:text-gray-600"></div>
+                </button>
+            </div>
+
+            <div class="giopic-dialog-body">
+                <div class="radio-group">
+                    <label class="radio-item" :class="{ active: closeOption === 'session' }">
+                        <input type="radio" v-model="closeOption" value="session">
+                        <span>{{ t('home.sidebar.closeDialog.session') }}</span>
+                    </label>
+                    <label class="radio-item" :class="{ active: closeOption === 'site' }">
+                        <input type="radio" v-model="closeOption" value="site">
+                        <span>
+                            {{ t('home.sidebar.closeDialog.site') }}
+                            <span class="text-xs text-gray-400 ml-1">{{ t('home.sidebar.closeDialog.settingsHint')
+                            }}</span>
+                        </span>
+                    </label>
+                    <label class="radio-item" :class="{ active: closeOption === 'permanent' }">
+                        <input type="radio" v-model="closeOption" value="permanent">
+                        <span>
+                            {{ t('home.sidebar.closeDialog.permanent') }}
+                            <span class="text-xs text-gray-400 ml-1">{{ t('home.sidebar.closeDialog.settingsHint')
+                            }}</span>
+                        </span>
+                    </label>
+                </div>
+            </div>
+
+            <div class="giopic-dialog-footer">
+                <button class="btn-cancel" @click="showCloseDialog = false">{{ t('home.sidebar.closeDialog.cancel')
+                    }}</button>
+                <button class="btn-confirm" @click="handleConfirmClose">{{ t('home.sidebar.closeDialog.confirm')
+                }}</button>
+            </div>
+        </div>
+    </div>
 </template>
 
 <script setup lang="ts">
-import { onMounted, onUnmounted, ref, computed, useTemplateRef, watch } from 'vue'
+import { ref, computed, onMounted, watch, nextTick, type CSSProperties } from 'vue'
 import browser from 'webextension-polyfill'
-import { useSidebarDrag } from '@/content/composables/useSidebarDrag'
+import { useDraggable } from '@/content/composables/useDraggable'
+import { useI18n } from 'vue-i18n'
 
-interface SidebarConfig {
-    status: boolean
-    width: number
-    height: number
-    location: number
+const { t, locale } = useI18n()
+
+// Data Types
+interface SidebarSettings {
+    enabled: boolean
+    mode?: 'inject' | 'native'
+    position: { x: number, y: number }
     opacity: number
-    closeTime: number
-    position: 'Left' | 'Right'
 }
 
-const uploadAreaRef = useTemplateRef<HTMLDivElement>('uploadAreaRef')
-const uploadAreaData = ref<SidebarConfig>()
+interface LegacyUploadArea {
+    status?: boolean
+    location?: number
+    opacity?: number
+    position?: 'Left' | 'Right'
+}
 
+// Refs
+const ballRef = ref<HTMLElement | null>(null)
+const iframeRef = ref<HTMLIFrameElement | null>(null)
+const dialogRef = ref<HTMLElement | null>(null)
+const isHovering = ref(false)
+const showCloseDialog = ref(false)
+const closeOption = ref<'session' | 'site' | 'permanent'>('session')
 const iframeShow = ref(false)
-const iframeRef = useTemplateRef<HTMLIFrameElement>('iframeRef')
 const iframeSrc = ref('')
-const isHoveringHandle = ref(false)
+const dialogStyle = ref<any>({})
 
-// Composable for drag logic
-const {
-    isDragging,
-    isClickPrevented,
-    handleMouseDown,
-    handleGlobalMouseMove
-} = useSidebarDrag(uploadAreaRef, uploadAreaData)
+// Settings & State
+const settings = ref<SidebarSettings>({
+    enabled: true,
+    mode: 'inject',
+    position: { x: (document.documentElement.clientWidth || window.innerWidth) - 60, y: window.innerHeight * 0.4 },
+    opacity: 80
+})
+const disabledSites = ref<string[]>([])
+const isSessionClosed = ref(false)
 
-// Computed Styles
-const sidebarStyle = computed(() => {
-    if (!uploadAreaData.value) return {}
-    
-    const { width, height, location, opacity, position } = uploadAreaData.value
-    const isLeft = position === 'Left'
-    const logoUrl = browser.runtime.getURL('assets/icons/logo256.png')
-    
-    return {
-        position: 'fixed',
-        width: `${width}px`,
-        height: `${height}%`,
-        background: `rgba(17, 24, 39, ${Math.max(0.12, opacity / 100)})`,
-        WebkitBackdropFilter: 'blur(10px)',
-        backdropFilter: 'blur(10px)',
-        top: `${location}%`,
-        zIndex: 2147483647,
-        [isLeft ? 'left' : 'right']: `-${width + 10}px`,
-        transition: isLeft ? 'left 0.3s ease-in-out' : 'right 0.3s ease-in-out',
-        borderRadius: isLeft ? '0px 14px 14px 0px' : '14px 0px 0px 14px',
-        cursor: 'pointer',
-        boxShadow: '0 12px 30px rgba(0,0,0,0.22)',
-        border: '1px solid rgba(255,255,255,0.16)',
-        overflow: 'hidden',
-        userSelect: 'none',
-        touchAction: 'none',
-        backgroundImage: `radial-gradient(circle at 30% 20%, rgba(255,255,255,0.10), transparent 55%), url("${logoUrl}")`,
-        backgroundRepeat: 'no-repeat',
-        backgroundPosition: 'center',
-        backgroundSize: 'contain',
-    } as any
+// Draggable
+const { isDragging, position } = useDraggable(ballRef, ballRef, settings.value.position)
+
+// Computed
+const isVisible = computed(() => {
+    if (!settings.value.enabled) return false
+    // Removed: if (settings.value.mode === 'native') return false
+    if (isSessionClosed.value) return false
+    if (disabledSites.value.includes(window.location.hostname)) return false
+    return true
 })
 
-const overlayStyle = computed(() => {
+const logoUrl = browser.runtime.getURL('assets/icons/logo64.png')
+
+const ballStyle = computed<CSSProperties>(() => {
+    const showBall = !iframeShow.value
     return {
-        position: 'fixed',
-        inset: '0',
-        background: 'rgba(0,0,0,0.32)',
-        WebkitBackdropFilter: 'blur(2px)',
-        backdropFilter: 'blur(2px)',
-        zIndex: String(Math.pow(2, 31) - 11),
-    } as any
+        left: `${position.value.x}px`,
+        top: `${position.value.y}px`,
+        opacity: showBall ? (isHovering.value || isDragging.value ? 1 : settings.value.opacity / 100) : 0,
+        transform: showBall ? (isHovering.value ? 'scale(1.1)' : 'scale(1)') : 'scale(0)',
+        cursor: isDragging.value ? 'grabbing' : 'pointer',
+        pointerEvents: showBall ? 'auto' : 'none'
+    }
 })
 
-const iframeStyle = computed(() => {
-    if (!uploadAreaData.value) return {}
-    const { position } = uploadAreaData.value
-    const isLeft = position === 'Left'
+const overlayStyle = computed<CSSProperties>(() => ({
+    position: 'fixed',
+    inset: '0',
+    background: 'rgba(0,0,0,0.32)',
+    backdropFilter: 'blur(2px)',
+    zIndex: 2147483646,
+    opacity: iframeShow.value ? 1 : 0,
+    pointerEvents: iframeShow.value ? 'auto' : 'none',
+    transition: 'opacity 0.3s ease-in-out'
+}))
+
+const iframeStyle = computed<CSSProperties>(() => ({
+    position: 'fixed',
+    width: 'min(650px)',
+    height: '100%',
+    top: 0,
+    right: iframeShow.value ? '0' : '-900px',
+    border: 'none',
+    boxShadow: '-4px 0 16px rgba(0,0,0,0.15)',
+    zIndex: 2147483647,
+    transition: 'right 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+    background: 'transparent',
+    pointerEvents: iframeShow.value ? 'auto' : 'none'
+}))
+
+// Methods
+const onClick = async () => {
+    if (isDragging.value) return
     
-    return {
-        position: 'fixed',
-        width: 'min(650px)',
-        height: '100%',
-        bottom: '0',
-        border: 'none',
-        boxShadow: '0 0 16px rgba(0,0,0,0.25), 0 6px 30px rgba(0,0,0,0.18)',
-        borderRadius: isLeft ? '0 16px 16px 0' : '16px 0 0 16px',
-        zIndex: String(Math.pow(2, 31) - 10),
-        transition: isLeft ? 'left 0.3s ease-in-out' : 'right 0.3s ease-in-out',
-        [isLeft ? 'left' : 'right']: iframeShow.value ? '0' : '-900px'
-    } as any
-})
+    if (settings.value.mode === 'native') {
+        try {
+            const res = await browser.runtime.sendMessage({ type: 'TOGGLE_SIDE_PANEL' }) as any
+            if (res && typeof res === 'object' && res.success === false) {
+                if (res.error === 'API not supported') {
+                    alert(t('home.sidebar.nativeNotSupported'))
+                }
+                if (!iframeSrc.value) iframeSrc.value = browser.runtime.getURL('index.html')
+                iframeShow.value = true
+            }
+        } catch (err) {
+            console.error('GioPic: Failed to open native sidebar message', err)
+            if (!iframeSrc.value) iframeSrc.value = browser.runtime.getURL('index.html')
+            iframeShow.value = true
+        }
+        return
+    }
 
-const showIframe = () => {
-    if (isClickPrevented.value) return
-    iframeShow.value = true
     if (!iframeSrc.value) iframeSrc.value = browser.runtime.getURL('index.html')
+    iframeShow.value = true
 }
 
 const hideIframe = () => {
     iframeShow.value = false
 }
 
-const handleClick = () => {
-    showIframe()
+const handleConfirmClose = async () => {
+    try {
+        if (closeOption.value === 'session') {
+            try {
+                sessionStorage.setItem('giopic-sidebar-session-closed', 'true')
+            } catch (e) {
+                console.warn('GioPic: SessionStorage access blocked', e)
+            }
+            isSessionClosed.value = true
+        } else if (closeOption.value === 'site') {
+            const hostname = window.location.hostname
+            if (hostname && !disabledSites.value.includes(hostname)) {
+                // create new array ref to ensure reactivity triggers
+                const newSites = [...disabledSites.value, hostname]
+                disabledSites.value = newSites
+                // save plain array
+                await browser.storage.local.set({ sidebar_disabled_sites: newSites })
+            }
+        } else if (closeOption.value === 'permanent') {
+            settings.value.enabled = false
+            // save plain object
+            await browser.storage.local.set({ sidebarSettings: JSON.parse(JSON.stringify(settings.value)) })
+        }
+    } catch (error) {
+        console.error('GioPic: Close sidebar error', error)
+    } finally {
+        showCloseDialog.value = false
+    }
 }
 
-const applyGlowPosition = (e: PointerEvent) => {
-    if (!uploadAreaRef.value) return
-    const rect = uploadAreaRef.value.getBoundingClientRect()
-    const x = Math.min(Math.max(0, e.clientX - rect.left), rect.width)
-    const y = Math.min(Math.max(0, e.clientY - rect.top), rect.height)
-    const xPercent = rect.width ? (x / rect.width) * 100 : 50
-    const yPercent = rect.height ? (y / rect.height) * 100 : 50
-    uploadAreaRef.value.style.setProperty('--glow-x', `${xPercent}%`)
-    uploadAreaRef.value.style.setProperty('--glow-y', `${yPercent}%`)
-}
+const updateDialogPosition = async () => {
+    if (!ballRef.value) return
 
-const resetGlowPosition = () => {
-    if (!uploadAreaRef.value) return
-    uploadAreaRef.value.style.setProperty('--glow-x', '50%')
-    uploadAreaRef.value.style.setProperty('--glow-y', '50%')
-}
+    // Reset style first to ensure correct dimension calculation if needed, 
+    // though here we mainly need dimensions which are fixed by CSS mostly.
 
-const handlePointerEnter = (e: PointerEvent) => {
-    isHoveringHandle.value = true
-    applyGlowPosition(e)
-}
+    await nextTick()
+    const dialogEl = dialogRef.value
+    if (!dialogEl) return
 
-const handlePointerLeave = () => {
-    isHoveringHandle.value = false
-    resetGlowPosition()
-}
+    const ballRect = ballRef.value.getBoundingClientRect()
+    const dialogRect = dialogEl.getBoundingClientRect()
+    const margin = 12
 
-const handlePointerMove = (e: PointerEvent) => {
-    if (!isHoveringHandle.value) return
-    applyGlowPosition(e)
-}
+    const { innerWidth, innerHeight } = window
 
-onMounted(async () => {
-    const res = await browser.storage.local.get("uploadArea");
-    
-    if (res.uploadArea) {
-        uploadAreaData.value = res.uploadArea as SidebarConfig
-    } else {
-        uploadAreaData.value = {
-            status: true,
-            width: 32,
-            height: 30,
-            location: 34,
-            opacity: 30,
-            closeTime: 2,
-            position: 'Right',
+    // Potential positions
+    const positions = [
+        // Right
+        { left: ballRect.right + margin, top: ballRect.top },
+        // Left
+        { left: ballRect.left - dialogRect.width - margin, top: ballRect.top },
+        // Bottom
+        { left: ballRect.left, top: ballRect.bottom + margin },
+        // Top
+        { left: ballRect.left, top: ballRect.top - dialogRect.height - margin }
+    ]
+
+    // Check which fits (simple check: fully inside viewport)
+    let bestPos = null
+
+    for (const pos of positions) {
+        if (
+            pos.left >= 0 &&
+            pos.top >= 0 &&
+            pos.left + dialogRect.width <= innerWidth &&
+            pos.top + dialogRect.height <= innerHeight
+        ) {
+            bestPos = pos
+            break
         }
     }
 
-    // Listen for settings changes
+    // If no position fits perfectly, try to keep it on screen or center it
+    if (bestPos) {
+        dialogStyle.value = {
+            left: `${bestPos.left}px`,
+            top: `${bestPos.top}px`,
+            transform: 'none',
+            position: 'fixed'
+        }
+    } else {
+        // Center on screen as fallback
+        dialogStyle.value = {
+            left: '50%',
+            top: '50%',
+            transform: 'translate(-50%, -50%)',
+            position: 'fixed'
+        }
+    }
+}
+
+// Watchers
+watch(showCloseDialog, (val) => {
+    if (val) {
+        updateDialogPosition()
+    }
+})
+
+watch(isVisible, (val) => {
+    if (!val) {
+        showCloseDialog.value = false
+    }
+})
+
+// Watchers
+watch(isDragging, async (dragging) => {
+    if (!dragging) {
+        settings.value.position = position.value
+        await browser.storage.local.set({ sidebarSettings: settings.value })
+    }
+})
+
+// Lifecycle
+onMounted(async () => {
+    // 1. Migration
+    const oldStorage = await browser.storage.local.get(['uploadArea', 'sidebarSettings', 'sidebar_disabled_sites']) as {
+        uploadArea?: LegacyUploadArea
+        sidebarSettings?: SidebarSettings
+        sidebar_disabled_sites?: string[]
+    }
+
+    if (oldStorage.uploadArea && !oldStorage.sidebarSettings) {
+        // Migrate
+        const old = oldStorage.uploadArea
+        settings.value = {
+            enabled: old.status !== false, // Default true
+            mode: 'inject',
+            position: {
+                x: old.position === 'Left' ? 20 : window.innerWidth - 60,
+                y: ((old.location || 40) / 100) * window.innerHeight
+            },
+            opacity: old.opacity || 80
+        }
+        await browser.storage.local.set({ sidebarSettings: settings.value })
+        await browser.storage.local.remove('uploadArea')
+    } else if (oldStorage.sidebarSettings) {
+        settings.value = {
+            ...oldStorage.sidebarSettings,
+            mode: oldStorage.sidebarSettings.mode || 'inject'
+        }
+        // Sync position ref
+        position.value = settings.value.position
+    }
+
+    disabledSites.value = Array.isArray(oldStorage.sidebar_disabled_sites) ? oldStorage.sidebar_disabled_sites : []
+
+    // Check session
+    if (sessionStorage.getItem('giopic-sidebar-session-closed')) {
+        isSessionClosed.value = true
+    }
+
+    // Sync locale
+    const storedLocale = await browser.storage.local.get('giopic-locale')
+    if (storedLocale['giopic-locale']) {
+        locale.value = storedLocale['giopic-locale'] as 'zh-CN' | 'en-US'
+    }
+
+    // Listen for changes
     browser.storage.onChanged.addListener((changes, area) => {
-        if (area === 'local' && changes.uploadArea) {
-            uploadAreaData.value = changes.uploadArea.newValue as SidebarConfig
+        if (area === 'local') {
+            if (changes['giopic-locale']) {
+                locale.value = changes['giopic-locale'].newValue as 'zh-CN' | 'en-US'
+            }
+            if (changes.sidebarSettings) {
+                const next = changes.sidebarSettings.newValue as SidebarSettings | undefined
+                if (next && typeof next === 'object') {
+                    settings.value = next
+                }
+                // Only update position if difference is large (to avoid loop with drag)
+                const newPos = settings.value.position
+                if (Math.abs(newPos.x - position.value.x) > 5 || Math.abs(newPos.y - position.value.y) > 5) {
+                    position.value = newPos
+                }
+            }
+            if (changes.sidebar_disabled_sites) {
+                const next = changes.sidebar_disabled_sites.newValue as unknown
+                disabledSites.value = Array.isArray(next) ? (next as string[]) : []
+            }
         }
     })
-
-    // Global mouse move for sidebar peek/hide
-    document.addEventListener('mousemove', handleGlobalMouseMove)
 })
 
-let isGlowListenerAttached = false
-const attachGlowListeners = () => {
-    if (isGlowListenerAttached) return
-    if (!uploadAreaRef.value) return
-    uploadAreaRef.value.addEventListener('pointerenter', handlePointerEnter)
-    uploadAreaRef.value.addEventListener('pointerleave', handlePointerLeave)
-    uploadAreaRef.value.addEventListener('pointermove', handlePointerMove)
-    resetGlowPosition()
-    isGlowListenerAttached = true
-}
-
-const detachGlowListeners = () => {
-    if (!isGlowListenerAttached) return
-    if (!uploadAreaRef.value) return
-    uploadAreaRef.value.removeEventListener('pointerenter', handlePointerEnter)
-    uploadAreaRef.value.removeEventListener('pointerleave', handlePointerLeave)
-    uploadAreaRef.value.removeEventListener('pointermove', handlePointerMove)
-    isGlowListenerAttached = false
-}
-
-watch([uploadAreaRef, () => uploadAreaData.value?.status], ([el, status]) => {
-    if (el && status) {
-        attachGlowListeners()
-    } else {
-        detachGlowListeners()
-    }
-}, { immediate: true })
-
-watch(isDragging, async (val, oldVal) => {
-    if (!oldVal || val) return
-    if (!uploadAreaData.value) return
-    await browser.storage.local.set({ uploadArea: uploadAreaData.value })
-})
-
-onUnmounted(() => {
-    document.removeEventListener('mousemove', handleGlobalMouseMove)
-    detachGlowListeners()
-})
 </script>
 
 <style scoped>
-.giopic-web-handle {
+.giopic-floating-ball {
+    position: fixed;
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.9);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    z-index: 2147483647;
     display: flex;
     align-items: center;
     justify-content: center;
-    --glow-x: 50%;
-    --glow-y: 50%;
+    transition: transform 0.2s ease, opacity 0.2s ease;
+    user-select: none;
+    border: 1px solid rgba(0, 0, 0, 0.05);
 }
 
-.giopic-web-handle__glow {
-    position: absolute;
-    inset: -24px;
-    background: radial-gradient(circle at var(--glow-x) var(--glow-y), rgba(59, 130, 246, 0.25), transparent 60%);
-    opacity: 0;
-    transition: opacity 0.2s ease;
-    pointer-events: none;
+:global(.dark) .giopic-floating-ball {
+    background: rgba(31, 41, 55, 0.9);
+    border-color: rgba(255, 255, 255, 0.1);
 }
 
-.giopic-web-handle__inner {
+.giopic-ball-content {
     width: 100%;
     height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    border-radius: 50%;
+}
+
+.giopic-logo {
+    width: 24px;
+    height: 24px;
+    object-fit: contain;
+    pointer-events: none;
+}
+
+.giopic-close-btn {
     position: absolute;
+    top: -4px;
+    right: -4px;
+    width: 18px;
+    height: 18px;
+    background: #ef4444;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+    transition: transform 0.1s;
+}
+
+.giopic-close-btn:hover {
+    transform: scale(1.1);
+    background: #dc2626;
+}
+
+/* Dialog Styles */
+.giopic-dialog-overlay {
+    position: fixed;
     inset: 0;
-    background: linear-gradient(180deg, rgba(255, 255, 255, 0.10), rgba(255, 255, 255, 0.02));
-    pointer-events: none;
+    z-index: 2147483647;
+    background: transparent;
 }
 
-.giopic-web-handle__label {
-    position: absolute;
-    left: 100%;
-    margin-left: 10px;
-    padding: 6px 10px;
-    border-radius: 10px;
-    font-size: 12px;
-    font-weight: 600;
-    color: rgba(255, 255, 255, 0.92);
-    background: rgba(17, 24, 39, 0.75);
-    border: 1px solid rgba(255, 255, 255, 0.16);
-    box-shadow: 0 10px 24px rgba(0, 0, 0, 0.18);
-    transform: translateX(-6px);
-    opacity: 0;
-    transition: opacity 0.18s ease, transform 0.18s ease;
-    pointer-events: none;
-    white-space: nowrap;
+.giopic-dialog {
+    position: fixed;
+    background: white;
+    border-radius: 16px;
+    padding: 20px;
+    width: 320px;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+    font-family: system-ui, -apple-system, sans-serif;
+    border: 1px solid rgba(0, 0, 0, 0.05);
 }
 
-.giopic-web-handle[data-side='Right'] .giopic-web-handle__label {
-    left: auto;
-    right: 100%;
-    margin-left: 0;
-    margin-right: 10px;
-    transform: translateX(6px);
+:global(.dark) .giopic-dialog {
+    background: #1f2937;
+    color: #f3f4f6;
+    border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
-.giopic-web-handle:hover .giopic-web-handle__glow {
-    opacity: 1;
+.giopic-dialog-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
+    font-size: 16px;
 }
 
-.giopic-web-handle:hover .giopic-web-handle__label {
-    opacity: 1;
-    transform: translateX(0);
+.giopic-dialog-close {
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    padding: 4px;
+    border-radius: 4px;
+}
+
+.giopic-dialog-close:hover {
+    background: rgba(0, 0, 0, 0.05);
+}
+
+.radio-group {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.radio-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+    padding: 8px 12px;
+    border-radius: 8px;
+    transition: background 0.1s;
+    font-size: 14px;
+}
+
+.radio-item:hover {
+    background: #f3f4f6;
+}
+
+:global(.dark) .radio-item:hover {
+    background: #374151;
+}
+
+.radio-item input {
+    accent-color: #ec4899;
+    /* Pink accent */
+}
+
+.giopic-dialog-footer {
+    margin-top: 20px;
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+}
+
+.btn-cancel,
+.btn-confirm {
+    padding: 6px 16px;
+    border-radius: 6px;
+    font-size: 14px;
+    cursor: pointer;
+    border: 1px solid transparent;
+    transition: all 0.2s;
+}
+
+.btn-cancel {
+    background: transparent;
+    border-color: #e5e7eb;
+    color: #6b7280;
+}
+
+.btn-cancel:hover {
+    border-color: #d1d5db;
+    color: #374151;
+}
+
+:global(.dark) .btn-cancel {
+    border-color: #4b5563;
+    color: #9ca3af;
+}
+
+:global(.dark) .btn-cancel:hover {
+    border-color: #6b7280;
+    color: #e5e7eb;
+}
+
+.btn-confirm {
+    background: #ec4899;
+    color: white;
+}
+
+.btn-confirm:hover {
+    background: #db2777;
 }
 
 .giopic-web-overlay {
