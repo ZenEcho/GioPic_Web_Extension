@@ -26,7 +26,6 @@ GioPic 是一个多节点、多图床的浏览器图片上传扩展，一次操�
 
 - Google Chrome (最新版本)
 - Microsoft Edge (最新版本)
-- Firefox (最新版本)
 
 ## 演示图
 
