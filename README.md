@@ -26,7 +26,6 @@ GioPic is a multi-node image upload browser extension that can upload images to 
 
 - Google Chrome (Latest Version)
 - Microsoft Edge (Latest Version)
-- Firefox (Latest Version)
 
 ## Demo
 
