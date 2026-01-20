@@ -21,12 +21,12 @@ const { t, locale } = useI18n()
 // 内部状态
 const isOnboardingMinimized = ref(false)
 const onboardingStep = ref<'language' | 'layout' | 'config'>('language')
-const primaryColor = computed(() => themeStore.themeOverrides?.common?.primaryColor || '#10b981')
+const primaryColor = computed(() => themeStore.themeOverrides?.common?.primaryColor || '#ef4444')
 // 方法
 function handleLanguageSelect(lang: string) {
     locale.value = lang
     browser.storage.local.set({ 'giopic-language': lang })
-    onboardingStep.value = 'layout'
+    onboardingStep.value = 'config'
 }
 
 function celebrate() {
@@ -142,67 +142,7 @@ defineExpose({
                         </div>
                     </div>
 
-                    <!-- Step 2: Layout Selection -->
-                    <div v-else-if="onboardingStep === 'layout'" class="animate-fade-in">
-                        <div class="text-center mb-8">
-                            <div
-                                class="w-16 h-16 bg-primary/10 rounded-2xl flex items-center justify-center mx-auto mb-4">
-                                <img src="@/assets/icons/logo64.png" class="w-10 h-10" />
-                            </div>
-                            <h2 class="text-2xl font-bold text-gray-800 dark:text-gray-100 mb-2">{{
-                                t('home.onboarding.title')
-                                }}</h2>
-                            <p class="text-gray-500 dark:text-gray-400">{{ t('home.onboarding.subtitle') }}</p>
-                        </div>
-
-                        <div class="grid grid-cols-2 gap-4 mb-8">
-                            <div v-for="mode in ['classic', 'console', 'center', 'simple']" :key="mode"
-                                class="relative group cursor-pointer rounded-xl border-2 transition-all duration-300 p-4 hover:shadow-lg"
-                                :class="themeStore.uiMode === mode ? 'border-primary bg-primary/5 dark:bg-primary/10' : 'border-gray-100 dark:border-gray-700 hover:border-primary/50'"
-                                @click="themeStore.setUiMode(mode as any)">
-                                <div class="flex items-center gap-3 mb-2">
-                                    <div
-                                        class="w-10 h-10 rounded-lg bg-gray-100 dark:bg-gray-800 flex items-center justify-center text-xl text-gray-500 group-hover:text-primary transition-colors">
-                                        <div :class="{
-                                            'i-ph-layout': mode === 'classic',
-                                            'i-ph-terminal-window': mode === 'console',
-                                            'i-ph-columns': mode === 'center',
-                                            'i-ph-square': mode === 'simple'
-                                        }"></div>
-                                    </div>
-                                    <div class="font-bold text-gray-800 dark:text-gray-200">{{
-                                        t(`home.onboarding.${mode}.title`) }}</div>
-                                </div>
-                                <div class="text-xs text-gray-500 dark:text-gray-400 pl-[52px]">
-                                    {{ t(`home.onboarding.${mode}.desc`) }}
-                                </div>
-                                <div v-if="themeStore.uiMode === mode"
-                                    class="absolute top-3 right-3 text-primary text-xl">
-                                    <div class="i-ph-check-circle-fill"></div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="flex justify-center gap-4">
-                            <button
-                                class="px-6 py-3 bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-600 dark:text-gray-200 rounded-xl font-bold transition-all"
-                                @click="onboardingStep = 'language'">
-                                <div class="i-ph-arrow-left inline-block mr-1 align-middle" />
-                                {{ t('common.back', 'Back') }}
-                            </button>
-                            <button
-                                class="px-6 py-3 bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-600 dark:text-gray-200 rounded-xl font-bold transition-all"
-                                @click="isOnboardingMinimized = true">
-                                {{ t('home.onboarding.preview') }}
-                            </button>
-                            <button
-                                class="px-6 py-3 bg-primary hover:bg-primary-hover text-white rounded-xl font-bold shadow-lg shadow-primary/20 transition-all transform hover:-translate-y-0.5 active:translate-y-0"
-                                @click="onboardingStep = 'config'">
-                                {{ t('common.next', 'Next') }}
-                                <div class="i-ph-arrow-right inline-block ml-1 align-middle" />
-                            </button>
-                        </div>
-                    </div>
+                    <!-- Step 2: Removed -->
 
                     <!-- Step 3: Config Selection -->
                     <div v-else-if="onboardingStep === 'config'" class="animate-fade-in">
@@ -271,7 +211,7 @@ defineExpose({
                         <div class="flex justify-center">
                             <button
                                 class="px-6 py-3 bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-600 dark:text-gray-200 rounded-xl font-bold transition-all"
-                                @click="onboardingStep = 'layout'">
+                                @click="onboardingStep = 'language'">
                                 <div class="i-ph-arrow-left inline-block mr-1 align-middle" />
                                 {{ t('common.back', 'Back') }}
                             </button>
@@ -285,15 +225,9 @@ defineExpose({
                 :class="isOnboardingMinimized ? 'translate-y-0 opacity-100' : 'translate-y-[200%] opacity-0'">
                 <div class="flex items-center gap-2 pr-4 border-r border-gray-200 dark:border-gray-700">
                     <div class="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary">
-                        <div :class="{
-                            'i-ph-layout': themeStore.uiMode === 'classic',
-                            'i-ph-terminal-window': themeStore.uiMode === 'console',
-                            'i-ph-columns': themeStore.uiMode === 'center',
-                            'i-ph-square': themeStore.uiMode === 'simple'
-                        }"></div>
+                        <div class="i-ph-terminal-window"></div>
                     </div>
-                    <span class="font-bold text-gray-700 dark:text-gray-200">{{
-                        t(`home.onboarding.${themeStore.uiMode}.title`) }}</span>
+                    <span class="font-bold text-gray-700 dark:text-gray-200">GioPic</span>
                 </div>
                 <button
                     class="px-4 py-2  hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full text-sm font-medium text-gray-600 dark:text-gray-300 transition-colors"

@@ -5,10 +5,7 @@ import type { DriveConfig } from '@/types'
 import { useI18n } from 'vue-i18n'
 import browser from 'webextension-polyfill'
 
-import ClassicHome from '@/views/home/ClassicHome.vue'
-import ConsoleHome from '@/views/home/ConsoleHome.vue'
-import CenterHome from '@/views/home/CenterHome.vue'
-import SimpleHome from '@/views/home/SimpleHome.vue'
+import DesktopLayout from '@/views/home/DesktopLayout.vue'
 import ConfigModal from '@/components/config/ConfigModal.vue'
 import SettingsModal from '@/components/settings/SettingsModal.vue'
 
@@ -124,18 +121,9 @@ onMounted(async () => {
 <template>
     <div class="h-full w-full overflow-hidden transition-colors duration-300 bg-[#F5F7FA] dark:bg-[#101014]">
 
-        <ClassicHome v-if="themeStore.uiMode === 'classic'" :fileQueue="fileQueue" @filesDropped="handleFilesDropped"
-            @addConfig="handleAddConfig" @editConfig="handleEditConfig" @openSettings="showSettingsModal = true" />
-
-        <ConsoleHome v-else-if="themeStore.uiMode === 'console'" :fileQueue="fileQueue"
+        <DesktopLayout :fileQueue="fileQueue"
             @filesDropped="handleFilesDropped" @addConfig="handleAddConfig" @editConfig="handleEditConfig"
-            @openSettings="showSettingsModal = true" />
-
-        <CenterHome v-else-if="themeStore.uiMode === 'center'" :fileQueue="fileQueue" @filesDropped="handleFilesDropped"
-            @addConfig="handleAddConfig" @editConfig="handleEditConfig" @openSettings="showSettingsModal = true" />
-
-        <SimpleHome v-else-if="themeStore.uiMode === 'simple'" :fileQueue="fileQueue" @filesDropped="handleFilesDropped"
-            @addConfig="handleAddConfig" @editConfig="handleEditConfig" @openSettings="showSettingsModal = true" />
+            @openSettings="themeStore.showSettingsModal = true" />
 
         <ConfigModal v-model:show="showAddModal" :config="currentConfig" :isEdit="isEdit" @saved="handleConfigSaved"
             @update:show="(val) => {
@@ -147,7 +135,7 @@ onMounted(async () => {
                 }
             }" />
 
-        <SettingsModal v-model:show="showSettingsModal" />
+        <SettingsModal v-model:show="themeStore.showSettingsModal" />
 
         <ImportConfigModal v-model:show="showImportModal" v-model:value="importJson" @confirm="confirmImport" />
 

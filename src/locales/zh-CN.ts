@@ -1,7 +1,7 @@
 export default {
   app: {
-    name: 'GioPic ',
-    nameSuffix: 'SYNC',
+    name: 'GioPic',
+    nameSuffix: 'Desktop',
   },
   providers: {
     aliyun: '阿里云',
@@ -33,22 +33,6 @@ export default {
       emptyDescription: '配置分发节点后即可开始上传。支持多种存储策略组合。',
     },
     myImages: '我的图片',
-    sidebar: {
-      upload: '上传图片',
-      history: '历史',
-      nodes: '分发节点',
-      nativeNotSupported: '当前浏览器不支持原生侧边栏或 API 不可用',
-      closeDialog: {
-        title: '关闭悬浮球',
-        close: '本次关闭直到下次刷新',
-        session: '当前标签页禁用',
-        site: '当前网站禁用',
-        permanent: '永久禁用',
-        settingsHint: '(可在设置页开启)',
-        cancel: '取消',
-        confirm: '确定',
-      },
-    },
     nav: {
       upload: '上传',
       history: '历史',
@@ -113,26 +97,8 @@ export default {
     importNoData: '未识别到有效配置',
     onboarding: {
       title: '欢迎使用 GioPic',
-      subtitle: '请选择您喜欢的界面布局',
-      classic: {
-        title: '经典布局',
-        desc: '左侧导航，右侧内容，功能全面展示'
-      },
-      console: {
-        title: '控制台布局',
-        desc: '类似 IDE 的控制台风格，适合开发者'
-      },
-      center: {
-        title: '中心布局',
-        desc: '内容居中，专注核心功能'
-      },
-      simple: {
-        title: '极简布局',
-        desc: '极简风格，仅保留最核心的上传功能'
-      },
+      subtitle: '请配置您的第一个上传节点',
       start: '开始使用',
-      preview: '预览效果',
-      restore: '恢复面板',
       config: {
         title: '节点配置',
         subtitle: '您可以现在配置上传节点，或稍后配置',
@@ -144,18 +110,6 @@ export default {
         laterDesc: '直接进入主界面',
         skip: '跳过教程'
       }
-    }
-  },
-  uploadList: {
-    title: '上传列表',
-    copyFormat: '复制格式',
-    clearCompleted: '清除已完成',
-    img: '图片',
-    copyUrl: '复制链接',
-    empty: '暂无待处理上传',
-    status: {
-      done: '完成',
-      err: '错误',
     }
   },
   config: {
@@ -296,38 +250,16 @@ export default {
   settings: {
     title: '设置',
     language: '语言',
-    sidebar: '侧边栏设置',
     theme: '主题色',
     appearance: '外观',
     darkMode: '深色模式',
     lightMode: '浅色模式',
-    openMode: '打开方式',
     uiMode: '界面布局',
-    automation: '自动化',
-    autoInject: '上传成功后自动注入',
-    openModes: {
-      tab: '新标签页',
-      window: '弹窗窗口',
-      action: '内置弹窗',
-    },
     uiModes: {
       classic: '经典布局',
       console: '控制台布局',
       center: '中心布局',
       simple: '极简布局',
-    },
-    desktopLink: {
-      title: '桌面联动 (beta)',
-      description: '通过 WebSocket 与桌面端通信，上传成功后自动插入链接',
-      enabled: '启用桌面联动 (beta)',
-      statusLabel: '连接状态',
-      status: {
-        disabled: '未启用',
-        disconnected: '未连接',
-        connecting: '连接中',
-        connected: '已连接',
-        error: '异常',
-      },
     },
     themeColor: {
       blue: '极客蓝',
@@ -335,27 +267,6 @@ export default {
       purple: '优雅紫',
       orange: '活力橙',
       red: '热情红',
-    },
-    sidebarSetting: {
-      title: '设置侧边栏',
-      switch: '侧边栏',
-      mode: '模式',
-      inject: '浏览器注入',
-      native: '浏览器侧边栏',
-      width: '宽',
-      height: '高',
-      location: '位置',
-      opacity: '透明度',
-      closeTime: '关闭时间',
-      position: '侧边栏在',
-      positionLeft: '左',
-      positionRight: '右',
-      reset: '重置',
-      save: '保存',
-      saveSuccess: '保存成功',
-      disabledSites: '禁用站点',
-      noDisabledSites: '没有禁用站点',
-      remove: '移除'
     },
     version: {
       title: '关于版本',
@@ -374,46 +285,14 @@ export default {
     },
     dangerZone: {
       title: '危险区域',
-      reset: '重置扩展',
+      reset: '重置应用',
       resetConfirm: '此操作将清空所有配置、历史记录和设置，且不可恢复。确定要继续吗？',
       resetSuccess: '重置成功，页面将重新加载',
     }
   },
-  background: {
-    contextMenuTitle: 'GioPic 上传图片',
-    downloading: '正在下载图片...',
-    noConfigOrSelection: '未配置或未选择上传节点',
-    noEnabledConfig: '没有启用的上传节点',
-    uploadingTo: '正在上传至 {count} 个节点...',
-    uploadComplete: 'GioPic 上传完成',
-    uploadSuccess: '成功上传 {count} 张图片',
-    uploadFinished: 'GioPic 上传结束',
-    uploadResult: '成功: {success}, 失败: {fail}',
-    uploadFailed: 'GioPic 上传失败',
-    unknownError: '未知错误'
-  },
-  detector: {
-    foundTitle: '发现：{appName} 可配置图床',
-    lskyContent: '点击【创建 Token】按钮，在【创建成功】页点击【添加到 {appName}】按钮，可加载到 {appName} 扩展。',
-    lskyOpenContent: '填入邮箱和密码后，点击【添加到 {appName}】按钮，可一键配置扩展',
-    easyimagesOpenContent: '填入邮箱和密码后，点击【添加到 {appName}】按钮，可一键配置扩展',
-    cheveretoContent: '点击【重新生成密钥】按钮，在【创建成功】页点击【添加到 {appName}】按钮，可加载到 {appName} 扩展。',
-    best16Content: '点击【添加到 {appName}】按钮，可加载到 {appName} 扩展。',
-
-    addToApp: '添加到 {appName}',
-    ignore: '本站不再提示',
-    permissionTitle: '权限调用询问',
-    permissionContentLine1: '是否允许【{appName}】调用本站的 cookie，用于一键获取 token？',
-    permissionContentLine2: '注意：本次调用将涉及您的隐私，如不同意请忽略。',
-    allowAndGet: '允许并获取token',
-    reject: '取消',
-    email: '邮箱',
-    password: '密码',
-    failed: '获取失败',
-    failedContent: '详细报错请打开开发者控制台(F12)查看',
-    configName: '配置',
-    getTokenFailed: '获取 Token 失败，请点击【创建 Token】按钮创建Token',
-    addSuccess: '添加成功',
-    addFailed: '添加失败',
+  tray: {
+    show: '显示主界面',
+    quit: '退出',
+    tooltip: 'GioPic 桌面端'
   }
 }

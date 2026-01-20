@@ -1,7 +1,7 @@
 export default {
   app: {
     name: 'GioPic',
-    nameSuffix: 'SYNC',
+    nameSuffix: 'Desktop',
   },
   providers: {
     aliyun: 'Aliyun',
@@ -33,22 +33,6 @@ export default {
       emptyDescription: 'Upload images after configuring nodes. Supports multiple storage strategy combinations.',
     },
     myImages: 'My Images',
-    sidebar: {
-      upload: 'Upload Image',
-      history: 'History',
-      nodes: 'Nodes',
-      nativeNotSupported: 'Native sidebar not supported in this browser',
-      closeDialog: {
-        title: 'Close Floating Ball',
-        close: 'Close until next refresh',
-        session: 'Disable for this session',
-        site: 'Disable on current site',
-        permanent: 'Permanently disable',
-        settingsHint: '(Can be enabled in Settings)',
-        cancel: 'Cancel',
-        confirm: 'Confirm',
-      },
-    },
     nav: {
       upload: 'Upload',
       history: 'History',
@@ -113,26 +97,8 @@ export default {
     importNoData: 'No valid config recognized',
     onboarding: {
       title: 'Welcome to GioPic',
-      subtitle: 'Choose your preferred layout',
-      classic: {
-        title: 'Classic',
-        desc: 'Left nav, right content, comprehensive view'
-      },
-      console: {
-        title: 'Console',
-        desc: 'IDE-like console style, for developers'
-      },
-      center: {
-        title: 'Center',
-        desc: 'Centered content, focused on core features'
-      },
-      simple: {
-        title: 'Simple',
-        desc: 'Minimalist style, core upload only'
-      },
+      subtitle: 'Please configure your first upload node',
       start: 'Get Started',
-      preview: 'Preview',
-      restore: 'Return to Selection',
       config: {
         title: 'Node Config',
         subtitle: 'You can configure upload nodes now or later',
@@ -284,38 +250,16 @@ export default {
   settings: {
     title: 'Settings',
     language: 'Language',
-    sidebar: 'Sidebar Settings',
     theme: 'Theme Color',
     appearance: 'Appearance',
     darkMode: 'Dark Mode',
     lightMode: 'Light Mode',
-    openMode: 'Open Mode',
     uiMode: 'UI Mode',
-    automation: 'Automation',
-    autoInject: 'Auto Inject URL after Upload',
-    openModes: {
-      tab: 'New Tab',
-      window: 'Popup Window',
-      action: 'Built-in Popup',
-    },
     uiModes: {
       classic: 'Classic Layout',
       console: 'Console Layout',
       center: 'Center Layout',
       simple: 'Simple Layout',
-    },
-    desktopLink: {
-      title: 'Desktop Link (beta)',
-      description: 'Use WebSocket to receive URLs from desktop app and auto insert',
-      enabled: 'Enable Desktop Link (beta)',
-      statusLabel: 'Connection Status',
-      status: {
-        disabled: 'Disabled',
-        disconnected: 'Disconnected',
-        connecting: 'Connecting',
-        connected: 'Connected',
-        error: 'Error',
-      },
     },
     themeColor: {
       blue: 'Geek Blue',
@@ -323,27 +267,6 @@ export default {
       purple: 'Elegant Purple',
       orange: 'Vibrant Orange',
       red: 'Passion Red',
-    },
-    sidebarSetting: {
-      title: 'Sidebar Settings',
-      switch: 'Sidebar',
-      mode: 'Mode',
-      inject: 'Browser Inject',
-      native: 'Browser Sidebar',
-      width: 'Width',
-      height: 'Height',
-      location: 'Location',
-      opacity: 'Opacity',
-      closeTime: 'Close Time',
-      position: 'Position',
-      positionLeft: 'Left',
-      positionRight: 'Right',
-      reset: 'Reset',
-      save: 'Save',
-      saveSuccess: 'Saved Successfully',
-      disabledSites: 'Disabled Sites',
-      noDisabledSites: 'No disabled sites',
-      remove: 'Remove',
     },
     version: {
       title: 'About Version',
@@ -362,58 +285,14 @@ export default {
     },
     dangerZone: {
       title: 'Danger Zone',
-      reset: 'Reset Extension',
+      reset: 'Reset App',
       resetConfirm: 'This will clear all configurations, history, and settings. This action cannot be undone. Continue?',
       resetSuccess: 'Reset successful, page will reload',
     }
   },
-  background: {
-    contextMenuTitle: 'GioPic Upload Image',
-    downloading: 'Downloading image...',
-    noConfigOrSelection: 'No config or no node selected',
-    noEnabledConfig: 'No enabled upload nodes',
-    uploadingTo: 'Uploading to {count} nodes...',
-    uploadComplete: 'GioPic Upload Complete',
-    uploadSuccess: 'Successfully uploaded {count} images',
-    uploadFinished: 'GioPic Upload Finished',
-    uploadResult: 'Success: {success}, Fail: {fail}',
-    uploadFailed: 'GioPic Upload Failed',
-    unknownError: 'Unknown error'
-  },
-  uploadList: {
-    title: 'Uploads',
-    clearCompleted: 'Clear Completed',
-    img: 'IMG',
-    copyUrl: 'Copy URL',
-    copyFormat: 'Copy Format',
-    empty: 'No pending uploads',
-    status: {
-      done: 'DONE',
-      err: 'ERR',
-    }
-  },
-  detector: {
-    foundTitle: 'Found: {appName} Configurable Image Host',
-    lskyContent: 'Click [Create Token] button, then on [Success] page click [Add to {appName}] button to load into {appName} extension.',
-    lskyOpenContent: 'Enter email and password, then click [Add to {appName}] button to configure extension.',
-    easyimagesOpenContent: 'Enter email and password, then click [Add to {appName}] button to configure extension.',
-    cheveretoContent: 'Click [Regenerate Key] button, then on [Success] page click [Add to {appName}] button to load into {appName} extension.',
-    best16Content: 'Click [Add to {appName}] button to load into {appName} extension.',
-
-    addToApp: 'Add to {appName}',
-    ignore: 'Don\'t ask again for this site',
-    permissionTitle: 'Permission Request',
-    permissionContentLine1: 'Allow [{appName}] to use this site\'s cookie to get token?',
-    permissionContentLine2: 'Note: This involves privacy. Ignore if you disagree.',
-    allowAndGet: 'Allow and Get Token',
-    reject: 'Cancel',
-    email: 'Email',
-    password: 'Password',
-    failed: 'Failed',
-    failedContent: 'Check developer console (F12) for details',
-    configName: 'Config',
-    getTokenFailed: 'Failed to get Token, please click [Create Token] button first',
-    addSuccess: 'Added Successfully',
-    addFailed: 'Add Failed',
+  tray: {
+    show: 'Show App',
+    quit: 'Quit',
+    tooltip: 'GioPic Desktop'
   }
 }

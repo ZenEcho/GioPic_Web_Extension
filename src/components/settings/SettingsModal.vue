@@ -3,7 +3,6 @@ import { useI18n } from 'vue-i18n'
 import { useThemeStore, themeColors } from '@/stores/theme'
 import { computed, ref, onMounted, onBeforeUnmount } from 'vue'
 import browser from 'webextension-polyfill'
-import SidebarSettings from './SidebarSettings.vue'
 import { useMessage, useDialog } from 'naive-ui'
 import { db } from '@/utils/storage'
 
@@ -22,10 +21,10 @@ const themeStore = useThemeStore()
 const message = useMessage()
 const dialog = useDialog()
 
+const isElectron = window.ipcRenderer !== undefined
+
 const primaryColor = computed(() => themeStore.themeOverrides?.common?.primaryColor || '#409eff')
-const openMode = ref('tab')
 const autoInject = ref(false)
-const showSidebarSettings = ref(false)
 
 const desktopEnabled = ref(false)
 const desktopStatus = ref<DesktopLinkStatusType>('disabled')
@@ -75,12 +74,6 @@ async function setDesktopLinkEnabled(val: boolean) {
 }
 
 onMounted(async () => {
-    const res = await browser.storage.local.get('open-mode')
-    if (res['open-mode']) {
-        openMode.value = res['open-mode'] as string
-    }
-    const inject = await browser.storage.local.get('giopic-auto-inject')
-    autoInject.value = !!inject['giopic-auto-inject']
     browser.runtime.onMessage.addListener(handleRuntimeMessage)
     await refreshDesktopStatus()
 })
@@ -89,29 +82,14 @@ onBeforeUnmount(() => {
     browser.runtime.onMessage.removeListener(handleRuntimeMessage)
 })
 
-async function setAutoInject(val: boolean) {
-    autoInject.value = val
-    await browser.storage.local.set({ 'giopic-auto-inject': val })
-}
-
-async function setOpenMode(mode: string) {
-    openMode.value = mode
-    await browser.storage.local.set({ 'open-mode': mode })
-    try {
-        await browser.runtime.sendMessage({ type: 'UPDATE_OPEN_MODE', mode })
-    } catch (e) {
-        console.log('Failed to notify background script', e)
-    }
-}
-
 async function changeLocale(lang: string) {
     locale.value = lang
     // Use storage.local for locale to share with content scripts
     await browser.storage.local.set({ 'giopic-locale': lang })
     try {
-        await browser.runtime.sendMessage({ type: 'UPDATE_LOCALE', lang })
+        window.ipcRenderer?.send('update-locale', lang)
     } catch (e) {
-        console.log('Failed to notify background script', e)
+        console.log('Failed to notify main process', e)
     }
 }
 
@@ -121,18 +99,7 @@ const isChecking = ref(false)
 const hasUpdate = ref(false)
 const checkError = ref(false)
 
-const openModeIcons: Record<string, string> = {
-    tab: 'i-ph-browser',
-    window: 'i-ph-app-window',
-    action: 'i-ph-monitor'
-}
 
-const uiModeIcons: Record<string, string> = {
-    classic: 'i-ph-layout',
-    console: 'i-ph-terminal-window',
-    center: 'i-ph-columns',
-    simple: 'i-ph-square'
-}
 
 onMounted(() => {
     try {
@@ -187,7 +154,20 @@ async function checkVersion() {
     }
 }
 
-async function handleResetExtension() {
+function openDevTools() {
+    if (!window.ipcRenderer) {
+        message.error(t('common.error'))
+        return
+    }
+    try {
+        window.ipcRenderer.send('open-devtools')
+    } catch (e) {
+        console.error('Failed to open devtools', e)
+        message.error(t('common.error'))
+    }
+}
+
+const handleResetExtension = async () => {
     dialog.warning({
         title: t('settings.dangerZone.title'),
         content: t('settings.dangerZone.resetConfirm'),
@@ -200,7 +180,11 @@ async function handleResetExtension() {
                 // Clear localStorage
                 localStorage.clear()
                 // Clear browser.storage.local
-                await browser.storage.local.clear()
+                if (browser.storage.local.clear) {
+                    await browser.storage.local.clear()
+                } else {
+                     await browser.storage.local.remove(await browser.storage.local.get(null).then(Object.keys))
+                }
                 
                 message.success(t('settings.dangerZone.resetSuccess'))
                 
@@ -220,7 +204,7 @@ async function handleResetExtension() {
 <template>
     <n-modal :show="show" @update:show="(val: boolean) => emit('update:show', val)" preset="card"
         :title="t('settings.title')" class="w-full max-w-2xl rounded-2xl" :segmented="false">
-        <div class="space-y-6">
+        <div class="space-y-6 max-h-[70vh] overflow-y-auto pr-2 custom-scrollbar">
             <div class="grid gap-4 md:grid-cols-2">
                 <!-- 外观设置 -->
                 <div>
@@ -265,50 +249,8 @@ async function handleResetExtension() {
                         </button>
                     </div>
                 </div>
-                <!-- 打开方式设置 -->
-                <div>
-                    <div class="text-sm font-bold text-gray-500 mb-2 flex items-center gap-1">
-                        <div class="i-ph-arrow-square-out" /> {{ t('settings.openMode') }}
-                    </div>
-                    <div class="flex gap-2">
-                        <button v-for="mode in ['tab', 'window', 'action']" :key="mode"
-                            class="flex-1 py-2 rounded-lg border transition-all font-medium text-sm flex items-center justify-center gap-2"
-                            :class="openMode === mode ? 'text-white' : 'border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'"
-                            :style="openMode === mode ? { backgroundColor: primaryColor } : {}"
-                            @click="setOpenMode(mode)">
-                            <div :class="openModeIcons[mode]" /> {{ t(`settings.openModes.${mode}`) }}
-                        </button>
-                    </div>
-                </div>
-
                 <!-- 界面布局 -->
-                <div>
-                    <div class="text-sm font-bold text-gray-500 mb-2 flex items-center gap-1">
-                        <div class="i-ph-layout" /> {{ t('settings.uiMode') }}
-                    </div>
-                    <div class="grid grid-cols-2 gap-2">
-                        <button v-for="mode in ['classic', 'console', 'center', 'simple']" :key="mode"
-                            class="giopic-link-btn giopic-link-btn-primary flex-1 py-2 border font-medium text-sm rounded-lg transition-all flex items-center justify-center gap-2"
-                            :class="themeStore.uiMode === mode ? 'text-white' : 'border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'"
-                            :style="themeStore.uiMode === mode ? { backgroundColor: primaryColor } : {}"
-                            @click="themeStore.setUiMode(mode as any)">
-                            <div :class="uiModeIcons[mode]" /> {{ t(`settings.uiModes.${mode}`) }}
-                        </button>
-                    </div>
-                </div>
-
-                <!-- 侧边栏设置 -->
-                <div>
-                    <div class="text-sm font-bold text-gray-500 mb-2 flex items-center gap-1">
-                        <div class="i-ph-sidebar" /> {{ t('settings.sidebar') }}
-                    </div>
-                    <button
-                        class="giopic-link-btn giopic-link-btn-primary w-full py-2 border font-medium text-sm flex items-center justify-center gap-2"
-                        :class="'border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'"
-                        @click="showSidebarSettings = true">
-                        <div class="i-ph-sliders-horizontal" /> {{ t('settings.sidebar') }}
-                    </button>
-                </div>
+                <!-- Removed -->
 
                 <!-- 主题色设置 -->
                 <div class="md:col-span-2">
@@ -322,44 +264,6 @@ async function handleResetExtension() {
                             <div v-if="themeStore.currentColor === key"
                                 class="i-ph-check text-white text-lg font-bold" />
                         </button>
-                    </div>
-                </div>
-            </div>
-            <div class="grid gap-4 md:grid-cols-2">
-                <!-- 自动化设置 -->
-                <div>
-                    <div class="text-sm font-bold text-gray-500 mb-2 flex items-center gap-1">
-                        <div class="i-ph-magic-wand" /> {{ t('settings.automation') }}
-                    </div>
-                    <div
-                        class="flex items-center justify-between p-3 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-700/30">
-                        <span class="text-sm font-medium text-gray-700 dark:text-gray-200">{{ t('settings.autoInject')
-                        }}</span>
-                        <n-switch v-model:value="autoInject" @update:value="setAutoInject" />
-                    </div>
-                </div>
-                <!-- 桌面联动 -->
-                <div>
-                    <div class="text-sm font-bold text-gray-500 mb-2 flex items-center gap-1">
-                        <div class="i-ph-desktop" /> {{ t('settings.desktopLink.title') }}
-                    </div>
-                    <div
-                        class="space-y-2 p-3 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-700/30">
-                        <div class="flex items-center justify-between">
-                            <span class="text-sm font-medium text-gray-700 dark:text-gray-200">{{
-                                t('settings.desktopLink.enabled') }}</span>
-                            <n-switch v-model:value="desktopEnabled" @update:value="setDesktopLinkEnabled" />
-                        </div>
-                        <div class="flex items-center justify-between text-xs">
-                            <span class="text-gray-500 dark:text-gray-400">{{ t('settings.desktopLink.statusLabel')
-                            }}</span>
-                            <span :class="desktopStatusClass">
-                                {{ desktopStatusText }}
-                            </span>
-                        </div>
-                        <div class="text-xs text-gray-400 dark:text-gray-500">
-                            {{ t('settings.desktopLink.description') }}
-                        </div>
                     </div>
                 </div>
             </div>
@@ -416,6 +320,20 @@ async function handleResetExtension() {
                 </div>
             </div>
 
+            <!-- 开发者选项 -->
+            <div v-if="isElectron">
+                <div class="text-sm font-bold text-gray-500 mb-2 flex items-center gap-1">
+                    <div class="i-ph-code" /> 开发者选项
+                </div>
+                <div class="p-3 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-700/30">
+                    <button
+                        class="w-full py-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-lg font-medium text-sm transition-colors flex items-center justify-center gap-2 hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-200"
+                        @click="openDevTools">
+                        <div class="i-ph-terminal-window" /> 打开控制台
+                    </button>
+                </div>
+            </div>
+
             <!-- 危险区域 -->
             <div class="md:col-span-2">
                 <div class="text-sm font-bold text-red-500 mb-2 flex items-center gap-1">
@@ -431,5 +349,4 @@ async function handleResetExtension() {
             </div>
         </div>
     </n-modal>
-    <SidebarSettings v-model:show="showSidebarSettings" />
 </template>

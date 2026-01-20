@@ -29,11 +29,7 @@ const primaryColorHover = computed(() => themeStore.themeOverrides?.common?.prim
     <div class="flex justify-between mb-6 flex-col md:flex-row md:items-center gap-4">
 
         <div class="flex items-center gap-4">
-            <button v-if="themeStore.uiMode === 'classic' || themeStore.uiMode === 'simple'"
-                class="giopic-icon-btn w-10 h-10 bg-white dark:text-gray-100 dark:bg-gray-600 border border-gray-200 dark:border-gray-700 hover:border-primary/50 hover:text-primary transition-all shadow-sm hover:shadow-md"
-                @click="router.back()">
-                <div class="i-ph-arrow-left text-xl" />
-            </button>
+            <!-- Back button removed -->
             <div class="flex flex-col">
                 <div class="text-2xl font-black italic text-gray-800 dark:text-white leading-none">{{ t('home.history.title') }}</div>
                 <div class="text-xs text-gray-400 font-medium mt-1">{{ t('app.name') }} History</div>

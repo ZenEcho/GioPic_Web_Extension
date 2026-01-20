@@ -98,6 +98,7 @@ export function useSidebar(props: SidebarProps, emit: SidebarEmits) {
   }
 
   return {
+    configStore,
     showImportModal,
     importJson,
     toggleConfigSelection,

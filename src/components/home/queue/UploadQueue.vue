@@ -26,7 +26,7 @@ const configStore = useConfigStore()
 const themeStore = useThemeStore()
 const router = useRouter()
 
-const primaryColor = computed(() => themeStore.themeOverrides?.common?.primaryColor || '#409eff')
+const primaryColor = computed(() => themeStore.themeOverrides?.common?.primaryColor || '#ef4444')
 
 
 const message = useMessage()
@@ -76,8 +76,8 @@ function copyLink(url: string, thumbUrl?: string) {
                 </button>
             </div>
         </div>
-        <div class=" overflow-y-auto space-y-4 px-4 md:px-6 pb-4 md:pb-6 custom-scrollbar"
-            :class="themeStore.uiMode != 'console' ? 'flex-col' : 'flex-row'">
+        <div class=" overflow-y-auto space-y-4 px-4 md:px-6 pb-4 md:pb-6 custom-scrollbar flex-col"
+            >
                   <div v-if="hasSuccessTask" class="hidden sm:flex bg-gray-100 dark:bg-gray-700 rounded-lg p-0.5">
                     <button v-for="fmt in COPY_FORMATS" :key="fmt"
                         class="giopic-link-btn px-2 py-2 rounded text-[10px] font-bold uppercase"

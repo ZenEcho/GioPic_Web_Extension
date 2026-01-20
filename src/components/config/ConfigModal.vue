@@ -27,7 +27,7 @@ const message = useMessage()
 const formRef = ref()
 const themeStore = useThemeStore()
 
-const primaryColor = computed(() => themeStore.themeOverrides?.common?.primaryColor || '#409eff')
+const primaryColor = computed(() => themeStore.themeOverrides?.common?.primaryColor || '#ef4444')
 
 const defaultForm: any = {
   id: '',

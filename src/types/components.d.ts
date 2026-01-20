@@ -12,6 +12,7 @@ export {}
 declare module 'vue' {
   export interface GlobalComponents {
     AclConfig: typeof import('./../components/config/AclConfig.vue')['default']
+    AppSidebar: typeof import('./../components/home/sidebar/AppSidebar.vue')['default']
     ClassicSidebar: typeof import('./../components/home/sidebar/ClassicSidebar.vue')['default']
     ConfigModal: typeof import('./../components/config/ConfigModal.vue')['default']
     ConsoleSidebar: typeof import('./../components/home/sidebar/ConsoleSidebar.vue')['default']
@@ -50,6 +51,7 @@ declare module 'vue' {
     RouterView: typeof import('vue-router')['RouterView']
     SettingsModal: typeof import('./../components/settings/SettingsModal.vue')['default']
     SidebarSettings: typeof import('./../components/settings/SidebarSettings.vue')['default']
+    TitleBar: typeof import('./../components/electron/TitleBar.vue')['default']
     UploadQueue: typeof import('./../components/home/queue/UploadQueue.vue')['default']
     UploadZone: typeof import('./../components/home/upload/UploadZone.vue')['default']
   }

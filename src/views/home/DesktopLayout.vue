@@ -4,7 +4,7 @@ import { useConfigStore } from '@/stores/config'
 import type { DriveConfig } from '@/types'
 import { useI18n } from 'vue-i18n'
 
-import ConsoleSidebar from '@/components/home/sidebar/ConsoleSidebar.vue'
+import AppSidebar from '@/components/home/sidebar/AppSidebar.vue'
 import UploadZone from '@/components/home/upload/UploadZone.vue'
 import UploadQueue from '@/components/home/queue/UploadQueue.vue'
 import HistoryView from '@/views/HistoryView.vue'
@@ -25,6 +25,8 @@ const { t } = useI18n()
 const configStore = useConfigStore()
 const currentView = ref('upload')
 
+const isElectron = window.ipcRenderer !== undefined
+
 // 移动端侧边栏控制
 const isMobileSidebarOpen = ref(false)
 
@@ -43,7 +45,8 @@ function handleNavigate(view: 'upload' | 'history') {
     <div class="h-full flex flex-col md:flex-row overflow-hidden bg-[#F5F7FA] dark:bg-[#101014]">
         <!-- 移动端顶部栏 -->
         <div
-            class="md:hidden flex-shrink-0 flex items-center justify-between px-4 py-3 bg-white dark:bg-gray-800 border-b border-gray-100 dark:border-gray-700">
+            class="md:hidden flex-shrink-0 flex items-center justify-between px-4 py-3 bg-white dark:bg-gray-800 border-b border-gray-100 dark:border-gray-700"
+            :class="{ 'pt-12': isElectron }">
             <button class="p-2 -ml-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
                 @click="isMobileSidebarOpen = true">
                 <div class="i-ph-list text-xl" />
@@ -66,7 +69,7 @@ function handleNavigate(view: 'upload' | 'history') {
         <!-- 侧边栏 - 桌面端固定/移动端抽屉 -->
         <Transition name="slide">
             <div v-show="isMobileSidebarOpen" class="md:hidden fixed left-0 top-0 bottom-0 z-50 w-64">
-                <ConsoleSidebar v-model:selectedIds="configStore.selectedIds" :currentView="currentView"
+                <AppSidebar v-model:selectedIds="configStore.selectedIds" :currentView="currentView"
                     @navigate="handleNavigate" @add="emit('addConfig')" @edit="(c) => emit('editConfig', c)"
                     @openSettings="emit('openSettings'); isMobileSidebarOpen = false" />
             </div>
@@ -74,13 +77,13 @@ function handleNavigate(view: 'upload' | 'history') {
 
         <!-- 桌面端侧边栏 -->
         <div class="hidden md:block flex-shrink-0">
-            <ConsoleSidebar v-model:selectedIds="configStore.selectedIds" :currentView="currentView"
+            <AppSidebar v-model:selectedIds="configStore.selectedIds" :currentView="currentView"
                 @navigate="(view) => currentView = view" @add="emit('addConfig')" @edit="(c) => emit('editConfig', c)"
                 @openSettings="emit('openSettings')" />
         </div>
 
         <!-- 内容区 -->
-        <div class="flex-1 overflow-hidden relative">
+        <div class="flex-1 overflow-hidden relative" :class="{ 'md:pt-12': isElectron }">
             <!-- 上传视图: 上下分栏 -->
             <div v-if="currentView === 'upload'" class="h-full flex flex-col">
                 <!-- 上部分: 上传区域 -->
@@ -155,6 +158,6 @@ function handleNavigate(view: 'upload' | 'history') {
 
 /* 主题色 */
 .text-primary {
-    color: var(--primary-color, #10b981);
+    color: var(--primary-color, #ef4444);
 }
 </style>

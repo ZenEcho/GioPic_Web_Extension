@@ -11,7 +11,7 @@ const { t } = useI18n()
 const themeStore = useThemeStore()
 const currentHover = ref(false)
 
-const primaryColor = computed(() => themeStore.themeOverrides?.common?.primaryColor || '#409eff')
+const primaryColor = computed(() => themeStore.themeOverrides?.common?.primaryColor || '#ef4444')
 
 function onDrop(e: DragEvent) {
     e.preventDefault()

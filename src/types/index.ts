@@ -1,4 +1,4 @@
-export type DriveType = 'lsky' | 'easyimages' | 'chevereto' | 'imgurl' | 'aliyun' | 'aws' | 'tencent' | 'imgurl' | 'smms' | 'hellohao' | 'imgur' | 'custom' | 'github';
+export type DriveType = 'lsky' | 'easyimages' | 'chevereto' | 'imgurl' | 'aliyun' | 'aws' | 'tencent' | 'smms' | 'hellohao' | 'imgur' | 'custom' | 'github';
 
 export interface BaseConfig {
   id: string;

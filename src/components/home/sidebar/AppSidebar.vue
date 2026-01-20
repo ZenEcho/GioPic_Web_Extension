@@ -4,10 +4,9 @@ import { useConfigStore } from '@/stores/config'
 import { useThemeStore } from '@/stores/theme'
 import { useI18n } from 'vue-i18n'
 import type { DriveConfig } from '@/types'
-import { useDialog, useMessage } from 'naive-ui'
 import browser from 'webextension-polyfill'
-import { getStorageIcon } from '@/utils/icon'
 import { useSidebar } from '@/composables/useSidebar'
+import ImportConfigModal from '@/components/home/sidebar/ImportConfigModal.vue'
 
 const props = defineProps<{
     selectedIds: string[],
@@ -26,21 +25,20 @@ const { t } = useI18n()
 const configStore = useConfigStore()
 const themeStore = useThemeStore()
 
+const isElectron = window.ipcRenderer !== undefined
+
 const currentVersion = ref('2.0.0')
 const isConfigExpanded = ref(true)
 const isCollapsed = ref(false)
-const primaryColor = computed(() => themeStore.themeOverrides?.common?.primaryColor || '#10b981')
+const primaryColor = computed(() => themeStore.themeOverrides?.common?.primaryColor || '#ef4444')
 
 const {
-    showImportModal,
-    importJson,
     toggleConfigSelection,
-    handleDelete,
-    handleShare,
-    handleShareAll,
     handleRefresh,
     handleImport,
-    confirmImport
+    confirmImport,
+    showImportModal,
+    importJson
 } = useSidebar(props, emit)
 
 onMounted(async () => {
@@ -70,44 +68,33 @@ async function toggleCollapse() {
 </script>
 
 <template>
-    <div class="flex-shrink-0 bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 flex flex-col h-full transition-all duration-300"
-        :class="isCollapsed ? 'w-20' : 'w-64'">
-        <!-- 头部 Logo -->
-        <div class="p-4 border-b border-gray-100 dark:border-gray-700 flex items-center"
-            :class="isCollapsed ? 'justify-center' : 'justify-between'">
+    <div class="flex-shrink-0 bg-white dark:bg-gray-800 flex flex-col h-full transition-all duration-300"
+        :class="[isCollapsed ? 'w-20' : 'w-64', isElectron ? 'pt-12' : '']">
+        
+        <!-- 头部 Logo (Web Only) -->
+        <div v-if="!isElectron" class="px-4 pb-4 pt-4 flex items-center app-region-no-drag"
+            :class="isCollapsed ? 'justify-center flex-col gap-2' : 'justify-between'">
             <div class="flex items-center gap-2">
-                <!-- <div 
-                    class="w-8 h-8 rounded-lg bg-gradient-to-br from-primary to-primary/70 flex items-center justify-center shadow-sm flex-shrink-0">
-                    <div class="i-ph-image-square text-sm" />
-                </div> -->
                 <div
                     class="w-8 h-8 rounded-lg bg-gradient-to-br from-primary to-primary/70 flex items-center justify-center  shadow-sm">
-                    <img src="@/assets/icons/logo64.png" alt="logo" class="h-6 hidden md:block">
+                    <img src="@/assets/icons/logo64.png" alt="logo" class="h-6">
                 </div>
                 <span v-show="!isCollapsed"
                     class="text-sm font-bold text-gray-700 dark:text-gray-200 whitespace-nowrap transition-opacity duration-200">{{
                         t('home.myImages') }}</span>
             </div>
-            <div v-show="!isCollapsed" class="flex items-center">
+            <div class="flex items-center gap-1" :class="isCollapsed ? 'flex-col' : ''">
                 <button
                     class="giopic-icon-btn w-8 h-8 rounded-lg text-gray-400 hover:text-primary hover:bg-gray-50 dark:hover:bg-gray-700 transition-all"
                     @click="themeStore.toggleDark()"
                     :title="themeStore.isDark ? t('settings.lightMode') : t('settings.darkMode')">
                     <div class="text-lg" :class="themeStore.isDark ? 'i-ph-moon' : 'i-ph-sun'" />
                 </button>
-                <!-- //切换布局 -->
                 <button
                     class="giopic-icon-btn w-8 h-8 rounded-lg text-gray-400 hover:text-primary hover:bg-gray-50 dark:hover:bg-gray-700 transition-all"
-                    @click="themeStore.setUiMode(themeStore.uiMode === 'console' ? 'classic' : 'console')">
-                    <div class="i-ph-layout text-lg" />
+                    @click="emit('openSettings')" :title="t('settings.title')">
+                    <div class="i-ph-gear text-lg" />
                 </button>
-
-                <button
-                    class="giopic-icon-btn w-8 h-8 rounded-lg text-gray-400 hover:text-primary hover:bg-gray-50 dark:hover:bg-gray-700 transition-all"
-                    @click="emit('openSettings')">
-                    <div class="i-ph-gear-six text-lg" />
-                </button>
-
             </div>
         </div>
 
@@ -116,23 +103,23 @@ async function toggleCollapse() {
             <button
                 class="nav-btn dark:hover:bg-gray-700 w-full flex items-center px-3 py-2.5 rounded-xl transition-all duration-200 text-sm font-medium"
                 :class="[currentView === 'upload' ? 'active' : 'inactive', isCollapsed ? 'justify-center' : 'gap-3']"
-                @click="emit('navigate', 'upload')" :title="isCollapsed ? t('home.sidebar.upload') : ''">
+                @click="emit('navigate', 'upload')" :title="isCollapsed ? t('home.nav.upload') : ''">
                 <div class="w-8 h-8 rounded-lg flex items-center justify-center transition-colors flex-shrink-0"
                     :class="currentView === 'upload' ? 'bg-white/20' : 'bg-gray-100 dark:bg-gray-700'">
                     <div class="i-ph-cloud-arrow-up text-lg" />
                 </div>
-                <span v-show="!isCollapsed" class="whitespace-nowrap">{{ t('home.sidebar.upload') }}</span>
+                <span v-show="!isCollapsed" class="whitespace-nowrap">{{ t('home.nav.upload') }}</span>
             </button>
 
             <button
                 class="nav-btn w-full flex items-center px-3 py-2.5 rounded-xl transition-all duration-200 text-sm font-medium"
                 :class="[currentView === 'history' ? 'active' : 'inactive', isCollapsed ? 'justify-center' : 'gap-3']"
-                @click="emit('navigate', 'history')" :title="isCollapsed ? t('home.sidebar.history') : ''">
+                @click="emit('navigate', 'history')" :title="isCollapsed ? t('home.nav.history') : ''">
                 <div class="w-8 h-8 rounded-lg flex items-center justify-center transition-colors flex-shrink-0"
                     :class="currentView === 'history' ? 'bg-white/20' : 'bg-gray-100 dark:bg-gray-700'">
                     <div class="i-ph-clock-counter-clockwise text-lg" />
                 </div>
-                <span v-show="!isCollapsed" class="whitespace-nowrap">{{ t('home.sidebar.history') }}</span>
+                <span v-show="!isCollapsed" class="whitespace-nowrap">{{ t('home.nav.history') }}</span>
             </button>
         </div>
 
@@ -142,7 +129,7 @@ async function toggleCollapse() {
             <div class="px-4 py-3 flex items-center justify-between" v-show="!isCollapsed">
                 <div class="flex items-center gap-2">
                     <div class="text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider">
-                        {{ t('home.sidebar.nodes') }}
+                        {{ t('home.nodes') }}
                     </div>
                     <div
                         class="px-1.5 py-0.5 rounded-md bg-gray-100 dark:bg-gray-700 text-[10px] font-bold text-gray-500 dark:text-gray-400">
@@ -154,6 +141,11 @@ async function toggleCollapse() {
                         class="w-6 h-6 rounded-md flex items-center justify-center text-gray-400 hover:text-primary hover:bg-primary/10 transition-all"
                         @click="handleRefresh" :title="t('home.refresh')">
                         <div class="i-ph-arrows-clockwise text-sm" />
+                    </button>
+                    <button
+                        class="w-6 h-6 rounded-md flex items-center justify-center text-gray-400 hover:text-primary hover:bg-primary/10 transition-all"
+                        @click="handleImport" :title="t('home.importTitle')">
+                        <div class="i-ph-download-simple text-sm" />
                     </button>
                     <button
                         class="w-6 h-6 rounded-md flex items-center justify-center text-gray-400 hover:text-primary hover:bg-primary/10 transition-all"
@@ -198,7 +190,7 @@ async function toggleCollapse() {
                     <div v-for="config in configStore.configs" :key="config.id"
                         class="config-card group relative rounded-xl p-3 cursor-pointer transition-all duration-200 border"
                         :class="[selectedIds.includes(config.id)
-                            ? 'bg-primary/20 border-primary/30 dark:bg-primary/10 dark:border-primary/20'
+                            ? 'bg-primary/5 border-primary shadow-sm'
                             : 'bg-gray-50 dark:bg-gray-700/50 border-transparent hover:bg-gray-100 dark:hover:bg-gray-700',
                         isCollapsed ? 'flex justify-center' : '']" @click="toggleConfigSelection(config.id)"
                         :title="isCollapsed ? config.name : ''">
@@ -208,108 +200,102 @@ async function toggleCollapse() {
                             <div class="relative w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0 transition-colors"
                                 :class="selectedIds.includes(config.id)
                                     ? 'bg-primary text-white'
-                                    : 'bg-white dark:bg-gray-600 text-gray-400 dark:text-gray-300 shadow-sm'">
-                                <div :class="getStorageIcon(config.type)" class="text-lg" />
+                                    : 'bg-gray-200 dark:bg-gray-600 text-gray-500 dark:text-gray-300 group-hover:bg-white dark:group-hover:bg-gray-500 shadow-sm'">
+                                <div :class="config.type === 'lsky' ? 'i-ph-cloud' : 'i-ph-hard-drives'" class="text-lg" />
+                                
+                                <!-- 状态指示点 -->
+                                <div class="absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full border-2 border-white dark:border-gray-800"
+                                    :class="config.enabled ? 'bg-green-500' : 'bg-gray-300'"></div>
                             </div>
 
-                            <!-- 配置信息 -->
                             <div v-show="!isCollapsed" class="flex-1 min-w-0">
-                                <div class="flex items-center gap-2">
-                                    <span class="text-sm font-medium truncate" :class="selectedIds.includes(config.id)
-                                        ? 'text-primary dark:text-primary'
-                                        : 'text-gray-700 dark:text-gray-200'">
+                                <div class="flex items-center justify-between mb-0.5">
+                                    <span class="font-bold text-sm truncate"
+                                        :class="selectedIds.includes(config.id) ? 'text-primary' : 'text-gray-700 dark:text-gray-200'">
                                         {{ config.name }}
                                     </span>
                                 </div>
-                                <div class="text-xs text-gray-400 dark:text-gray-500 mt-0.5 truncate">
-                                    {{ config.type }}
+                                <div class="text-xs text-gray-400 truncate flex items-center gap-1">
+                                    <span class="uppercase">{{ config.type }}</span>
                                 </div>
                             </div>
                         </div>
-
-                        <!-- 操作按钮 - 悬停显示 -->
-                        <div v-if="!isCollapsed"
-                            class="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                            <button
-                                class="w-7 h-7 rounded-lg flex items-center justify-center bg-white dark:bg-gray-600 text-gray-400 hover:text-primary shadow-sm transition-colors"
-                                @click.stop="handleShare(config)" :title="t('home.share')">
-                                <div class="i-ph-share-network text-sm" />
-                            </button>
-                            <button
-                                class="w-7 h-7 rounded-lg flex items-center justify-center bg-white dark:bg-gray-600 text-gray-400 hover:text-primary shadow-sm transition-colors"
-                                @click.stop="emit('edit', config)" :title="t('common.edit')">
-                                <div class="i-ph-pencil-simple text-sm" />
-                            </button>
-                            <button
-                                class="w-7 h-7 rounded-lg flex items-center justify-center bg-white dark:bg-gray-600 text-gray-400 hover:text-red-500 shadow-sm transition-colors"
-                                @click.stop="handleDelete(config)" :title="t('common.delete')">
-                                <div class="i-ph-trash text-sm" />
-                            </button>
-                        </div>
                     </div>
                 </div>
             </div>
-        </div>
-
-        <!-- 底部 -->
-        <div class="p-4 border-t border-gray-100 dark:border-gray-700">
-            <div class="flex items-center" :class="isCollapsed ? 'flex-col gap-3' : 'justify-between'">
-                <div v-show="!isCollapsed" class="flex items-center gap-2 text-xs text-gray-400">
-                    <div
-                        class="w-5 h-5 rounded-md bg-gradient-to-br from-primary/20 to-primary/10 flex items-center justify-center">
-                        <div class="i-ph-sparkle text-primary text-[10px]" />
-                    </div>
-                    <span>v{{ currentVersion }}</span>
-                </div>
-                <div class="flex items-center gap-1" :class="isCollapsed ? 'flex-col' : ''">
-                    <button v-show="!isCollapsed"
-                        class="w-8 h-8 rounded-md flex items-center justify-center text-gray-400 hover:text-primary hover:bg-primary/10 transition-all"
-                        @click="handleShareAll" :title="t('home.shareAll')">
-                        <div class="i-ph-share-network text-sm" />
-                    </button>
-                    <button v-show="!isCollapsed"
-                        class="w-8 h-8 rounded-md flex items-center justify-center text-gray-400 hover:text-primary hover:bg-primary/10 transition-all"
-                        @click="handleImport" :title="t('home.import')">
-                        <div class="i-ph-download-simple text-sm" />
-                    </button>
-                    <button
-                        class="w-8 h-8 rounded-lg flex items-center justify-center text-gray-400 hover:text-primary hover:bg-gray-50 dark:hover:bg-gray-700 transition-all"
-                        @click="toggleCollapse" :title="isCollapsed ? t('common.expand') : t('common.collapse')">
-                        <div class="text-lg" :class="isCollapsed ? 'i-ph-caret-right' : 'i-ph-caret-left'" />
-                    </button>
-                </div>
+            
+            <!-- 底部折叠按钮 -->
+             <div class="p-3 border-t border-gray-100 dark:border-gray-700 mt-auto">
+                <button
+                    class="w-full flex items-center justify-center p-2 rounded-lg text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                    @click="toggleCollapse">
+                    <div class="i-ph-caret-double-left text-lg transition-transform duration-300"
+                        :class="isCollapsed ? 'rotate-180' : ''" />
+                </button>
             </div>
         </div>
-
-        <!-- 导入弹窗 -->
+        
         <ImportConfigModal v-model:show="showImportModal" v-model:value="importJson" @confirm="confirmImport" />
     </div>
 </template>
 
 <style scoped>
-/* 导航按钮样式 */
 .nav-btn.active {
-    background: linear-gradient(135deg, v-bind(primaryColor), color-mix(in srgb, v-bind(primaryColor) 80%, #000));
+    background-color: v-bind(primaryColor);
     color: white;
-    box-shadow: 0 4px 12px -2px color-mix(in srgb, v-bind(primaryColor) 40%, transparent);
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
 }
 
 .nav-btn.inactive {
     color: #6b7280;
 }
 
+.nav-btn.inactive:hover {
+    background-color: #f3f4f6;
+    color: #374151;
+}
 
 :global(.dark) .nav-btn.inactive {
-    color: #d1d5db;
+    color: #9ca3af;
 }
 
 :global(.dark) .nav-btn.inactive:hover {
     background-color: #374151;
+    color: #e5e7eb;
 }
 
-/* 主题色相关 */
+/* Scrollbar */
+.custom-scrollbar::-webkit-scrollbar {
+    width: 4px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+    background-color: transparent;
+    border-radius: 4px;
+}
+
+.custom-scrollbar:hover::-webkit-scrollbar-thumb {
+    background-color: #e5e7eb;
+}
+
+:global(.dark) .custom-scrollbar:hover::-webkit-scrollbar-thumb {
+    background-color: #374151;
+}
+
+.text-primary {
+    color: v-bind(primaryColor);
+}
+
 .bg-primary {
     background-color: v-bind(primaryColor);
+}
+
+.border-primary {
+    border-color: v-bind(primaryColor);
+}
+
+.hover\:text-primary:hover {
+    color: v-bind(primaryColor);
 }
 
 .bg-primary\/5 {
@@ -320,94 +306,16 @@ async function toggleCollapse() {
     background-color: color-mix(in srgb, v-bind(primaryColor) 10%, transparent);
 }
 
-.bg-primary\/20 {
-    background-color: color-mix(in srgb, v-bind(primaryColor) 20%, transparent);
-}
-
-.border-primary\/30 {
-    border-color: color-mix(in srgb, v-bind(primaryColor) 30%, transparent);
-}
-
-.border-primary\/20 {
-    border-color: color-mix(in srgb, v-bind(primaryColor) 20%, transparent);
-}
-
-.text-primary {
-    color: v-bind(primaryColor);
-}
-
-.hover\:text-primary:hover {
-    color: v-bind(primaryColor);
-}
-
 .hover\:bg-primary\/10:hover {
     background-color: color-mix(in srgb, v-bind(primaryColor) 10%, transparent);
 }
 
-.hover\:bg-primary\/20:hover {
-    background-color: color-mix(in srgb, v-bind(primaryColor) 20%, transparent);
+.to-primary\/70 {
+    --un-gradient-to: color-mix(in srgb, v-bind(primaryColor) 70%, transparent);
 }
 
 .from-primary {
-    --tw-gradient-from: v-bind(primaryColor);
-}
-
-.from-primary\/20 {
-    --tw-gradient-from: color-mix(in srgb, v-bind(primaryColor) 20%, transparent);
-}
-
-.from-primary\/10 {
-    --tw-gradient-from: color-mix(in srgb, v-bind(primaryColor) 10%, transparent);
-}
-
-.to-primary\/70 {
-    --tw-gradient-to: color-mix(in srgb, v-bind(primaryColor) 70%, transparent);
-}
-
-.to-primary\/10 {
-    --tw-gradient-to: color-mix(in srgb, v-bind(primaryColor) 10%, transparent);
-}
-
-:global(.dark) .dark\:text-primary {
-    color: v-bind(primaryColor);
-}
-
-:global(.dark) .dark\:bg-primary\/10 {
-    background-color: color-mix(in srgb, v-bind(primaryColor) 10%, transparent);
-}
-
-:global(.dark) .dark\:border-primary\/20 {
-    border-color: color-mix(in srgb, v-bind(primaryColor) 20%, transparent);
-}
-
-/* 滚动条样式 */
-.custom-scrollbar::-webkit-scrollbar {
-    width: 4px;
-}
-
-.custom-scrollbar::-webkit-scrollbar-track {
-    background: transparent;
-}
-
-.custom-scrollbar::-webkit-scrollbar-thumb {
-    background-color: #e5e7eb;
-    border-radius: 4px;
-}
-
-.custom-scrollbar::-webkit-scrollbar-thumb:hover {
-    background-color: #d1d5db;
-}
-
-:global(.dark) .custom-scrollbar::-webkit-scrollbar-thumb {
-    background-color: #374151;
-}
-
-:global(.dark) .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-    background-color: #4b5563;
-}
-
-/* 配置卡片悬停效果 */
-.config-card:hover .group-hover\:opacity-100 {
-    opacity: 1;
+    --un-gradient-from: v-bind(primaryColor);
+    --un-gradient-stops: var(--un-gradient-from), var(--un-gradient-to);
 }
 </style>
