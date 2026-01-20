@@ -64,6 +64,13 @@ async function saveConfig(type: DriveType = 'lsky', extra: Partial<DriveConfig> 
     type: 'ADD_CONFIG',
     payload: cfg,
   })
+
+  // Notify other parts to refresh
+  try {
+    await browser.runtime.sendMessage({ type: 'REFRESH_CONFIG' })
+  } catch (e) {
+    console.warn('Failed to send REFRESH_CONFIG', e)
+  }
 }
 
 const handleAddToAppLsky = async () => {

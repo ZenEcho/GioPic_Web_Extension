@@ -10,12 +10,12 @@
         <!-- Close Button (visible on hover) -->
         <div v-show="isHovering" class="giopic-close-btn" @click.stop="showCloseDialog = true"
             :title="t('common.delete')">
-            <div class="i-ph-x-bold text-white text-xs"></div>
+            <div class="i-ph-x-bold text-red-500 text-xs"></div>
         </div>
         <!-- 上传列表 -->
         <div v-show="isHovering" class="giopic-uploadList-btn" @click.stop="toggleUploadList"
             :title="t('home.history.uploadQueue')">
-            <div class="i-ph-list-bold text-white text-xs"></div>
+            <div class="i-ph-list-bold text-blue-500 text-xs"></div>
         </div>
     </div>
 
@@ -450,44 +450,102 @@ onMounted(async () => {
 
 .giopic-close-btn {
     position: absolute;
-    top: -4px;
-    right: -4px;
-    width: 18px;
-    height: 18px;
-    background: #ef4444;
+    top: -34px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 28px;
+    height: 28px;
+    background: white;
     border-radius: 50%;
     display: flex;
     align-items: center;
     justify-content: center;
     cursor: pointer;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
-    transition: transform 0.1s;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+    z-index: -1;
+    opacity: 0;
+    border: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+:global(.dark) .giopic-close-btn {
+    background: rgba(31, 41, 55, 0.9);
+    border-color: rgba(255, 255, 255, 0.1);
+}
+
+/* Fill the gap to prevent mouseleave */
+.giopic-close-btn::after {
+    content: '';
+    position: absolute;
+    bottom: -10px;
+    left: 0;
+    width: 100%;
+    height: 10px;
+}
+
+.giopic-floating-ball:hover .giopic-close-btn {
+    top: -36px;
+    opacity: 1;
+    z-index: 10;
 }
 
 .giopic-close-btn:hover {
-    transform: scale(1.1);
-    background: #dc2626;
+    transform: translateX(-50%) scale(1.15);
+    background: #fee2e2;
+}
+
+:global(.dark) .giopic-close-btn:hover {
+    background: rgba(239, 68, 68, 0.2);
 }
 
 .giopic-uploadList-btn {
     position: absolute;
-    bottom: -4px;
-    left: -4px;
-    width: 18px;
-    height: 18px;
-    background: #3b82f6;
+    bottom: -34px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 28px;
+    height: 28px;
+    background: white;
     border-radius: 50%;
     display: flex;
     align-items: center;
     justify-content: center;
     cursor: pointer;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
-    transition: transform 0.1s;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+    z-index: -1;
+    opacity: 0;
+    border: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+:global(.dark) .giopic-uploadList-btn {
+    background: rgba(31, 41, 55, 0.9);
+    border-color: rgba(255, 255, 255, 0.1);
+}
+
+/* Fill the gap to prevent mouseleave */
+.giopic-uploadList-btn::after {
+    content: '';
+    position: absolute;
+    top: -10px;
+    left: 0;
+    width: 100%;
+    height: 10px;
+}
+
+.giopic-floating-ball:hover .giopic-uploadList-btn {
+    bottom: -36px;
+    opacity: 1;
+    z-index: 10;
 }
 
 .giopic-uploadList-btn:hover {
-    transform: scale(1.1);
-    background: #2563eb;
+    transform: translateX(-50%) scale(1.15);
+    background: #dbeafe;
+}
+
+:global(.dark) .giopic-uploadList-btn:hover {
+    background: rgba(59, 130, 246, 0.2);
 }
 
 /* Dialog Styles */

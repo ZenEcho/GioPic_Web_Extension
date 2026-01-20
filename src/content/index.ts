@@ -1,8 +1,5 @@
 import { mountComponent } from './utils/mount'
-import NotificationView from './components/NotificationView.vue'
-import WebSidebar from './components/WebSidebar.vue'
-import UploadList from './components/UploadList.vue'
-import TokenDetector from './components/TokenDetector.vue'
+import ContentOverlay from './components/ContentOverlay.vue'
 import browser from 'webextension-polyfill'
 import 'virtual:uno.css'
 import './style.css'
@@ -65,29 +62,10 @@ try {
     browser.runtime.sendMessage({ type: 'REGISTER_CONTENT' })
 } catch {}
 
+// 挂载单一容器
 mountComponent(
-    NotificationView,
-    'giopic-notification-container',
-    true,
-    {},
-    true
-)
-
-mountComponent(
-    UploadList,
-    'giopic-upload-list-container',
-    true
-)
-
-mountComponent(
-    WebSidebar,
-    'giopic-sidebar-container',
-    true
-)
-
-mountComponent(
-    TokenDetector,
-    'giopic-token-detector',
+    ContentOverlay,
+    'giopic-content-overlay',
     true,
     {},
     true // Use Provider for Message/Dialog

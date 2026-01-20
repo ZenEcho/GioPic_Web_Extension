@@ -55,6 +55,12 @@ onMounted(async () => {
     } catch (e) {
         console.warn('Failed to get manifest version or storage', e)
     }
+
+    browser.runtime.onMessage.addListener(async (message: any) => {
+        if (message.type === 'REFRESH_CONFIG') {
+            await configStore.reload()
+        }
+    })
 })
 
 async function toggleCollapse() {

@@ -3,9 +3,11 @@ import { useConfigStore } from '@/stores/config'
 import { useThemeStore, themeColors } from '@/stores/theme'
 import { useI18n } from 'vue-i18n'
 import type { DriveConfig } from '@/types'
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { getStorageIcon } from '@/utils/icon'
 import { useSidebar } from '@/composables/useSidebar'
+import browser from 'webextension-polyfill'
+
 
 const props = defineProps<{
     selectedIds: string[]
@@ -38,6 +40,14 @@ const {
     handleImport,
     confirmImport
 } = useSidebar(props, emit as any)
+
+onMounted(() => {
+    browser.runtime.onMessage.addListener(async (message: any) => {
+        if (message.type === 'REFRESH_CONFIG') {
+            await configStore.reload()
+        }
+    })
+})
 </script>
 
 <template>

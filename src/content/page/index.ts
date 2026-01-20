@@ -1,6 +1,4 @@
-import './style.css'
-import { createApp } from 'vue'
-import App from './App.vue'
+import { Detector } from './editorInjector'
 
 declare global {
   interface Window {
@@ -10,22 +8,9 @@ declare global {
 
 if (!window.__GioPicPageScriptLoaded__) {
   window.__GioPicPageScriptLoaded__ = true
-
-  const rootId = 'giopic-page-root'
-
-  const mount = () => {
-    if (document.getElementById(rootId)) return
-    const el = document.createElement('div')
-    el.id = rootId
-    el.className = 'giopic-page-root'
-    document.documentElement.appendChild(el)
-
-    createApp(App).mount(el)
-  }
-
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', mount, { once: true })
-  } else {
-    mount()
-  }
+  
+  // 启动编辑器注入监听
+  Detector.startListening()
+  
+  console.log('GioPic page script loaded (Main World)')
 }
