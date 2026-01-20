@@ -31,7 +31,9 @@ export async function copyToClipboard(text: string): Promise<void> {
 
 export function getValueByPath(obj: any, path: string): any {
     if (!path) return undefined
-    return path.split('.').reduce((acc, part) => acc && acc[part], obj)
+    // Support array syntax like data[0].url -> data.0.url
+    const normalizedPath = path.replace(/\[(\d+)\]/g, '.$1')
+    return normalizedPath.split('.').reduce((acc, part) => acc && acc[part], obj)
 }
 
 export function parseJsonConfig(jsonStr: string | undefined): Record<string, any> {

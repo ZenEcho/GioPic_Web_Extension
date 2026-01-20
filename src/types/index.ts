@@ -66,12 +66,13 @@ export interface CustomConfig extends Omit<BaseConfig, 'type'> {
   type: 'custom';
   apiUrl: string;
   method: 'POST' | 'PUT';
-  uploadFormat: 'formData' | 'json';
+  uploadFormat: 'formData' | 'json' | 'binary';
   fileParamName: string;
   headers?: string; // JSON string
   bodyParams?: string; // JSON string
   queryParams?: string; // JSON string
-  responseUrlPath: string;
+  responseType?: 'json' | 'regex'; // 默认 json
+  responseUrlPath: string; // JSON path or Regex
   urlPrefix?: string; // 自定义URL前缀，例如https://example.com/
   urlSuffix?: string; // 自定义URL后缀，例如.jpg
 }

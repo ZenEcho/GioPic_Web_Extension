@@ -4,6 +4,7 @@ import { S3Client } from '@aws-sdk/client-s3'
 import { Upload } from '@aws-sdk/lib-storage'
 import axios from 'axios'
 import { getValueByPath, parseJsonConfig } from '@/utils/common'
+import { replaceMagicVariables } from '@/utils/variables'
 
 export interface UploadResult {
   url: string
@@ -216,14 +217,43 @@ async function fetchUpload(
 }
 
 async function uploadCustom(file: File, config: CustomConfig, onProgress: ProgressCallback): Promise<UploadResult> {
-  const headers = parseJsonConfig(config.headers)
-  const queryParams = parseJsonConfig(config.queryParams)
-  const bodyParams = parseJsonConfig(config.bodyParams)
+  // 1. Parse and Replace Variables in Config
+  const rawHeaders = parseJsonConfig(config.headers)
+  const rawQueryParams = parseJsonConfig(config.queryParams)
+  const rawBodyParams = parseJsonConfig(config.bodyParams)
 
+  const headers: Record<string, string> = {}
+  const queryParams: Record<string, string> = {}
+  const bodyParams: Record<string, string> = {}
+
+  // Helper to replace variables in an object
+  const replaceInObj = (source: Record<string, any>, target: Record<string, string>) => {
+    Object.keys(source).forEach(key => {
+        target[replaceMagicVariables(key, file)] = replaceMagicVariables(String(source[key]), file)
+    })
+  }
+
+  replaceInObj(rawHeaders, headers)
+  replaceInObj(rawQueryParams, queryParams)
+  replaceInObj(rawBodyParams, bodyParams)
+
+  const apiUrl = replaceMagicVariables(config.apiUrl, file)
+  const fileParamName = replaceMagicVariables(config.fileParamName || 'file', file)
+  const urlPrefix = config.urlPrefix ? replaceMagicVariables(config.urlPrefix, file) : undefined
+  const urlSuffix = config.urlSuffix ? replaceMagicVariables(config.urlSuffix, file) : undefined
+
+  // 2. Prepare Data
   let data: any
-  const fileParamName = config.fileParamName || 'file'
 
-  if (config.uploadFormat === 'json') {
+  if (config.uploadFormat === 'binary') {
+      // Binary Mode: Direct File Body
+      data = file
+      if (!headers['Content-Type'] && !headers['content-type']) {
+          // Default to file type, but let user override
+          headers['Content-Type'] = file.type || 'application/octet-stream'
+      }
+  } else if (config.uploadFormat === 'json') {
+    // JSON Mode (Base64)
     const reader = new FileReader()
     const contentBase64 = await new Promise<string>((resolve, reject) => {
       reader.onload = (e) => {
@@ -244,6 +274,7 @@ async function uploadCustom(file: File, config: CustomConfig, onProgress: Progre
       headers['Content-Type'] = 'application/json'
     }
   } else {
+    // FormData Mode (Default)
     data = new FormData()
     data.append(fileParamName, file)
     Object.keys(bodyParams).forEach(key => {
@@ -251,10 +282,11 @@ async function uploadCustom(file: File, config: CustomConfig, onProgress: Progre
     })
   }
 
+  // 3. Send Request
   try {
     const response = await axios({
       method: config.method || 'POST',
-      url: config.apiUrl,
+      url: apiUrl,
       params: queryParams,
       headers,
       data,
@@ -263,41 +295,79 @@ async function uploadCustom(file: File, config: CustomConfig, onProgress: Progre
           const percent = Math.floor((progressEvent.loaded * 100) / progressEvent.total)
           onProgress(percent)
         }
-      }
+      },
+      // If responseType is regex, we might need text response
+      responseType: config.responseType === 'regex' ? 'text' : 'json'
     })
 
-    let url = getValueByPath(response.data, config.responseUrlPath)
+    // 4. Parse Response
+    let url: string | undefined
+
+    const responseBody = response.data
+
+    if (config.responseType === 'regex') {
+        // Regex Mode
+        const contentStr = typeof responseBody === 'string' ? responseBody : JSON.stringify(responseBody)
+        
+        // Extract URL
+        const urlRegex = new RegExp(config.responseUrlPath)
+        const urlMatch = contentStr.match(urlRegex)
+        url = urlMatch ? (urlMatch[1] || urlMatch[0]) : undefined // Group 1 or Full Match
+
+    } else {
+        // JSON Mode (Default)
+        url = getValueByPath(responseBody, config.responseUrlPath)
+    }
+
     if (!url) {
-      throw new Error(`Cannot find URL at path "${config.responseUrlPath}" in response`)
+      throw new Error(`Cannot find URL at path/regex "${config.responseUrlPath}" in response`)
     }
 
-    try {
-      const baseUrl = config.urlPrefix || config.apiUrl
-      let finalUrl = String(url)
+    // 5. Post-process URL (Prefix/Suffix)
+    const processUrl = (rawUrl: string | undefined) => {
+        if (!rawUrl) return undefined
+        try {
+            const baseUrl = urlPrefix || apiUrl
+            let finalUrl = String(rawUrl)
 
-      const urlObj = new URL(finalUrl, baseUrl)
-      finalUrl = urlObj.href
+            // Try to resolve relative URL
+            // If baseUrl is not a valid URL (e.g. just a path prefix), this might fail, so we fallback
+            try {
+                 const urlObj = new URL(finalUrl, baseUrl.startsWith('http') ? baseUrl : undefined)
+                 finalUrl = urlObj.href
+            } catch(e) {
+                // Ignore URL parse error, use simple concatenation
+            }
 
-      if (config.urlSuffix) {
-        finalUrl += config.urlSuffix
-      }
-      
-      url = finalUrl
-    } catch (e) {
-      console.warn('Failed to resolve URL:', e)
-      let res = String(url)
-      if (config.urlPrefix && !res.startsWith('http')) {
-         const prefix = config.urlPrefix.endsWith('/') ? config.urlPrefix : config.urlPrefix + '/'
-         const path = res.startsWith('/') ? res.slice(1) : res
-         res = prefix + path
-      }
-      if (config.urlSuffix) {
-        res += config.urlSuffix
-      }
-      url = res
+            // If manual prefix logic needed (when baseUrl is just a string prefix, not full URL)
+            if (urlPrefix) {
+                 const prefix = urlPrefix.endsWith('/') ? urlPrefix : urlPrefix + '/'
+                 // If original URL is absolute (http...), we usually don't touch it unless forced?
+                 // But user configured a prefix, they likely want to use it.
+                 // Scenario A: Response is relative path "/img.png" -> Prepend prefix -> "https://cdn.com/img.png"
+                 // Scenario B: Response is absolute URL "http://api.com/img.png" -> Prepend prefix? -> "https://cdn.com/http://api.com/img.png" (WRONG)
+                 //                                                               -> Replace domain? -> "https://cdn.com/img.png" (Maybe)
+                 
+                 // Current logic: Only prepend if it doesn't look like an absolute URL OR if it doesn't already start with the prefix.
+                  if (!finalUrl.startsWith(urlPrefix)) {
+                      const path = finalUrl.startsWith('/') ? finalUrl.slice(1) : finalUrl
+                      finalUrl = prefix + path
+                  }
+             }
+            
+            if (urlSuffix) {
+                finalUrl += urlSuffix
+            }
+            return finalUrl
+        } catch (e) {
+            return String(rawUrl)
+        }
     }
 
-    return { url }
+    return { 
+        url: processUrl(url)!,
+    }
+
   } catch (error: any) {
     console.error('Custom Upload Error:', error)
     if (error.response) {
