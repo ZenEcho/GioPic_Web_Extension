@@ -8,8 +8,8 @@ function injectPageBundle() {
     const doc = document
     const root = doc.documentElement
     if (!root) return
-    if (root.hasAttribute('data-giopic-page-bundle')) return
-    root.setAttribute('data-giopic-page-bundle', 'true')
+    if (root.hasAttribute('data-giopic-page-bundle')) return // 已注入则不重复
+    root.setAttribute('data-giopic-page-bundle', 'true') // 标记页面已注入
 
     const headOrRoot = doc.head || root
 
