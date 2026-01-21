@@ -120,7 +120,15 @@
                         </div>
 
                         <!-- Actions -->
-                        <div v-if="item.status === 'success'" class="mt-2 flex justify-end gap-2">
+                        <div class="mt-2 flex justify-end gap-2">
+                             <button v-if="item.status !== 'success'" @click="removeUpload(item.id)"
+                                class="text-[10px] bg-red-50 hover:bg-red-100 dark:bg-red-900/20 dark:hover:bg-red-900/30 text-red-600 dark:text-red-400 px-2 py-1 rounded border border-red-200 dark:border-red-900/30 flex items-center gap-1 transition-all active:scale-95"
+                                :title="t('common.delete')">
+                                <div class="i-ph-trash-simple-bold text-xs"></div>
+                                {{ t('common.delete') }}
+                            </button>
+
+                            <template v-if="item.status === 'success'">
                             <button @click="handleInject(item.url)"
                                 class="text-[10px] bg-gray-50 hover:bg-gray-100 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-600 dark:text-gray-300 px-2 py-1 rounded border border-gray-200 dark:border-gray-600 flex items-center gap-1 transition-all active:scale-95"
                                 :title="t('common.inject')">
@@ -139,6 +147,7 @@
                                 </svg>
                                 {{ t('uploadList.copyUrl') }}
                             </button>
+                            </template>
                         </div>
                     </div>
                 </TransitionGroup>
@@ -192,6 +201,18 @@ browser.storage.onChanged.addListener((changes, area) => {
         if (changes['giopic-show-upload-list']) {
             isVisible.value = !!changes['giopic-show-upload-list'].newValue
         }
+        if (changes['giopic-upload-queue']) {
+            mergeUploads(changes['giopic-upload-queue'].newValue as UploadItem[])
+        }
+        if (changes['giopic-upload-list-position']) {
+            const newPos = changes['giopic-upload-list-position'].newValue as { x: number, y: number }
+            if (newPos && !isDragging.value) {
+                // Only update if not currently dragging to avoid conflict
+                if (Math.abs(newPos.x - position.value.x) > 5 || Math.abs(newPos.y - position.value.y) > 5) {
+                    position.value = newPos
+                }
+            }
+        }
     }
 })
 
@@ -210,6 +231,27 @@ interface UploadItem {
 const uploads = ref<UploadItem[]>([])
 const copyFormat = ref('url')
 
+const mergeUploads = (newQueue: UploadItem[]) => {
+    if (!newQueue) return
+    
+    // Create a map of current progress for uploading items to preserve animation
+    const progressMap = new Map<string, number>()
+    uploads.value.forEach(u => {
+        if (u.status === 'uploading') {
+            progressMap.set(u.id, u.progress)
+        }
+    })
+
+    // Map new queue to preserve progress
+    uploads.value = newQueue.map(item => {
+        // If it's the same item and still uploading, preserve local progress
+        if (item.status === 'uploading' && progressMap.has(item.id)) {
+            return { ...item, progress: progressMap.get(item.id)! }
+        }
+        return item
+    })
+}
+
 const containerRef = useTemplateRef<HTMLElement>('containerRef')
 const headerRef = useTemplateRef<HTMLElement>('headerRef')
 
@@ -217,11 +259,13 @@ const headerRef = useTemplateRef<HTMLElement>('headerRef')
 const initialX = (document.documentElement.clientWidth || window.innerWidth) - 400
 const initialY = window.innerHeight - 400
 
-const { position } = useDraggable(containerRef, headerRef, { x: initialX, y: initialY })
+const { position, isDragging } = useDraggable(containerRef, headerRef, { x: initialX, y: initialY })
 
-// Persist position
-watch(position, (newPos) => {
-    browser.storage.local.set({ 'giopic-upload-list-position': newPos })
+// Persist position only on drag end
+watch(isDragging, (val) => {
+    if (!val) {
+        browser.storage.local.set({ 'giopic-upload-list-position': position.value })
+    }
 })
 
 const handleMessage = (message: any) => {
@@ -233,15 +277,18 @@ const handleMessage = (message: any) => {
             isVisible.value = true
             browser.storage.local.set({ 'giopic-show-upload-list': true })
 
-            uploads.value.unshift({
-                id,
-                filename: payload.filename,
-                configName: payload.configName,
-                progress: 0,
-                status: 'uploading',
-                thumbUrl: payload.thumbUrl,
-                timestamp: Date.now()
-            })
+            // Add if not exists (though storage sync will likely handle it too)
+            if (!uploads.value.find(u => u.id === id)) {
+                uploads.value.unshift({
+                    id,
+                    filename: payload.filename,
+                    configName: payload.configName,
+                    progress: 0,
+                    status: 'uploading',
+                    thumbUrl: payload.thumbUrl,
+                    timestamp: payload.timestamp || Date.now()
+                })
+            }
         } else if (event === 'progress') {
             const item = uploads.value.find(u => u.id === id)
             if (item) {
@@ -265,7 +312,14 @@ const handleMessage = (message: any) => {
 }
 
 const clearCompleted = () => {
-    uploads.value = uploads.value.filter(u => u.status === 'uploading')
+    // Update storage instead of local state
+    const newQueue = uploads.value.filter(u => u.status === 'uploading')
+    browser.storage.local.set({ 'giopic-upload-queue': newQueue })
+}
+
+const removeUpload = (id: string) => {
+    const newQueue = uploads.value.filter(u => u.id !== id)
+    browser.storage.local.set({ 'giopic-upload-queue': newQueue })
 }
 
 const copyToClipboard = async (url?: string) => {
@@ -289,7 +343,7 @@ const handleInject = (url?: string) => {
 
 onMounted(() => {
     browser.runtime.onMessage.addListener(handleMessage)
-    browser.storage.local.get(['copyFormat', 'giopic-dark-mode', 'giopic-locale', 'giopic-show-upload-list', 'giopic-upload-list-position']).then((res) => {
+    browser.storage.local.get(['copyFormat', 'giopic-dark-mode', 'giopic-locale', 'giopic-show-upload-list', 'giopic-upload-list-position', 'giopic-upload-queue']).then((res) => {
         if (res.copyFormat) {
             copyFormat.value = res.copyFormat as string
         }
@@ -304,6 +358,9 @@ onMounted(() => {
         }
         if (res['giopic-upload-list-position']) {
             position.value = res['giopic-upload-list-position'] as { x: number, y: number }
+        }
+        if (res['giopic-upload-queue']) {
+            mergeUploads(res['giopic-upload-queue'] as UploadItem[])
         }
     })
 })

@@ -27,28 +27,55 @@ export function updateContextMenuLocale() {
 }
 
 async function sendUploadEvent(
-    tabId: number | undefined,
+    originTabId: number | undefined,
     event: 'start' | 'progress' | 'success' | 'fail',
     id: string,
     payload: any
 ) {
     try {
-        if (tabId) {
-            await browser.tabs.sendMessage(tabId, {
-                type: 'UPLOAD_EVENT',
-                data: { event, id, payload }
-            })
-            return
-        }
-        const tabs = await browser.tabs.query({ active: true, currentWindow: true })
-        if (tabs.length > 0 && tabs[0]?.id) {
-            await browser.tabs.sendMessage(tabs[0]?.id, {
-                type: 'UPLOAD_EVENT',
-                data: { event, id, payload }
-            })
+        // Broadcast to all tabs
+        const tabs = await browser.tabs.query({})
+        for (const tab of tabs) {
+            if (tab.id) {
+                // Determine if this tab is the origin tab
+                const isOrigin = originTabId !== undefined && tab.id === originTabId
+
+                browser.tabs.sendMessage(tab.id, {
+                    type: 'UPLOAD_EVENT',
+                    data: { event, id, payload, isOrigin }
+                }).catch(() => {
+                    // Ignore errors (e.g. content script not loaded in this tab)
+                })
+            }
         }
     } catch (e) {
         console.warn('Failed to send upload event', e)
+    }
+}
+
+async function updateUploadQueue(action: 'add' | 'update', item: any) {
+    try {
+        const key = 'giopic-upload-queue'
+        // Use browser.storage.local for sync capabilities (onChanged event)
+        const res = await browser.storage.local.get(key)
+        const data = res[key] as any[] || []
+        const newQueue = [...data]
+
+        if (action === 'add') {
+            newQueue.unshift(item)
+        } else if (action === 'update') {
+            const index = newQueue.findIndex(i => i.id === item.id)
+            if (index !== -1) {
+                newQueue[index] = { ...newQueue[index], ...item }
+            }
+        }
+        
+        // Limit queue size to 50
+        if (newQueue.length > 50) newQueue.length = 50
+        
+        await browser.storage.local.set({ [key]: newQueue })
+    } catch (e) {
+        console.error('Failed to update upload queue', e)
     }
 }
 
@@ -77,25 +104,49 @@ async function handleContextMenuClick(info: any, tab: any) {
             // 3. Upload to all selected nodes
             const results = await Promise.allSettled(activeConfigs.map(async (config) => {
                 const uploadId = crypto.randomUUID()
-                
-                // Send start event
-                await sendUploadEvent(tab?.id, 'start', uploadId, {
+                const queueItem = {
+                    id: uploadId,
                     filename: file.name,
                     configName: config.name,
-                    thumbUrl: info.srcUrl // Use original URL as thumbnail initially
-                })
+                    progress: 0,
+                    status: 'uploading',
+                    thumbUrl: info.srcUrl, // Use original URL as thumbnail initially
+                    timestamp: Date.now()
+                }
+
+                // Add to storage queue
+                await updateUploadQueue('add', queueItem)
+                
+                // Send start event
+                await sendUploadEvent(tab?.id, 'start', uploadId, queueItem)
 
                 return uploadImage(file, config, (progress) => {
                     // Send progress event
                     sendUploadEvent(tab?.id, 'progress', uploadId, { progress })
-                }).then(res => {
+                }).then(async res => {
+                    // Update storage
+                    await updateUploadQueue('update', {
+                        id: uploadId,
+                        status: 'success',
+                        progress: 100,
+                        url: res.url,
+                        thumbUrl: res.thumbUrl || info.srcUrl
+                    })
+
                     // Send success event
                     sendUploadEvent(tab?.id, 'success', uploadId, { 
                         url: res.url,
                         thumbUrl: res.thumbUrl || info.srcUrl
                     })
                     return { config, res }
-                }).catch(err => {
+                }).catch(async err => {
+                    // Update storage
+                    await updateUploadQueue('update', {
+                        id: uploadId,
+                        status: 'error',
+                        error: err.message || 'Upload failed'
+                    })
+
                     // Send fail event
                     sendUploadEvent(tab?.id, 'fail', uploadId, { 
                         error: err.message || 'Upload failed'

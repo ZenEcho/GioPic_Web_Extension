@@ -295,7 +295,8 @@ async function relayUploadSuccess(message: any, sender: Runtime.MessageSender) {
                 data: {
                     event: 'success',
                     id: message.id || 'relay',
-                    payload: message.payload
+                    payload: message.payload,
+                    isOrigin: true
                 }
             })
         } catch (e) {
@@ -312,7 +313,8 @@ async function relayUploadSuccess(message: any, sender: Runtime.MessageSender) {
                 data: {
                     event: 'success',
                     id: message.id || 'relay',
-                    payload: message.payload
+                    payload: message.payload,
+                    isOrigin: true
                 }
             })
             return
@@ -326,7 +328,8 @@ async function relayUploadSuccess(message: any, sender: Runtime.MessageSender) {
                 data: {
                     event: 'success',
                     id: message.id || 'relay',
-                    payload: message.payload
+                    payload: message.payload,
+                    isOrigin: true
                 }
             })
         } catch (e) {

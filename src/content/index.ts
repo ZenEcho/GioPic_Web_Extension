@@ -32,11 +32,12 @@ function injectPageBundle() {
 browser.runtime.onMessage.addListener(async (message: any) => {
     if (message.type === 'UPLOAD_EVENT' && message.data?.event === 'success') {
         const { url } = message.data.payload
+        const { isOrigin } = message.data
         if (!url) return
 
-        // 检查是否开启自动注入
+        // 检查是否开启自动注入，且当前是触发上传的源标签页
         const storage = await browser.storage.local.get('giopic-auto-inject')
-        if (storage['giopic-auto-inject'] !== false) {
+        if (storage['giopic-auto-inject'] !== false && isOrigin) {
             // 通过 postMessage 发送给页面脚本 (Main World)
             window.postMessage({
                 type: 'GIOPIC_INJECT',
