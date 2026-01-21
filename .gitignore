@@ -14,7 +14,8 @@ dist-ssr
 coverage
 *.local
 .trae/*
-
+src/types/auto-imports.d.ts
+src/types/components.d.ts
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
@@ -24,8 +25,7 @@ coverage
 *.njsproj
 *.sln
 *.sw?
-src/types/auto-imports.d.ts
-src/types/components.d.ts
+
 *.tsbuildinfo
 
 .eslintcache
