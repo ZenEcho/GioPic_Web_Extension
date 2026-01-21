@@ -236,6 +236,9 @@ export default {
       no: '否',
       noDelete: '不删除',
       secretId: 'SecretId',
+      dedup: '是否去重',
+      watermark: '是否启用文字水印',
+      compress: '是否压缩图片',
       placeholder: {
         strategyId: 'ID (V1为策略ID, V2为存储ID)',
         albumId: '相册ID (可选)',

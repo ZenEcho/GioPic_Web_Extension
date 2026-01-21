@@ -2,7 +2,7 @@ import type {
     CKEditor5Type,
     WangEditorType,
     CodeMirrorElementType
-} from '../editorInjector/types';
+} from '../EditorInjector/types';
 
 export function handleDiscuz(url: string): boolean {
     const discuz = document.getElementById("fastpostmessage") as HTMLTextAreaElement | HTMLInputElement | null;

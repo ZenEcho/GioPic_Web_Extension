@@ -6,9 +6,9 @@ import axios from 'axios'
 import { getValueByPath, parseJsonConfig } from '@/utils/common'
 import { replaceMagicVariables } from '@/utils/variables'
 
+
 export interface UploadResult {
   url: string
-  deleteUrl?: string
   thumbUrl?: string
 }
 
@@ -38,6 +38,8 @@ export async function uploadImage(
       return uploadChevereto(file, config as WebUploaderConfig, onProgress)
     case 'imgurl':
       return uploadImgURL(file, config as WebUploaderConfig, onProgress)
+    case 'zpic':
+      return uploadZpic(file, config as WebUploaderConfig, onProgress)
     case 'smms':
       return uploadSMMS(file, config as WebUploaderConfig, onProgress)
     case 'hellohao':
@@ -229,7 +231,7 @@ async function uploadCustom(file: File, config: CustomConfig, onProgress: Progre
   // Helper to replace variables in an object
   const replaceInObj = (source: Record<string, any>, target: Record<string, string>) => {
     Object.keys(source).forEach(key => {
-        target[replaceMagicVariables(key, file)] = replaceMagicVariables(String(source[key]), file)
+      target[replaceMagicVariables(key, file)] = replaceMagicVariables(String(source[key]), file)
     })
   }
 
@@ -246,12 +248,12 @@ async function uploadCustom(file: File, config: CustomConfig, onProgress: Progre
   let data: any
 
   if (config.uploadFormat === 'binary') {
-      // Binary Mode: Direct File Body
-      data = file
-      if (!headers['Content-Type'] && !headers['content-type']) {
-          // Default to file type, but let user override
-          headers['Content-Type'] = file.type || 'application/octet-stream'
-      }
+    // Binary Mode: Direct File Body
+    data = file
+    if (!headers['Content-Type'] && !headers['content-type']) {
+      // Default to file type, but let user override
+      headers['Content-Type'] = file.type || 'application/octet-stream'
+    }
   } else if (config.uploadFormat === 'json') {
     // JSON Mode (Base64)
     const reader = new FileReader()
@@ -264,12 +266,12 @@ async function uploadCustom(file: File, config: CustomConfig, onProgress: Progre
       reader.onerror = reject
       reader.readAsDataURL(file)
     })
-    
+
     data = {
       ...bodyParams,
       [fileParamName]: contentBase64
     }
-    
+
     if (!headers['Content-Type'] && !headers['content-type']) {
       headers['Content-Type'] = 'application/json'
     }
@@ -306,17 +308,17 @@ async function uploadCustom(file: File, config: CustomConfig, onProgress: Progre
     const responseBody = response.data
 
     if (config.responseType === 'regex') {
-        // Regex Mode
-        const contentStr = typeof responseBody === 'string' ? responseBody : JSON.stringify(responseBody)
-        
-        // Extract URL
-        const urlRegex = new RegExp(config.responseUrlPath)
-        const urlMatch = contentStr.match(urlRegex)
-        url = urlMatch ? (urlMatch[1] || urlMatch[0]) : undefined // Group 1 or Full Match
+      // Regex Mode
+      const contentStr = typeof responseBody === 'string' ? responseBody : JSON.stringify(responseBody)
+
+      // Extract URL
+      const urlRegex = new RegExp(config.responseUrlPath)
+      const urlMatch = contentStr.match(urlRegex)
+      url = urlMatch ? (urlMatch[1] || urlMatch[0]) : undefined // Group 1 or Full Match
 
     } else {
-        // JSON Mode (Default)
-        url = getValueByPath(responseBody, config.responseUrlPath)
+      // JSON Mode (Default)
+      url = getValueByPath(responseBody, config.responseUrlPath)
     }
 
     if (!url) {
@@ -325,53 +327,53 @@ async function uploadCustom(file: File, config: CustomConfig, onProgress: Progre
 
     // 5. Post-process URL (Prefix/Suffix)
     const processUrl = (rawUrl: string | undefined) => {
-        if (!rawUrl) return undefined
+      if (!rawUrl) return undefined
+      try {
+        const baseUrl = urlPrefix || apiUrl
+        let finalUrl = String(rawUrl)
+
+        // Try to resolve relative URL
+        // If baseUrl is not a valid URL (e.g. just a path prefix), this might fail, so we fallback
         try {
-            const baseUrl = urlPrefix || apiUrl
-            let finalUrl = String(rawUrl)
-
-            // Try to resolve relative URL
-            // If baseUrl is not a valid URL (e.g. just a path prefix), this might fail, so we fallback
-            try {
-                 const urlObj = new URL(finalUrl, baseUrl.startsWith('http') ? baseUrl : undefined)
-                 finalUrl = urlObj.href
-            } catch(e) {
-                // Ignore URL parse error, use simple concatenation
-            }
-
-            // If manual prefix logic needed (when baseUrl is just a string prefix, not full URL)
-            if (urlPrefix) {
-                 const prefix = urlPrefix.endsWith('/') ? urlPrefix : urlPrefix + '/'
-                 // If original URL is absolute (http...), we usually don't touch it unless forced?
-                 // But user configured a prefix, they likely want to use it.
-                 // Scenario A: Response is relative path "/img.png" -> Prepend prefix -> "https://cdn.com/img.png"
-                 // Scenario B: Response is absolute URL "http://api.com/img.png" -> Prepend prefix? -> "https://cdn.com/http://api.com/img.png" (WRONG)
-                 //                                                               -> Replace domain? -> "https://cdn.com/img.png" (Maybe)
-                 
-                 // Current logic: Only prepend if it doesn't look like an absolute URL OR if it doesn't already start with the prefix.
-                  if (!finalUrl.startsWith(urlPrefix)) {
-                      const path = finalUrl.startsWith('/') ? finalUrl.slice(1) : finalUrl
-                      finalUrl = prefix + path
-                  }
-             }
-            
-            if (urlSuffix) {
-                finalUrl += urlSuffix
-            }
-            return finalUrl
+          const urlObj = new URL(finalUrl, baseUrl.startsWith('http') ? baseUrl : undefined)
+          finalUrl = urlObj.href
         } catch (e) {
-            return String(rawUrl)
+          // Ignore URL parse error, use simple concatenation
         }
+
+        // If manual prefix logic needed (when baseUrl is just a string prefix, not full URL)
+        if (urlPrefix) {
+          const prefix = urlPrefix.endsWith('/') ? urlPrefix : urlPrefix + '/'
+          // If original URL is absolute (http...), we usually don't touch it unless forced?
+          // But user configured a prefix, they likely want to use it.
+          // Scenario A: Response is relative path "/img.png" -> Prepend prefix -> "https://cdn.com/img.png"
+          // Scenario B: Response is absolute URL "http://api.com/img.png" -> Prepend prefix? -> "https://cdn.com/http://api.com/img.png" (WRONG)
+          //                                                               -> Replace domain? -> "https://cdn.com/img.png" (Maybe)
+
+          // Current logic: Only prepend if it doesn't look like an absolute URL OR if it doesn't already start with the prefix.
+          if (!finalUrl.startsWith(urlPrefix)) {
+            const path = finalUrl.startsWith('/') ? finalUrl.slice(1) : finalUrl
+            finalUrl = prefix + path
+          }
+        }
+
+        if (urlSuffix) {
+          finalUrl += urlSuffix
+        }
+        return finalUrl
+      } catch (e) {
+        return String(rawUrl)
+      }
     }
 
-    return { 
-        url: processUrl(url)!,
+    return {
+      url: processUrl(url)!,
     }
 
   } catch (error: any) {
     console.error('Custom Upload Error:', error)
     if (error.response) {
-       throw new Error(error.response.data?.message || `Upload failed: ${error.response.status}`)
+      throw new Error(error.response.data?.message || `Upload failed: ${error.response.status}`)
     }
     throw error
   }
@@ -428,7 +430,6 @@ async function uploadLsky(file: File, config: WebUploaderConfig, onProgress: Pro
     const links = res.data.links || {}
     return {
       url: links.url || res.data.public_url,
-      deleteUrl: links.delete_url || res.data.delete_url,
       thumbUrl: links.thumbnail_url || links.url || res.data.public_url
     }
   } else {
@@ -436,7 +437,6 @@ async function uploadLsky(file: File, config: WebUploaderConfig, onProgress: Pro
     if (!res.status) throw new Error(res.message || 'Lsky upload failed')
     return {
       url: res.data.links.url,
-      deleteUrl: res.data.links.delete_url,
       thumbUrl: res.data.links.thumbnail_url
     }
   }
@@ -458,7 +458,6 @@ async function uploadEasyImages(file: File, config: WebUploaderConfig, onProgres
 
   return {
     url: res.url,
-    deleteUrl: res.del,
     thumbUrl: res.thumb
   }
 }
@@ -506,7 +505,6 @@ async function uploadChevereto(file: File, config: WebUploaderConfig, onProgress
 
   return {
     url: res.image.url,
-    deleteUrl: '',
     thumbUrl: res.image.thumb?.url || res.image.url
   }
 }
@@ -528,7 +526,35 @@ async function uploadImgURL(file: File, config: WebUploaderConfig, onProgress: P
 
   return {
     url: res.data.url,
-    deleteUrl: res.data.delete_url,
+    thumbUrl: res.data.thumbnail_url || res.data.url
+  }
+}
+// uploadZpic
+async function uploadZpic(file: File, config: WebUploaderConfig, onProgress: ProgressCallback): Promise<UploadResult> {
+  const formData = new FormData()
+  const headers = {
+    'Authorization': `Bearer ${config.token}`
+  }
+  const params = {
+    dedup: config.dedup !== 'false', // 默认为 true
+    album_id: config.albumId ? Number(config.albumId) : 0, // 默认为 0
+    watermark: config.watermark === 'true', // 默认为 false
+    compress: config.compress !== 'false' // 默认为 true
+  }
+
+  formData.append('file', file)
+  formData.append('params', JSON.stringify(params))
+
+  let url = config.apiUrl.replace(/\/$/, '')
+  if (!url.endsWith('/api/v3/upload')) {
+    url += '/api/v3/upload'
+  }
+  const res = await fetchUpload(url, formData, headers, onProgress)
+
+  if (res.code !== 200) throw new Error(res.msg || 'Zpic upload failed')
+
+  return {
+    url: res.data.url,
     thumbUrl: res.data.thumbnail_url || res.data.url
   }
 }
@@ -552,7 +578,6 @@ async function uploadSMMS(file: File, config: WebUploaderConfig, onProgress: Pro
     if (res.code === 'image_repeated' && res.images) {
       return {
         url: res.images,
-        deleteUrl: undefined,
         thumbUrl: res.images
       }
     }
@@ -561,7 +586,6 @@ async function uploadSMMS(file: File, config: WebUploaderConfig, onProgress: Pro
 
   return {
     url: res.data.url,
-    deleteUrl: res.data.delete,
     thumbUrl: res.data.url
   }
 }
@@ -609,7 +633,6 @@ async function uploadImgur(file: File, config: WebUploaderConfig, onProgress: Pr
 
   return {
     url: res.data.link,
-    deleteUrl: res.data.deletehash ? `https://imgur.com/delete/${res.data.deletehash}` : undefined,
     thumbUrl: res.data.link
   }
 }

@@ -89,6 +89,14 @@ export const DRIVE_SCHEMAS: Record<string, FieldSchema[]> = {
     { key: 'uid', label: 'config.form.uid', type: 'text', required: true },
     { key: 'token', label: 'config.form.token', type: 'password', required: true },
   ],
+  zpic: [
+    { key: 'apiUrl', label: 'config.form.apiUrl', type: 'text', required: true, placeholder: 'https://example.com' },
+    { key: 'token', label: 'config.form.token', type: 'password', required: true },
+    { key: 'dedup', label: 'config.form.dedup', type: 'select', defaultValue: 'true', options: [{ value: 'true', label: 'config.form.yes' }, { value: 'false', label: 'config.form.no' }] },
+    { key: 'albumId', label: 'config.form.albumId', type: 'text', placeholder: 'config.form.placeholder.albumId' },
+    { key: 'watermark', label: 'config.form.watermark', type: 'select', defaultValue: 'false', options: [{ value: 'true', label: 'config.form.yes' }, { value: 'false', label: 'config.form.no' }] },
+    { key: 'compress', label: 'config.form.compress', type: 'select', defaultValue: 'true', options: [{ value: 'true', label: 'config.form.yes' }, { value: 'false', label: 'config.form.no' }] },
+  ],
   smms: [
     { key: 'apiUrl', label: 'config.form.apiUrl', type: 'text', placeholder: 'https://sm.ms (默认为官方)', defaultValue: 'https://sm.ms/' },
     { key: 'token', label: 'config.form.token', type: 'password', required: true },
@@ -133,20 +141,20 @@ export const DRIVE_SCHEMAS: Record<string, FieldSchema[]> = {
   ],
   custom: [
     { key: 'apiUrl', label: 'config.form.apiUrl', type: 'text', required: true, placeholder: 'https://api.example.com/upload' },
-    { 
-      key: 'method', 
-      label: 'config.form.method', 
-      type: 'select', 
+    {
+      key: 'method',
+      label: 'config.form.method',
+      type: 'select',
       defaultValue: 'POST',
       options: [{ label: 'POST', value: 'POST' }, { label: 'PUT', value: 'PUT' }]
     },
-    { 
-      key: 'uploadFormat', 
-      label: 'config.form.uploadFormat', 
-      type: 'select', 
+    {
+      key: 'uploadFormat',
+      label: 'config.form.uploadFormat',
+      type: 'select',
       defaultValue: 'formData',
       options: [
-        { label: 'FormData', value: 'formData' }, 
+        { label: 'FormData', value: 'formData' },
         { label: 'JSON (Base64)', value: 'json' },
         { label: 'Binary (Raw Body)', value: 'binary' }
       ]
@@ -155,10 +163,10 @@ export const DRIVE_SCHEMAS: Record<string, FieldSchema[]> = {
     { key: 'headers', label: 'config.form.headers', type: 'kv-pairs', placeholder: 'config.form.placeholder.header' },
     { key: 'bodyParams', label: 'config.form.bodyParams', type: 'kv-pairs', placeholder: 'config.form.placeholder.body' },
     { key: 'queryParams', label: 'config.form.queryParams', type: 'kv-pairs', placeholder: 'config.form.placeholder.query' },
-    { 
-      key: 'responseType', 
-      label: 'config.form.responseType', 
-      type: 'select', 
+    {
+      key: 'responseType',
+      label: 'config.form.responseType',
+      type: 'select',
       defaultValue: 'json',
       options: [{ label: 'JSON', value: 'json' }, { label: 'Regex (Text/XML)', value: 'regex' }]
     },
@@ -174,6 +182,7 @@ export const DRIVE_TYPE_OPTIONS = [
   { label: 'EasyImages', value: 'easyimages' },
   { label: 'Chevereto', value: 'chevereto' },
   { label: 'ImgURL', value: 'imgurl' },
+  { label: 'Zpic', value: 'zpic' },
   { label: 'Hellohao', value: 'hellohao' },
   { label: 'SM.MS', value: 'smms' },
   { label: 'Imgur', value: 'imgur' },

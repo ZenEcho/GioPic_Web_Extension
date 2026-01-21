@@ -31,7 +31,6 @@ export function useUploadQueue() {
 
             task.status = 'success'
             task.result = result.url
-            task.deleteUrl = result.deleteUrl
 
             // 触发自动注入
             try {
@@ -56,7 +55,6 @@ export function useUploadQueue() {
                 configName: config.name,
                 createdAt: Date.now(),
                 status: 'success',
-                deleteUrl: result.deleteUrl,
                 thumbUrl: result.thumbUrl || result.url
             })
 

@@ -173,7 +173,6 @@ async function handleContextMenuClick(info: any, tab: any) {
                         createdAt: Date.now(),
                         status: 'success',
                         thumbUrl: res.thumbUrl,
-                        deleteUrl: res.deleteUrl
                     }
                     await saveToHistory(record)
                 }

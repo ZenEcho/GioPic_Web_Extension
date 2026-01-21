@@ -7,7 +7,7 @@ import type{
     CKEditor4Type,
     CKEditor5Type,
     UEType
-} from '../editorInjector/types';
+} from '../EditorInjector/types';
 
 // 域名检测器
 const domainDetectors: Record<string, EditorType> = {

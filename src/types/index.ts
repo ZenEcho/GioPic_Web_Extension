@@ -1,4 +1,4 @@
-export type DriveType = 'lsky' | 'easyimages' | 'chevereto' | 'imgurl' | 'aliyun' | 'aws' | 'tencent' | 'imgurl' | 'smms' | 'hellohao' | 'imgur' | 'custom' | 'github';
+export type DriveType = 'lsky' | 'easyimages' | 'chevereto' | 'imgurl' | 'zpic' | 'aliyun' | 'aws' | 'tencent' | 'imgurl' | 'smms' | 'hellohao' | 'imgur' | 'custom' | 'github';
 
 export interface BaseConfig {
   id: string;
@@ -8,7 +8,7 @@ export interface BaseConfig {
 }
 
 export interface WebUploaderConfig extends BaseConfig {
-  type: 'lsky' | 'easyimages' | 'chevereto' | 'imgurl' | 'smms' | 'hellohao' | 'imgur';
+  type: 'lsky' | 'easyimages' | 'chevereto' | 'imgurl' | 'zpic' | 'smms' | 'hellohao' | 'imgur';
   apiUrl: string;
   token: string;
   strategyId?: string;
@@ -20,6 +20,9 @@ export interface WebUploaderConfig extends BaseConfig {
   nsfw?: boolean | string; // For Chevereto
   source?: string; // For Hellohao
   permission?: string; // For Lsky (1=Public/0=Private or similar)
+  dedup?: boolean | string; // 默认为 true ，仅对 Zpic 有效
+  watermark?: boolean | string; // 默认为 false ，仅对 Zpic 有效
+  compress?: boolean | string; // 默认为 true ，仅对 Zpic 有效
 }
 
 export interface AliyunConfig extends BaseConfig {
@@ -88,7 +91,6 @@ export interface UploadRecord {
   createdAt: number;
   status: 'success' | 'failed';
   error?: string;
-  deleteUrl?: string;
   thumbUrl?: string;
 }
 
@@ -99,7 +101,6 @@ export interface UploadTask {
   progress: number
   result?: string
   error?: string
-  deleteUrl?: string
 }
 
 export interface QueueItem {

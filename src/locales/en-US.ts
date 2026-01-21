@@ -224,6 +224,9 @@ export default {
       no: 'No',
       noDelete: 'Don\'t delete',
       secretId: 'SecretId',
+      dedup: 'Dedup',
+      watermark: 'Watermark',
+      compress: 'Compress',
       placeholder: {
         strategyId: 'ID (V1: Strategy ID, V2: Storage ID)',
         albumId: 'Album ID (Optional)',

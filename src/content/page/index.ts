@@ -1,4 +1,4 @@
-import { Detector } from './editorInjector'
+import { Detector } from './EditorInjector'
 
 declare global {
   interface Window {

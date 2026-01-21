@@ -1,5 +1,5 @@
 
-export type DetectorType = 'lsky' | 'lskyOpen' | 'easyimages' | 'chevereto' | '16best'
+export type DetectorType = 'lsky' | 'lskyOpen' | 'easyimages' | 'chevereto' | '16best' | 'Zpic'
 
 export interface DetectionResult {
   type: DetectorType
@@ -105,7 +105,16 @@ export const detectors = {
       }
     }
     return null
-  }
+  },
+  // Zpic: (): DetectionResult | null => {
+  //   const isApiPage = window.location.pathname === '/account/api'
+  //   if (isApiPage) {
+  //     if (!isIgnored()) {
+  //       return { type: 'Zpic' }
+  //     }
+  //   }
+  //   return null
+  // },
 }
 
 export async function detectSite(): Promise<DetectionResult | null> {

@@ -94,10 +94,26 @@ async function loadAlbums(apiUrl: string, token: string, version: any) {
 // If not, return as is. Or we can just try to translate and if key missing, it returns key.
 // But some labels might be raw strings like "SecretId".
 function getLabel(label: string) {
-    if (label.includes('.')) {
+    if (label && label.includes('.')) {
         return t(label)
     }
     return label
+}
+
+function getPlaceholder(placeholder: string | undefined) {
+    if (!placeholder) return ''
+    if (placeholder.includes('.')) {
+        return t(placeholder)
+    }
+    return placeholder
+}
+
+function getOptions(options: { label: string; value: string }[] | undefined) {
+    if (!options) return []
+    return options.map(opt => ({
+        ...opt,
+        label: getLabel(opt.label)
+    }))
 }
 
 function updateField(key: string, value: any) {
@@ -165,11 +181,11 @@ function updateField(key: string, value: any) {
                     @update:value="(val: string | number) => updateField(field.key, val)"
                     :type="field.type === 'password' ? 'password' : 'text'"
                     :show-password-on="field.type === 'password' ? 'click' : undefined"
-                    :placeholder="field.placeholder ? (field.placeholder.includes('.') ? t(field.placeholder) : field.placeholder) : ''" />
+                    :placeholder="getPlaceholder(field.placeholder)" />
                 <n-select
                     v-else-if="field.type === 'select' && field.key !== 'strategyId' && !(field.key === 'albumId' && modelValue.type === 'lsky')"
                     :value="modelValue[field.key] || field.defaultValue"
-                    @update:value="(val: string | number) => updateField(field.key, val)" :options="field.options" />
+                    @update:value="(val: string | number) => updateField(field.key, val)" :options="getOptions(field.options)" />
 
                 <!-- Special handling for strategyId to use fetched options if available and Lsky -->
                 <n-select v-else-if="field.key === 'strategyId' && modelValue.type === 'lsky'"
@@ -181,16 +197,16 @@ function updateField(key: string, value: any) {
                 <n-select v-else-if="field.key === 'albumId' && modelValue.type === 'lsky'"
                     :value="modelValue[field.key]" @update:value="(val: string | number) => updateField(field.key, val)"
                     :options="albumOptions" :loading="loadingAlbums"
-                    :placeholder="field.placeholder ? (field.placeholder.includes('.') ? t(field.placeholder) : field.placeholder) : ''"
+                    :placeholder="getPlaceholder(field.placeholder)"
                     filterable clearable tag />
 
                 <n-input v-else-if="field.key === 'strategyId' && modelValue.type !== 'lsky'"
                     :value="modelValue[field.key]" @update:value="(val: string | number) => updateField(field.key, val)"
-                    :placeholder="field.placeholder ? (field.placeholder.includes('.') ? t(field.placeholder) : field.placeholder) : ''" />
+                    :placeholder="getPlaceholder(field.placeholder)" />
 
                 <n-input v-else-if="field.type === 'textarea'" :value="modelValue[field.key]"
                     @update:value="(val: string | number) => updateField(field.key, val)" type="textarea"
-                    :placeholder="field.placeholder ? (field.placeholder.includes('.') ? t(field.placeholder) : field.placeholder) : ''"
+                    :placeholder="getPlaceholder(field.placeholder)"
                     :autosize="{ minRows: 3, maxRows: 6 }" />
 
                 <KvInput v-else-if="field.type === 'kv-pairs'" :value="modelValue[field.key]"

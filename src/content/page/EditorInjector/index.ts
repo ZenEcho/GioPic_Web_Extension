@@ -1,6 +1,6 @@
-import { Detector as RawDetector } from './detectors';
-import type { DetectionResult, InjectableDetectionResult, EditorType } from '../editorInjector/types';
-import * as Handlers from '../editorInjector/handlers';
+import { Detector as RawDetector } from '../EditorInjector/detectors';
+import type { DetectionResult, InjectableDetectionResult, EditorType } from '../EditorInjector/types';
+import * as Handlers from '../EditorInjector/handlers';
 
 const handlerMap: Record<EditorType, (url: string) => boolean | Promise<boolean>> = {
     'Discuz': Handlers.handleDiscuz,
@@ -104,5 +104,5 @@ export class Detector {
     }
 }
 
-export * from '../editorInjector/types';
+export * from '../EditorInjector/types';
 
