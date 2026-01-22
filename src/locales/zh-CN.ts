@@ -26,6 +26,8 @@ export default {
     deleteConfirm: '确定要删除这个配置吗？',
     expand: '展开',
     collapse: '折叠',
+    change: '更换',
+    back: '返回',
   },
   home: {
     nodes: '分发节点',
@@ -153,6 +155,8 @@ export default {
     img: '图片',
     copyUrl: '复制链接',
     empty: '暂无待处理上传',
+    maxLimit: '最多显示10条',
+    limitDesc: '仅保留最近 10 条记录',
     status: {
       done: '完成',
       err: '错误',
@@ -161,6 +165,15 @@ export default {
   config: {
     addTitle: '添加节点',
     editTitle: '编辑节点',
+    selectType: '选择存储类型',
+    searchPlaceholder: '搜索存储类型...',
+    noResults: '未找到匹配的存储类型',
+    categories: {
+        selfHosted: '开源 / 自建',
+        cloud: '对象存储',
+        public: '第三方图床',
+        custom: '自定义',
+    },
     cors: {
       title: '{type} CORS 设置',
       desc: '配置跨域资源共享规则，解决浏览器跨域访问问题',

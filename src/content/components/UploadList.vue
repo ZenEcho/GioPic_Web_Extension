@@ -13,7 +13,7 @@
     <div class="flex items-center gap-2 text-white/95 dark:text-slate-200">
         <div class="i-ph-cloud-arrow-up-bold text-lg opacity-90"></div>
         <span class="font-bold tracking-wide text-sm">{{ t('uploadList.title') }}</span>
-        <span class="bg-white/20 dark:bg-slate-700/50 px-1.5 py-0.5 rounded text-[10px] font-bold min-w-[20px] text-center border border-white/10">
+        <span class="bg-white/20 dark:bg-slate-700/50 px-1.5 py-0.5 rounded text-[10px] font-bold min-w-[20px] text-center border border-white/10" :title="t('uploadList.maxLimit', 'Max 10 items')">
             {{ uploads.length }}
         </span>
     </div>
@@ -160,6 +160,7 @@
                 <div class="text-gray-400 dark:text-gray-500 font-medium text-sm">{{ t('uploadList.empty') }}</div>
                 <div class="text-gray-300 dark:text-gray-600 text-[11px] mt-1 text-center">
                     {{ t('home.nodeList.emptyDescription').replace('<br>', ' ') }}
+                    <div class="mt-2 opacity-70">{{ t('uploadList.limitDesc', 'Only the last 10 records are kept') }}</div>
                 </div>
             </div>
         </div>
@@ -243,13 +244,22 @@ const mergeUploads = (newQueue: UploadItem[]) => {
     })
 
     // Map new queue to preserve progress
-    uploads.value = newQueue.map(item => {
+    let merged = newQueue.map(item => {
         // If it's the same item and still uploading, preserve local progress
         if (item.status === 'uploading' && progressMap.has(item.id)) {
             return { ...item, progress: progressMap.get(item.id)! }
         }
         return item
     })
+
+    // Enforce limit of 10 items
+    if (merged.length > 10) {
+        merged = merged.slice(0, 10)
+        // Sync back to storage to ensure consistency
+        browser.storage.local.set({ 'giopic-upload-queue': merged })
+    }
+
+    uploads.value = merged
 }
 
 const containerRef = useTemplateRef<HTMLElement>('containerRef')
@@ -288,6 +298,11 @@ const handleMessage = (message: any) => {
                     thumbUrl: payload.thumbUrl,
                     timestamp: payload.timestamp || Date.now()
                 })
+
+                // Enforce limit locally for immediate feedback
+                if (uploads.value.length > 10) {
+                    uploads.value = uploads.value.slice(0, 10)
+                }
             }
         } else if (event === 'progress') {
             const item = uploads.value.find(u => u.id === id)

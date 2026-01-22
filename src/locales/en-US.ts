@@ -26,6 +26,8 @@ export default {
     deleteConfirm: 'Are you sure you want to delete this config?',
     expand: 'Expand',
     collapse: 'Collapse',
+    change: 'Change',
+    back: 'Back',
   },
   home: {
     nodes: 'Nodes',
@@ -149,6 +151,15 @@ export default {
   config: {
     addTitle: 'Add Node',
     editTitle: 'Edit Node',
+    selectType: 'Select Storage Type',
+    searchPlaceholder: 'Search drive type...',
+    noResults: 'No matching drive types found',
+    categories: {
+        selfHosted: 'Open Source / Self-Hosted',
+        cloud: 'Object Storage',
+        public: 'Third-party Image Host',
+        custom: 'Custom',
+    },
     cors: {
       title: '{type} CORS Settings',
       desc: 'Configure Cross-Origin Resource Sharing rules to solve browser cross-origin access issues',
@@ -384,15 +395,17 @@ export default {
     unknownError: 'Unknown error'
   },
   uploadList: {
-    title: 'Uploads',
-    clearCompleted: 'Clear Completed',
-    img: 'IMG',
-    copyUrl: 'Copy URL',
+    title: 'Upload List',
     copyFormat: 'Copy Format',
+    clearCompleted: 'Clear Completed',
+    img: 'Image',
+    copyUrl: 'Copy Link',
     empty: 'No pending uploads',
+    maxLimit: 'Max 10 items',
+    limitDesc: 'Only the last 10 records are kept',
     status: {
-      done: 'DONE',
-      err: 'ERR',
+      done: 'Done',
+      err: 'Error',
     }
   },
   detector: {

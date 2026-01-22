@@ -6,6 +6,7 @@ import browser from 'webextension-polyfill'
 import SidebarSettings from './SidebarSettings.vue'
 import { useMessage, useDialog } from 'naive-ui'
 import { db } from '@/utils/storage'
+import { getDefaultSettings } from '@/constants/defaultSettings'
 
 type DesktopLinkStatusType = 'disabled' | 'disconnected' | 'connecting' | 'connected' | 'error'
 
@@ -201,10 +202,11 @@ async function handleResetExtension() {
                 localStorage.clear()
                 // Clear browser.storage.local
                 await browser.storage.local.clear()
+
+                // Restore default settings
+                await browser.storage.local.set(getDefaultSettings())
                 
                 message.success(t('settings.dangerZone.resetSuccess'))
-                
-                // Reload page after a short delay
                 setTimeout(() => {
                     window.location.reload()
                 }, 1000)

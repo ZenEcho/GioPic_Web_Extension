@@ -4,6 +4,7 @@ import { setupContextMenus } from './services/contextMenu'
 import { getOpenMode, updateActionBehavior } from './services/actionManager'
 import { handleMessage, startAuthTokenMonitor } from './services/messageService'
 import { initDesktopLinkOnStartup } from './services/desktopLink'
+import { getDefaultSettings } from '../constants/defaultSettings'
 
 const POPUP_URL = 'index.html'
 const SIDE_PANEL_STATE_KEY = 'giopic-sidepanel-open-tabs'
@@ -84,18 +85,7 @@ browser.runtime.onInstalled.addListener(async (details) => {
     setupContextMenus()
 
     if (details.reason === 'install') {
-        await browser.storage.local.set({
-            'giopic-auto-inject': true,
-            'giopic-dark-mode': true,
-            'giopic-locale': 'zh-CN',
-            'open-mode': 'tab',
-            sidebarSettings: {
-                enabled: true,
-                mode: 'inject',
-                opacity: 80,
-            },
-            sidebar_disabled_sites: []
-        })
+        await browser.storage.local.set(getDefaultSettings())
     }
 })
 

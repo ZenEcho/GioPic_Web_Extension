@@ -81,7 +81,7 @@ onMounted(() => {
 </script>
 
 <template>
-    <div class="bg-[#F5F7FA] dark:bg-[#101014] flex flex-col p-4 md:p-8 overflow-y-scroll h-[90%]">
+    <div class="bg-[#F5F7FA] dark:bg-[#101014] flex flex-col p-4 md:p-8 h-[calc(100vh-56px)] overflow-hidden">
         <!-- Header -->
         <HistoryHeader :isBatchMode="isBatchMode" :isAllSelected="isAllSelected" v-model:copyFormat="copyFormat"
             @toggleBatchMode="toggleBatchMode" @toggleSelectAll="toggleSelectAll" />
