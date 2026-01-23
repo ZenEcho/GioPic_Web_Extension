@@ -1,10 +1,10 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+
 import { useConfigStore } from '@/stores/config'
 import { useSidebar } from '@/composables/useSidebar'
 import { useI18n } from 'vue-i18n'
 import { getStorageIcon } from '@/utils/icon'
-import { useThemeStore } from '@/stores/theme'
+
 import type { DriveConfig } from '@/types'
 import ImportConfigModal from '@/components/home/sidebar/ImportConfigModal.vue'
 
@@ -15,13 +15,9 @@ const emit = defineEmits<{
 
 const configStore = useConfigStore()
 const { t } = useI18n()
-const themeStore = useThemeStore()
-
-const primaryColor = computed(() => themeStore.themeOverrides?.common?.primaryColor || '#10b981')
-const primaryColorSuppl = computed(() => themeStore.themeOverrides?.common?.primaryColorSuppl || '#ecfdf5')
-const primaryColorHover = computed(() => themeStore.themeOverrides?.common?.primaryColorHover || '#34d399')
-
 const sidebarProps = {
+
+
     get selectedIds() {
         return configStore.selectedIds
     }
@@ -187,55 +183,7 @@ const toggleSelection = (id: string) => {
 </template>
 
 <style scoped>
-.text-primary {
-    color: v-bind(primaryColor);
-}
 
-.bg-primary {
-    background-color: v-bind(primaryColor);
-}
-
-.bg-primary-soft {
-    background-color: color-mix(in srgb, v-bind(primaryColor) 10%, transparent);
-}
-
-.bg-primary-50 {
-    background-color: v-bind(primaryColorSuppl);
-}
-
-.border-primary {
-    border-color: v-bind(primaryColor);
-}
-
-.ring-primary {
-    --tw-ring-color: v-bind(primaryColor);
-}
-
-/* Hover Utilities matching Tailwind syntax */
-.hover\:text-primary:hover {
-    color: v-bind(primaryColor);
-}
-
-.hover\:bg-primary-hover:hover {
-    background-color: v-bind(primaryColorHover);
-}
-
-.hover\:bg-primary-50:hover {
-    background-color: v-bind(primaryColorSuppl);
-}
-
-.hover\:border-primary\/50:hover {
-    border-color: color-mix(in srgb, v-bind(primaryColor) 50%, transparent);
-}
-
-/* Dark mode specific overrides */
-:global(.dark) .dark\:hover\:bg-primary\/10:hover {
-    background-color: color-mix(in srgb, v-bind(primaryColor) 10%, transparent);
-}
-
-:global(.dark) .dark\:hover\:border-primary\/50:hover {
-    border-color: color-mix(in srgb, v-bind(primaryColor) 50%, transparent);
-}
 
 /* Custom Scrollbar for this component */
 .scrollbar-thin::-webkit-scrollbar {

@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { useThemeStore } from '@/stores/theme'
 import { DRIVE_TYPE_OPTIONS } from '@/constants/driveSchemas'
 
 const props = defineProps<{
@@ -14,10 +13,7 @@ const emit = defineEmits<{
 }>()
 
 const { t } = useI18n()
-const themeStore = useThemeStore()
 const searchQuery = ref('')
-
-const primaryColor = computed(() => themeStore.themeOverrides?.common?.primaryColor || '#409eff')
 
 // Drive Categories Definition
 const DRIVE_CATEGORIES = [
@@ -110,7 +106,7 @@ function handleSelect(type: string) {
 </script>
 
 <template>
-    <div class="flex flex-col h-[550px] bg-gray-50/50 dark:bg-gray-900/50" :style="{ '--primary-color': primaryColor }">
+    <div class="flex flex-col h-[550px] bg-gray-50/50 dark:bg-gray-900/50">
         <!-- Search Bar Header -->
         <div class="sticky top-0 z-10 p-6 bg-white/80 dark:bg-gray-800/80 backdrop-blur-md border-b border-gray-100 dark:border-gray-700">
             <div class="relative max-w-xl mx-auto group">

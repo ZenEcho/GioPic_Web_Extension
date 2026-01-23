@@ -99,6 +99,19 @@ export const useThemeStore = defineStore('theme', () => {
     }
   })
 
+  function applyThemeCssVars() {
+    if (typeof document === 'undefined') return
+    const colors = themeColors[currentColor.value]
+    const root = document.documentElement
+    root.style.setProperty('--giopic-primary', colors.primary)
+    root.style.setProperty('--giopic-primary-hover', colors.hover)
+    root.style.setProperty('--giopic-primary-pressed', colors.pressed)
+    root.style.setProperty('--giopic-primary-suppl', isDark.value ? colors.pressed : colors.suppl)
+  }
+
+  watch([currentColor, isDark], applyThemeCssVars, { immediate: true })
+
+
   function setThemeColor(color: ThemeColor) {
     currentColor.value = color
     db.set('giopic-theme-color', color)

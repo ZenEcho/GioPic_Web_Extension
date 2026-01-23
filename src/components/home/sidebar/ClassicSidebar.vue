@@ -3,7 +3,8 @@ import { useConfigStore } from '@/stores/config'
 import { useThemeStore, themeColors } from '@/stores/theme'
 import { useI18n } from 'vue-i18n'
 import type { DriveConfig } from '@/types'
-import { ref, computed, onMounted } from 'vue'
+import { ref, onMounted } from 'vue'
+
 import { getStorageIcon } from '@/utils/icon'
 import { useSidebar } from '@/composables/useSidebar'
 import browser from 'webextension-polyfill'
@@ -25,11 +26,8 @@ const configStore = useConfigStore()
 const themeStore = useThemeStore()
 const isHovered = ref(false)
 
-const primaryColor = computed(() => themeStore.themeOverrides?.common?.primaryColor || '#409eff')
-const primaryColorSuppl = computed(() => themeStore.themeOverrides?.common?.primaryColorSuppl || '#ecf5ff')
-const primaryColorHover = computed(() => themeStore.themeOverrides?.common?.primaryColorHover || '#66b1ff')
-
 const {
+
     showImportModal,
     importJson,
     toggleConfigSelection,
@@ -254,51 +252,7 @@ onMounted(() => {
 }
 
 
-.text-primary {
-    color: v-bind(primaryColor);
-}
 
-.bg-primary {
-    background-color: v-bind(primaryColor);
-}
-
-.bg-primary\/5 {
-    background-color: color-mix(in srgb, v-bind(primaryColor) 5%, transparent);
-}
-
-.bg-primary\/10 {
-    background-color: color-mix(in srgb, v-bind(primaryColor) 10%, transparent);
-}
-
-.bg-primary\/20 {
-    background-color: color-mix(in srgb, v-bind(primaryColor) 20%, transparent);
-}
-
-
-
-.border-primary {
-    border-color: v-bind(primaryColor);
-}
-
-.border-primary\/20 {
-    border-color: color-mix(in srgb, v-bind(primaryColor) 20%, transparent);
-}
-
-.hover\:bg-primary-50:hover {
-    background-color: v-bind(primaryColorSuppl);
-}
-
-.hover\:bg-primary\/10:hover {
-    background-color: color-mix(in srgb, v-bind(primaryColor) 10%, transparent);
-}
-
-.hover\:text-primary:hover {
-    color: v-bind(primaryColorHover);
-}
-
-:global(.dark) .dark\:bg-primary\/10 {
-    background-color: color-mix(in srgb, v-bind(primaryColor) 10%, transparent);
-}
 
 :global(.dark) .dark\:hover\:bg-red-900\/20:hover {
     background-color: color-mix(in srgb, #ef4444 20%, transparent);

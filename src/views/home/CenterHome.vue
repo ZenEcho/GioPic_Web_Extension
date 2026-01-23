@@ -1,7 +1,9 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref } from 'vue'
+
 import { useConfigStore } from '@/stores/config'
-import { useThemeStore, themeColors } from '@/stores/theme'
+import { useThemeStore } from '@/stores/theme'
+
 import { useI18n } from 'vue-i18n'
 import type { DriveConfig } from '@/types'
 import { useUploadInput } from '@/composables/useUploadInput'
@@ -37,9 +39,8 @@ const { onFilesDropped } = useUploadInput((files) => {
     }
 })
 
-const primaryColor = computed(() => themeStore.themeOverrides?.common?.primaryColor || '#10b981')
-
 </script>
+
 
 <template>
     <div class="h-full w-full flex flex-col bg-[#F5F7FA] dark:bg-[#101014] overflow-hidden">
@@ -135,19 +136,8 @@ const primaryColor = computed(() => themeStore.themeOverrides?.common?.primaryCo
 </template>
 
 <style scoped>
-.bg-primary {
-    background-color: v-bind(primaryColor);
-}
-
-.text-primary {
-    color: v-bind(primaryColor);
-}
-
-.border-primary {
-    border-color: v-bind(primaryColor);
-}
-
 .animate-fade-in-up {
+
     animation: fadeInUp 0.3s ease-out;
 }
 

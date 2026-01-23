@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
+
 import { useConfigStore } from '@/stores/config'
 import { useThemeStore } from '@/stores/theme'
 import { useI18n } from 'vue-i18n'
@@ -58,9 +59,8 @@ const { onFilesDropped } = useUploadInput((files) => {
     emit('filesDropped', files)
 })
 
-const primaryColor = computed(() => themeStore.themeOverrides?.common?.primaryColor || '#10b981')
-
 </script>
+
 
 <template>
     <div class="h-full w-full relative bg-[#F5F7FA] dark:bg-[#101014] overflow-hidden flex items-center justify-center">
@@ -179,28 +179,10 @@ const primaryColor = computed(() => themeStore.themeOverrides?.common?.primaryCo
 </template>
 
 <style scoped>
-.bg-primary {
-    background-color: v-bind(primaryColor);
-}
-
-.text-primary {
-    color: v-bind(primaryColor);
-}
-
-.border-primary {
-    border-color: v-bind(primaryColor);
-}
-
-.hover\:text-primary:hover {
-    color: v-bind(primaryColor);
-}
-
-.hover\:border-primary:hover {
-    border-color: v-bind(primaryColor);
-}
-
 .slide-up-enter-active,
 .slide-up-leave-active {
+
+
     transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
 }
 

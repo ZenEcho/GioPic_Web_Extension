@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+
 import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
 import { useThemeStore } from '@/stores/theme'
@@ -21,9 +21,8 @@ const { t } = useI18n()
 const router = useRouter()
 const themeStore = useThemeStore()
 
-const primaryColor = computed(() => themeStore.themeOverrides?.common?.primaryColor || '#409eff')
-const primaryColorHover = computed(() => themeStore.themeOverrides?.common?.primaryColorHover || '#66b1ff')
 </script>
+
 
 <template>
     <div class="flex justify-between mb-6 flex-col md:flex-row md:items-center gap-4">
@@ -77,25 +76,4 @@ const primaryColorHover = computed(() => themeStore.themeOverrides?.common?.prim
     </div>
 </template>
 
-<style scoped>
-.text-primary {
-    color: v-bind(primaryColor);
-}
 
-.bg-primary {
-    background-color: v-bind(primaryColor);
-}
-
-.border-primary {
-    border-color: v-bind(primaryColor);
-}
-
-.hover\:border-primary:hover {
-    border-color: v-bind(primaryColorHover);
-}
-
-.hover\:text-primary:hover {
-    color: v-bind(primaryColorHover);
-}
-
-</style>

@@ -1,19 +1,19 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref } from 'vue'
+
 import { useI18n } from 'vue-i18n'
-import { useThemeStore } from '@/stores/theme'
+
 
 const emit = defineEmits<{
     (e: 'filesDropped', files: FileList): void
 }>()
 
 const { t } = useI18n()
-const themeStore = useThemeStore()
 const currentHover = ref(false)
 
-const primaryColor = computed(() => themeStore.themeOverrides?.common?.primaryColor || '#409eff')
 
 function onDrop(e: DragEvent) {
+
     e.preventDefault()
     currentHover.value = false
     const files = e.dataTransfer?.files
@@ -61,17 +61,4 @@ function onFileChange(e: Event) {
     </div>
 </template>
 
-<style scoped>
-.border-primary {
-    border-color: v-bind(primaryColor);
-}
 
-.bg-primary {
-    background-color: v-bind(primaryColor);
-}
-
-.shadow-primary-500\/30 {
-    --un-shadow-color: v-bind(primaryColor);
-    box-shadow: 0 10px 15px -3px var(--un-shadow-color), 0 4px 6px -2px var(--un-shadow-color);
-}
-</style>

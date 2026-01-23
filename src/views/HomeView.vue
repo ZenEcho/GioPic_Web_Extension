@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { ref, onMounted, computed } from 'vue'
+import { ref, onMounted } from 'vue'
+
 import { useThemeStore } from '@/stores/theme'
 import type { DriveConfig } from '@/types'
 import { useI18n } from 'vue-i18n'
@@ -23,9 +24,8 @@ const configStore = useConfigStore()
 const { t } = useI18n()
 const message = useMessage()
 
-const primaryColor = computed(() => themeStore.themeOverrides?.common?.primaryColor || '#10b981')
-
 // --- 状态定义 ---
+
 const showAddModal = ref(false)
 const showSettingsModal = ref(false)
 const showOnboarding = ref(false)
@@ -156,40 +156,3 @@ onMounted(async () => {
     </div>
 </template>
 
-<style scoped>
-.bg-primary {
-    background-color: v-bind(primaryColor);
-}
-
-.bg-primary\/5 {
-    background-color: color-mix(in srgb, v-bind(primaryColor) 5%, transparent);
-}
-
-.bg-primary\/10 {
-    background-color: color-mix(in srgb, v-bind(primaryColor) 10%, transparent);
-}
-
-.bg-primary\/20 {
-    background-color: color-mix(in srgb, v-bind(primaryColor) 20%, transparent);
-}
-
-.border-primary {
-    border-color: v-bind(primaryColor);
-}
-
-.border-primary\/50 {
-    border-color: color-mix(in srgb, v-bind(primaryColor) 50%, transparent);
-}
-
-.text-primary {
-    color: v-bind(primaryColor);
-}
-
-.shadow-primary\/20 {
-    box-shadow: 0 10px 15px -3px color-mix(in srgb, v-bind(primaryColor) 20%, transparent);
-}
-
-.hover\:bg-primary-hover:hover {
-    background-color: color-mix(in srgb, v-bind(primaryColor) 90%, black);
-}
-</style>

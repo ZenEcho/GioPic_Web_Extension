@@ -23,8 +23,8 @@ const themeStore = useThemeStore()
 const message = useMessage()
 const dialog = useDialog()
 
-const primaryColor = computed(() => themeStore.themeOverrides?.common?.primaryColor || '#409eff')
 const openMode = ref('tab')
+
 const autoInject = ref(false)
 const showSidebarSettings = ref(false)
 
@@ -233,14 +233,16 @@ async function handleResetExtension() {
                         <button
                             class="giopic-link-btn giopic-link-btn-primary flex-1 py-2 border font-medium text-sm flex items-center justify-center gap-2"
                             :class="!themeStore.isDark ? 'text-white' : 'border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'"
-                            :style="!themeStore.isDark ? { backgroundColor: primaryColor } : {}"
+                            :style="!themeStore.isDark ? { backgroundColor: 'var(--giopic-primary)' } : {}"
+
                             @click="themeStore.isDark = false">
                             <div class="i-ph-sun" /> {{ t('settings.lightMode') }}
                         </button>
                         <button
                             class="giopic-link-btn giopic-link-btn-primary flex-1 py-2 border font-medium text-sm flex items-center justify-center gap-2"
                             :class="themeStore.isDark ? 'text-white' : 'border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'"
-                            :style="themeStore.isDark ? { backgroundColor: primaryColor } : {}"
+                            :style="themeStore.isDark ? { backgroundColor: 'var(--giopic-primary)' } : {}"
+
                             @click="themeStore.isDark = true">
                             <div class="i-ph-moon" /> {{ t('settings.darkMode') }}
                         </button>
@@ -255,13 +257,15 @@ async function handleResetExtension() {
                     <div class="flex gap-2">
                         <button class="giopic-link-btn giopic-link-btn-primary flex-1 py-2 border font-medium text-sm flex items-center justify-center gap-2"
                             :class="locale === 'zh-CN' ? 'text-white' : 'border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'"
-                            :style="locale === 'zh-CN' ? { backgroundColor: primaryColor } : {}"
+                            :style="locale === 'zh-CN' ? { backgroundColor: 'var(--giopic-primary)' } : {}"
+
                             @click="changeLocale('zh-CN')">
                             中文
                         </button>
                         <button class="giopic-link-btn giopic-link-btn-primary flex-1 py-2 border font-medium text-sm flex items-center justify-center gap-2"
                             :class="locale === 'en-US' ? 'text-white' : 'border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'"
-                            :style="locale === 'en-US' ? { backgroundColor: primaryColor } : {}"
+                            :style="locale === 'en-US' ? { backgroundColor: 'var(--giopic-primary)' } : {}"
+
                             @click="changeLocale('en-US')">
                             English
                         </button>
@@ -276,7 +280,8 @@ async function handleResetExtension() {
                         <button v-for="mode in ['tab', 'window', 'action']" :key="mode"
                             class="flex-1 py-2 rounded-lg border transition-all font-medium text-sm flex items-center justify-center gap-2"
                             :class="openMode === mode ? 'text-white' : 'border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'"
-                            :style="openMode === mode ? { backgroundColor: primaryColor } : {}"
+                            :style="openMode === mode ? { backgroundColor: 'var(--giopic-primary)' } : {}"
+
                             @click="setOpenMode(mode)">
                             <div :class="openModeIcons[mode]" /> {{ t(`settings.openModes.${mode}`) }}
                         </button>
@@ -292,7 +297,8 @@ async function handleResetExtension() {
                         <button v-for="mode in ['classic', 'console', 'center', 'simple']" :key="mode"
                             class="giopic-link-btn giopic-link-btn-primary flex-1 py-2 border font-medium text-sm rounded-lg transition-all flex items-center justify-center gap-2"
                             :class="themeStore.uiMode === mode ? 'text-white' : 'border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'"
-                            :style="themeStore.uiMode === mode ? { backgroundColor: primaryColor } : {}"
+                            :style="themeStore.uiMode === mode ? { backgroundColor: 'var(--giopic-primary)' } : {}"
+
                             @click="themeStore.setUiMode(mode as any)">
                             <div :class="uiModeIcons[mode]" /> {{ t(`settings.uiModes.${mode}`) }}
                         </button>

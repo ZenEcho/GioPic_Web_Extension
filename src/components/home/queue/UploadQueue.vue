@@ -26,10 +26,8 @@ const configStore = useConfigStore()
 const themeStore = useThemeStore()
 const router = useRouter()
 
-const primaryColor = computed(() => themeStore.themeOverrides?.common?.primaryColor || '#409eff')
-
-
 const message = useMessage()
+
 const copyFormat = ref('url')
 
 const hasSuccessTask = computed(() => {
@@ -199,15 +197,5 @@ function copyLink(url: string, thumbUrl?: string) {
     background-color: #4b5563;
 }
 
-.text-primary {
-    color: v-bind(primaryColor);
-}
 
-.bg-primary {
-    background-color: v-bind(primaryColor);
-}
-
-.hover\:text-primary:hover {
-    color: v-bind(primaryColor);
-}
 </style>

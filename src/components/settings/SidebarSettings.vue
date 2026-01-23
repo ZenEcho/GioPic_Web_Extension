@@ -60,7 +60,7 @@
 
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted, watch } from "vue";
-import { useMessage } from 'naive-ui';
+
 import browser from "webextension-polyfill";
 import { useI18n } from "vue-i18n";
 
@@ -79,9 +79,8 @@ interface LegacyUploadArea {
 }
 
 const { t } = useI18n();
-const message = useMessage();
-
 const settings = ref<SidebarSettings>({
+
     enabled: true,
     mode: 'inject',
     position: { x: window.innerWidth - 60, y: window.innerHeight * 0.4 },
@@ -120,6 +119,23 @@ const removeSite = (site: string) => {
     disabledSites.value = disabledSites.value.filter(s => s !== site);
 };
 
+const handleStorageChange = (changes: Record<string, any>, area: string) => {
+    if (area !== 'local') return
+    if (changes.sidebarSettings) {
+        const next = changes.sidebarSettings.newValue as SidebarSettings | undefined
+        if (next && typeof next === 'object') {
+            settings.value = {
+                ...next,
+                mode: next.mode || 'inject'
+            }
+        }
+    }
+    if (changes.sidebar_disabled_sites) {
+        const next = changes.sidebar_disabled_sites.newValue as unknown
+        disabledSites.value = Array.isArray(next) ? (next as string[]) : []
+    }
+}
+
 onMounted(async () => {
     const res = await browser.storage.local.get(['uploadArea', 'sidebarSettings', 'sidebar_disabled_sites']) as {
         uploadArea?: LegacyUploadArea
@@ -151,27 +167,11 @@ onMounted(async () => {
         disabledSites.value = res.sidebar_disabled_sites;
     }
 
-    const handleStorageChange = (changes: Record<string, any>, area: string) => {
-        if (area !== 'local') return
-        if (changes.sidebarSettings) {
-            const next = changes.sidebarSettings.newValue as SidebarSettings | undefined
-            if (next && typeof next === 'object') {
-                settings.value = {
-                    ...next,
-                    mode: next.mode || 'inject'
-                }
-            }
-        }
-        if (changes.sidebar_disabled_sites) {
-            const next = changes.sidebar_disabled_sites.newValue as unknown
-            disabledSites.value = Array.isArray(next) ? (next as string[]) : []
-        }
-    }
-
     browser.storage.onChanged.addListener(handleStorageChange)
-
-    onUnmounted(() => {
-        browser.storage.onChanged.removeListener(handleStorageChange)
-    })
 });
+
+onUnmounted(() => {
+    browser.storage.onChanged.removeListener(handleStorageChange)
+});
+
 </script>

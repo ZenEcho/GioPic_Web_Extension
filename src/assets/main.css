@@ -49,3 +49,142 @@ button {
 .giopic-text-link:hover {
   text-decoration: underline;
 }
+
+:root {
+  --giopic-primary: #3B82F6;
+  --giopic-primary-hover: #60A5FA;
+  --giopic-primary-pressed: #2563EB;
+  --giopic-primary-suppl: #DBEAFE;
+  --primary-color: var(--giopic-primary);
+}
+
+
+.text-primary {
+  color: var(--giopic-primary);
+}
+
+.bg-primary {
+  background-color: var(--giopic-primary);
+}
+
+.bg-primary-50 {
+  background-color: var(--giopic-primary-suppl);
+}
+
+.bg-primary-soft {
+  background-color: color-mix(in srgb, var(--giopic-primary) 10%, transparent);
+}
+
+.bg-primary\/5 {
+  background-color: color-mix(in srgb, var(--giopic-primary) 5%, transparent);
+}
+
+.bg-primary\/10 {
+  background-color: color-mix(in srgb, var(--giopic-primary) 10%, transparent);
+}
+
+.bg-primary\/20 {
+  background-color: color-mix(in srgb, var(--giopic-primary) 20%, transparent);
+}
+
+.border-primary {
+  border-color: var(--giopic-primary);
+}
+
+.border-primary\/20 {
+  border-color: color-mix(in srgb, var(--giopic-primary) 20%, transparent);
+}
+
+.border-primary\/30 {
+  border-color: color-mix(in srgb, var(--giopic-primary) 30%, transparent);
+}
+
+.border-primary\/50 {
+  border-color: color-mix(in srgb, var(--giopic-primary) 50%, transparent);
+}
+
+.ring-primary {
+  --tw-ring-color: var(--giopic-primary);
+}
+
+.shadow-primary\/20 {
+  box-shadow: 0 10px 15px -3px color-mix(in srgb, var(--giopic-primary) 20%, transparent);
+}
+
+.shadow-primary-500\/30 {
+  --un-shadow-color: var(--giopic-primary);
+  box-shadow: 0 10px 15px -3px var(--un-shadow-color), 0 4px 6px -2px var(--un-shadow-color);
+}
+
+.hover\:bg-primary-hover:hover {
+  background-color: var(--giopic-primary-hover);
+}
+
+.hover\:bg-primary\/10:hover {
+  background-color: color-mix(in srgb, var(--giopic-primary) 10%, transparent);
+}
+
+.hover\:bg-primary\/20:hover {
+  background-color: color-mix(in srgb, var(--giopic-primary) 20%, transparent);
+}
+
+.hover\:bg-primary-50:hover {
+  background-color: var(--giopic-primary-suppl);
+}
+
+.hover\:text-primary:hover {
+  color: var(--giopic-primary-hover);
+}
+
+.hover\:border-primary:hover {
+  border-color: var(--giopic-primary-hover);
+}
+
+.hover\:border-primary\/50:hover {
+  border-color: color-mix(in srgb, var(--giopic-primary) 50%, transparent);
+}
+
+.hover\:border-primary-200:hover {
+  border-color: var(--giopic-primary-suppl);
+}
+
+.from-primary {
+  --tw-gradient-from: var(--giopic-primary);
+}
+
+.from-primary\/20 {
+  --tw-gradient-from: color-mix(in srgb, var(--giopic-primary) 20%, transparent);
+}
+
+.from-primary\/10 {
+  --tw-gradient-from: color-mix(in srgb, var(--giopic-primary) 10%, transparent);
+}
+
+.to-primary\/70 {
+  --tw-gradient-to: color-mix(in srgb, var(--giopic-primary) 70%, transparent);
+}
+
+.to-primary\/10 {
+  --tw-gradient-to: color-mix(in srgb, var(--giopic-primary) 10%, transparent);
+}
+
+.dark .dark\:text-primary {
+  color: var(--giopic-primary);
+}
+
+.dark .dark\:bg-primary\/10 {
+  background-color: color-mix(in srgb, var(--giopic-primary) 10%, transparent);
+}
+
+.dark .dark\:border-primary\/20 {
+  border-color: color-mix(in srgb, var(--giopic-primary) 20%, transparent);
+}
+
+.dark .dark\:hover\:bg-primary\/10:hover {
+  background-color: color-mix(in srgb, var(--giopic-primary) 10%, transparent);
+}
+
+.dark .dark\:hover\:border-primary\/50:hover {
+  border-color: color-mix(in srgb, var(--giopic-primary) 50%, transparent);
+}
+

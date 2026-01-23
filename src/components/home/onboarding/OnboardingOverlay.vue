@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref } from 'vue'
+
 import { useThemeStore } from '@/stores/theme'
 import { useI18n } from 'vue-i18n'
 import browser from 'webextension-polyfill'
@@ -21,8 +22,8 @@ const { t, locale } = useI18n()
 // 内部状态
 const isOnboardingMinimized = ref(false)
 const onboardingStep = ref<'language' | 'layout' | 'config'>('language')
-const primaryColor = computed(() => themeStore.themeOverrides?.common?.primaryColor || '#10b981')
 // 方法
+
 function handleLanguageSelect(lang: string) {
     locale.value = lang
     browser.storage.local.set({ 'giopic-language': lang })
@@ -309,40 +310,3 @@ defineExpose({
         </div>
     </Transition>
 </template>
-<style scoped>
-.bg-primary {
-    background-color: v-bind(primaryColor);
-}
-
-.bg-primary\/5 {
-    background-color: color-mix(in srgb, v-bind(primaryColor) 5%, transparent);
-}
-
-.bg-primary\/10 {
-    background-color: color-mix(in srgb, v-bind(primaryColor) 10%, transparent);
-}
-
-.bg-primary\/20 {
-    background-color: color-mix(in srgb, v-bind(primaryColor) 20%, transparent);
-}
-
-.border-primary {
-    border-color: v-bind(primaryColor);
-}
-
-.border-primary\/50 {
-    border-color: color-mix(in srgb, v-bind(primaryColor) 50%, transparent);
-}
-
-.text-primary {
-    color: v-bind(primaryColor);
-}
-
-.shadow-primary\/20 {
-    box-shadow: 0 10px 15px -3px color-mix(in srgb, v-bind(primaryColor) 20%, transparent);
-}
-
-.hover\:bg-primary-hover:hover {
-    background-color: color-mix(in srgb, v-bind(primaryColor) 90%, black);
-}
-</style>

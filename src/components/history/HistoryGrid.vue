@@ -1,9 +1,10 @@
 <script setup lang="ts">
-import { ref, watch, onMounted, onUnmounted, computed } from 'vue'
+import { ref, watch, onMounted, onUnmounted } from 'vue'
+
 import { useI18n } from 'vue-i18n'
 import { useMessage } from 'naive-ui'
 import browser from 'webextension-polyfill'
-import { useThemeStore } from '@/stores/theme'
+
 import type { UploadRecord } from '@/types'
 import { formatLink, copyToClipboard } from '@/utils/common'
 
@@ -23,13 +24,9 @@ const emit = defineEmits<{
 
 const { t } = useI18n()
 const message = useMessage()
-const themeStore = useThemeStore()
-
-const primaryColor = computed(() => themeStore.themeOverrides?.common?.primaryColor || '#409eff')
-const primaryColorSuppl = computed(() => themeStore.themeOverrides?.common?.primaryColorSuppl || '#ecf5ff')
-const primaryColorHover = computed(() => themeStore.themeOverrides?.common?.primaryColorHover || '#66b1ff')
-
 // Special handling for i.111666.best images
+
+
 const imageBlobs = ref<Record<string, string>>({})
 
 const fetchImageBlob = async (url: string) => {
@@ -272,37 +269,7 @@ async function handleInject(url: string) {
     background-color: #4b5563;
 }
 
-.text-primary {
-    color: v-bind(primaryColor);
-}
 
-.bg-primary {
-    background-color: v-bind(primaryColor);
-}
-
-.bg-primary-50 {
-    background-color: v-bind(primaryColorSuppl);
-}
-
-.hover\:bg-primary:hover {
-    background-color: v-bind(primaryColorHover);
-}
-
-.border-primary {
-    border-color: v-bind(primaryColor);
-}
-
-.hover\:border-primary:hover {
-    border-color: v-bind(primaryColorHover);
-}
-
-.ring-primary {
-    --tw-ring-color: v-bind(primaryColor);
-}
-
-.hover\:border-primary-200:hover {
-    border-color: v-bind(primaryColorSuppl);
-}
 
 .text-shadow-sm {
     text-shadow: 0 1px 2px rgba(0,0,0,0.5);

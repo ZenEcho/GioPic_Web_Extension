@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, onMounted } from 'vue'
+
 import { useConfigStore } from '@/stores/config'
 import { useThemeStore } from '@/stores/theme'
 import { useI18n } from 'vue-i18n'
@@ -29,9 +30,8 @@ const themeStore = useThemeStore()
 const currentVersion = ref('2.0.0')
 const isConfigExpanded = ref(true)
 const isCollapsed = ref(false)
-const primaryColor = computed(() => themeStore.themeOverrides?.common?.primaryColor || '#10b981')
-
 const {
+
     showImportModal,
     importJson,
     toggleConfigSelection,
@@ -289,10 +289,11 @@ async function toggleCollapse() {
 <style scoped>
 /* 导航按钮样式 */
 .nav-btn.active {
-    background: linear-gradient(135deg, v-bind(primaryColor), color-mix(in srgb, v-bind(primaryColor) 80%, #000));
+    background: linear-gradient(135deg, var(--giopic-primary), color-mix(in srgb, var(--giopic-primary) 80%, #000));
     color: white;
-    box-shadow: 0 4px 12px -2px color-mix(in srgb, v-bind(primaryColor) 40%, transparent);
+    box-shadow: 0 4px 12px -2px color-mix(in srgb, var(--giopic-primary) 40%, transparent);
 }
+
 
 .nav-btn.inactive {
     color: #6b7280;
@@ -307,78 +308,7 @@ async function toggleCollapse() {
     background-color: #374151;
 }
 
-/* 主题色相关 */
-.bg-primary {
-    background-color: v-bind(primaryColor);
-}
 
-.bg-primary\/5 {
-    background-color: color-mix(in srgb, v-bind(primaryColor) 5%, transparent);
-}
-
-.bg-primary\/10 {
-    background-color: color-mix(in srgb, v-bind(primaryColor) 10%, transparent);
-}
-
-.bg-primary\/20 {
-    background-color: color-mix(in srgb, v-bind(primaryColor) 20%, transparent);
-}
-
-.border-primary\/30 {
-    border-color: color-mix(in srgb, v-bind(primaryColor) 30%, transparent);
-}
-
-.border-primary\/20 {
-    border-color: color-mix(in srgb, v-bind(primaryColor) 20%, transparent);
-}
-
-.text-primary {
-    color: v-bind(primaryColor);
-}
-
-.hover\:text-primary:hover {
-    color: v-bind(primaryColor);
-}
-
-.hover\:bg-primary\/10:hover {
-    background-color: color-mix(in srgb, v-bind(primaryColor) 10%, transparent);
-}
-
-.hover\:bg-primary\/20:hover {
-    background-color: color-mix(in srgb, v-bind(primaryColor) 20%, transparent);
-}
-
-.from-primary {
-    --tw-gradient-from: v-bind(primaryColor);
-}
-
-.from-primary\/20 {
-    --tw-gradient-from: color-mix(in srgb, v-bind(primaryColor) 20%, transparent);
-}
-
-.from-primary\/10 {
-    --tw-gradient-from: color-mix(in srgb, v-bind(primaryColor) 10%, transparent);
-}
-
-.to-primary\/70 {
-    --tw-gradient-to: color-mix(in srgb, v-bind(primaryColor) 70%, transparent);
-}
-
-.to-primary\/10 {
-    --tw-gradient-to: color-mix(in srgb, v-bind(primaryColor) 10%, transparent);
-}
-
-:global(.dark) .dark\:text-primary {
-    color: v-bind(primaryColor);
-}
-
-:global(.dark) .dark\:bg-primary\/10 {
-    background-color: color-mix(in srgb, v-bind(primaryColor) 10%, transparent);
-}
-
-:global(.dark) .dark\:border-primary\/20 {
-    border-color: color-mix(in srgb, v-bind(primaryColor) 20%, transparent);
-}
 
 /* 滚动条样式 */
 .custom-scrollbar::-webkit-scrollbar {

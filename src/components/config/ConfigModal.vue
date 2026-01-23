@@ -3,7 +3,7 @@ import { ref, watch, computed } from 'vue'
 import { useConfigStore } from '@/stores/config'
 import { useI18n } from 'vue-i18n'
 import { useMessage } from 'naive-ui'
-import { useThemeStore } from '@/stores/theme'
+
 import type { DriveConfig } from '@/types'
 import { DRIVE_SCHEMAS, DRIVE_TYPE_OPTIONS } from '@/constants/driveSchemas'
 import DynamicConfigForm from './DynamicConfigForm.vue'
@@ -25,11 +25,9 @@ const { t } = useI18n()
 const configStore = useConfigStore()
 const message = useMessage()
 const formRef = ref()
-const themeStore = useThemeStore()
-
-const primaryColor = computed(() => themeStore.themeOverrides?.common?.primaryColor || '#409eff')
 
 const defaultForm: any = {
+
   id: '',
   name: '',
   type: '', // Default empty, user needs to select
@@ -238,7 +236,8 @@ function getDriveLabel(value: string) {
                 </button>
                 <button v-if="currentStep === 1" @click="handleSaveConfig" 
                     class="giopic-link-btn px-6 h-9 rounded-lg text-white hover:opacity-90 font-medium transition-opacity shadow-sm"
-                    :style="{ backgroundColor: primaryColor }">
+                    :style="{ backgroundColor: 'var(--giopic-primary)' }"
+>
                     {{ t('common.save') }}
                 </button>
             </div>
