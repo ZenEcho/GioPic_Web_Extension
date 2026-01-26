@@ -37,16 +37,18 @@ GioPic 是一个支持多节点并发的浏览器图片上传扩展，一次操�
 [![](https://i.mji.rip/2026/01/20/0a473ec9fadb00999173f0e462f73a82.png)](https://i.mji.rip/2026/01/20/0a473ec9fadb00999173f0e462f73a82.png)
 [![](https://i.mji.rip/2026/01/20/86b0aebb56aba750299fd67648401456.png)](https://i.mji.rip/2026/01/20/86b0aebb56aba750299fd67648401456.png)
 ### 自动注入演示
-![image](https://i.111666.best/image/Qnzu6AP19ob4IkIth6l59k.gif)
+![image](https://i.mji.rip/2026/01/26/114f48702f3d79e4527aeeb68fc45e02.gif)
+
 ### 右键上传演示
 ![image](https://wmimg.com/i/1550/2026/01/69707abba7d4b.gif)
+
 ### 多节点同步上传
-![image](https://i.111666.best/image/RbI1KqI1n3EaXHiL1Xc7q6.png)
+![image](https://i.mji.rip/2026/01/26/b94ff1213587c428da665aac830e342c.png)
+
 ### 一键配置
 对于支持的站点（如兰空图床、简单图床），当您访问该站点时，GioPic 可能会检测到并提供 "一键添加" 按钮，自动配置扩展。
-![image](https://i.111666.best/image/qNQku34RLRXWki2TxepAbV.png)
-![image](https://i.111666.best/image/pJFdLusLREDjVE39Bz4c50.png)
-
+![image](https://i.mji.rip/2026/01/26/e7355efe889a37dca766945154e5fff8.png)
+![image](https://i.mji.rip/2026/01/26/1e99ccbcfe5f892ae40ef4fa0f47578c.png)
 
 ## 🛠️ 安装
 
