@@ -1,31 +1,32 @@
 # GioPic
 
-GioPic is a multi-node image upload browser extension that can upload images to multiple providers (image hosts, object storages, GitHub and custom HTTP endpoints) at once.
+[Chinese Documentation](./README_zh-CN.md)
 
-[中文文档](./README_zh-CN.md)
+GioPic is a browser extension for multi-node concurrent image uploading that enables simultaneous distribution of images to multiple object storage services, image hosting platforms, or custom service interfaces with a single operation.
 
 [![Chrome](https://img.shields.io/badge/Chromium-chrome-blue?style=for-the-badge&logo=googlechrome)](https://chromewebstore.google.com/detail/giopic/cjmhdboadkifegpfnflaflbjeehndmak)
 
 ## 🌟 Features
 
-- **Multi-node Delivery**: Configure multiple "distribution nodes" and push to multiple targets in parallel with a single upload.
-- **Rich Providers**:
-  - Lsky Pro, EasyImages, Chevereto, ImgURL, Hellohao, SM.MS, Imgur
-  - Aliyun OSS, Tencent COS, AWS S3, GitHub Repository, Custom HTTP Endpoint
-- **Easy Upload**:
-  - Drag and drop, click to select, paste from clipboard
-  - Context menu "GioPic Upload Image" on web pages
-- **In-page Integration**:
-  - Draggable GioPic handle on the side of web pages, click to open the upload panel in-page
-  - Floating upload list shows progress in real-time, copy or inject links with one click
-- **History & Batch**: Search, filter, sort, and batch delete upload records.
-- **Cloud-friendly**: Built-in visual configuration for CORS & ACL of Aliyun / Tencent COS / AWS S3.
-- **Multi-language & Layouts**: English / Simplified Chinese, Classic / Console / Center / Simple layouts, Dark / Light themes with various accent colors.
+- **Multi-node Distribution**: Configure multiple "distribution nodes" to push images to all targets in parallel with a single upload.
+- **Extensive Provider Support**:
+  - **Image Hosting Platforms**: Lsky Pro, EasyImages, Chevereto, ImgURL, Hellohao, SM.MS, Imgur
+  - **Object Storage**: Alibaba Cloud OSS, Tencent Cloud COS, AWS S3
+  - **Others**: GitHub Repository, Custom HTTP Interface
+- **Convenient Upload Experience**:
+  - Supports drag-and-drop, click-to-select, and clipboard paste uploads.
+  - Right-click menu "GioPic Upload Image" on web pages.
+- **Seamless Page Integration**:
+  - Draggable floating button on the side of web pages; click to open the upload panel on the current page.
+  - Floating upload list shows real-time progress and supports one-click link copying or injection into page input fields.
+- **History & Batch Management**: Supports searching, filtering, sorting, and batch deletion of upload records.
+- **Cloud Storage Tools**: Built-in visual configuration tools for CORS and ACL for Alibaba Cloud OSS / Tencent Cloud COS / AWS S3.
+- **Personalization**: Supports Simplified Chinese / English, provides multiple layouts (Classic / Console / Center / Minimalist), and adapts to Dark / Light modes and various theme colors.
 
 ## 🔧 Supported Browsers
 
-- Google Chrome (Latest Version)
-- Microsoft Edge (Latest Version)
+- Google Chrome (Latest)
+- Microsoft Edge (Latest)
 
 ## Demo
 
@@ -36,10 +37,25 @@ GioPic is a multi-node image upload browser extension that can upload images to 
 [![](https://i.mji.rip/2026/01/20/0a473ec9fadb00999173f0e462f73a82.png)](https://i.mji.rip/2026/01/20/0a473ec9fadb00999173f0e462f73a82.png)
 [![](https://i.mji.rip/2026/01/20/86b0aebb56aba750299fd67648401456.png)](https://i.mji.rip/2026/01/20/86b0aebb56aba750299fd67648401456.png)
 
+### Auto Injection Demo
+![image](https://i.111666.best/image/Qnzu6AP19ob4IkIth6l59k.gif)
+
+### Right-click Upload Demo
+![image](https://wmimg.com/i/1550/2026/01/69707abba7d4b.gif)
+
+### Multi-node Sync Upload
+![image](https://i.111666.best/image/RbI1KqI1n3EaXHiL1Xc7q6.png)
+
+### One-Click Setup
+For supported sites (e.g., Lsky Pro, EasyImages), when you visit the site, GioPic may detect it and provide a "One-Click Add" button to automatically configure the extension.
+![image](https://i.111666.best/image/qNQku34RLRXWki2TxepAbV.png)
+![image](https://i.111666.best/image/pJFdLusLREDjVE39Bz4c50.png)
+
+
 ## 🛠️ Installation
 
-1. Download the latest release or build from source.
-2. Open Chrome/Edge and go to `chrome://extensions/`.
+1. Download the latest version or build from source.
+2. Open Chrome/Edge browser and visit `chrome://extensions/`.
 3. Enable "Developer mode".
 4. Click "Load unpacked" and select the `dist` directory.
 
@@ -50,26 +66,26 @@ GioPic is a multi-node image upload browser extension that can upload images to 
 
 ## 📖 Usage Guide
 
-### Adding Image Storage
+### Adding a Storage Node
 
 1. **Open Extension**: Click the extension icon in the browser toolbar.
 2. **Add Node**: Click the "+" button in the sidebar ("Add New Interface").
-3. **Select Type**: Choose your storage provider (e.g., Lsky Pro, Aliyun OSS, Custom, etc.).
+3. **Select Type**: Choose your storage service provider (e.g., Lsky Pro, Alibaba Cloud OSS, Custom, etc.).
 4. **Configure**: Enter the required information (API URL, Token/AccessKey, etc.).
-5. **Save**: Click "Save" to finish.
+5. **Save**: Click "Save" to complete the addition.
 
-### One-Click Configuration
+### One-Click Setup
 
-For supported sites (like Lsky Pro, EasyImages), when you visit the site, GioPic may detect it and offer a "One-Click Add" button to automatically configure the extension.
+For supported sites (e.g., Lsky Pro, EasyImages), when you visit the site, GioPic may detect it and provide a "One-Click Add" button to automatically configure the extension.
 
-## 🧑‍💻 Development
+## 🧑‍💻 Development Guide
 
 ### Prerequisites
 
 - Node.js >= 20.19.0
 - pnpm
 
-### Setup
+### Initialization
 
 ```bash
 pnpm install
@@ -78,10 +94,10 @@ pnpm install
 ### Development Mode
 
 ```bash
-# Start development server (Watch mode)
+# Start development server (watch mode)
 pnpm dev
 
-# For Firefox
+# Firefox development mode
 pnpm dev:firefox
 ```
 
@@ -91,7 +107,7 @@ pnpm dev:firefox
 # Build for production
 pnpm build
 
-# For Firefox
+# Build for Firefox
 pnpm build:firefox
 ```
 
@@ -101,59 +117,74 @@ pnpm build:firefox
 pnpm test
 ```
 
-### Adding New Image Host
+### Adding Support for New Storage Providers
 
-To add support for a new image hosting service, you need to modify two files:
+Adding support for a new storage provider requires modifying the following 4 files:
 
-1. **Define Configuration Schema**:
-   Edit `src/constants/driveSchemas.ts` to add the configuration fields required for the new image host.
+1.  **Update Type Definitions**:
+    Edit `src/types/index.ts`:
+    - Add the new type string to the `DriveType` union type.
+    - Define a new Config interface (e.g., `NewHostConfig`) inheriting from `BaseConfig`.
+    - Add the new Config interface to the `DriveConfig` union type.
 
-   Example:
-   ```typescript
-   export const DRIVE_SCHEMAS: Record<string, FieldSchema[]> = {
-     // ...
-     new_host: [
-       { key: 'apiUrl', label: 'API URL', type: 'text', required: true },
-       { key: 'token', label: 'Token', type: 'password', required: true },
-     ],
-   }
+2.  **Register Provider Configuration**:
+    Edit `src/constants/driveSchemas.ts`:
+    - Add a new entry to the `DRIVE_REGISTRY` object, including label, icon, theme color, category, and form configuration.
 
-   // Don't forget to add it to DRIVE_TYPE_OPTIONS
-   export const DRIVE_TYPE_OPTIONS = [
-     // ...
-     { label: 'New Host Name', value: 'new_host' },
-   ]
-   ```
+    Example:
+    ```typescript
+    export const DRIVE_REGISTRY: Record<string, DriveRegistryItem> = {
+      // ...
+      new_host: {
+        key: 'new_host',
+        label: 'New Host Name',
+        icon: 'i-ph-cloud-duotone', // Icon class name
+        color: 'text-blue-600 bg-blue-100', // Theme color
+        darkColor: 'dark:text-blue-300 dark:bg-blue-900/30', // Dark mode theme color
+        category: 'custom', // Category: self-hosted, cloud, public, custom
+        fields: [
+          { key: 'apiUrl', label: 'config.form.apiUrl', type: 'text', required: true },
+          { key: 'token', label: 'config.form.token', type: 'password', required: true },
+        ]
+      }
+    }
+    ```
 
-2. **Implement Upload Logic**:
-   Edit `src/services/uploader.ts` to implement the upload function and register it in the main `uploadImage` function.
+3.  **Add Translations**:
+    Edit `src/locales/zh-CN.ts` and `src/locales/en-US.ts`:
+    - Add the provider name under the `providers` object.
 
-   Example:
-   ```typescript
-   // 1. Register in uploadImage
-   export async function uploadImage(...) {
-     switch (config.type) {
-       // ...
-       case 'new_host':
-         return uploadNewHost(file, config, onProgress)
-     }
-   }
+    Example:
+    ```typescript
+    // src/locales/en-US.ts
+    providers: {
+      // ...
+      new_host: 'New Host Name',
+    }
+    ```
 
-   // 2. Implement function
-   async function uploadNewHost(file: File, config: any, onProgress: ProgressCallback): Promise<UploadResult> {
-     // Implement upload logic using fetch or axios
-     const formData = new FormData()
-     formData.append('file', file)
-     
-     const res = await fetchUpload(config.apiUrl, formData, {
-       'Authorization': config.token
-     }, onProgress)
+4.  **Implement Upload Logic**:
+    Edit `src/services/uploader.ts`:
+    - Import the new Config interface.
+    - Implement the upload function (e.g., `uploadNewHost`).
+    - Register the new type in the main `uploadImage` function.
 
-     return {
-       url: res.data.url
-     }
-   }
-   ```
+    Example:
+    ```typescript
+    // 1. Register in uploadImage
+    export async function uploadImage(...) {
+      switch (config.type) {
+        // ...
+        case 'new_host':
+          return uploadNewHost(file, config as NewHostConfig, onProgress)
+      }
+    }
+
+    // 2. Implement function
+    async function uploadNewHost(file: File, config: NewHostConfig, onProgress: ProgressCallback): Promise<UploadResult> {
+      // Implement upload logic...
+    }
+    ```
 
 ## 🏗️ Tech Stack
 

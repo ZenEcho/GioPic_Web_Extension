@@ -9,6 +9,7 @@ export default {
     aws: 'AWS S3',
     github: 'GitHub',
     custom: 'Custom',
+    test: 'Test Drive',
   },
   common: {
     edit: 'Edit',

@@ -1,4 +1,4 @@
-import type { DriveConfig, WebUploaderConfig, AliyunConfig, S3Config, TencentConfig, GithubConfig, CustomConfig } from '@/types'
+import type { DriveConfig, WebUploaderConfig, AliyunConfig, S3Config, TencentConfig, GithubConfig, CustomConfig, TestConfig } from '@/types'
 import OSS from 'ali-oss'
 import { S3Client } from '@aws-sdk/client-s3'
 import { Upload } from '@aws-sdk/lib-storage'
@@ -56,6 +56,8 @@ export async function uploadImage(
       return uploadGithub(file, config as GithubConfig, onProgress)
     case 'custom':
       return uploadCustom(file, config as CustomConfig, onProgress)
+    case 'test':
+      return uploadTest(file, config as TestConfig, onProgress)
     default:
       throw new Error('Unknown config type')
   }
@@ -527,6 +529,21 @@ async function uploadImgURL(file: File, config: WebUploaderConfig, onProgress: P
   return {
     url: res.data.url,
     thumbUrl: res.data.thumbnail_url || res.data.url
+  }
+}
+
+async function uploadTest(file: File, config: TestConfig, onProgress: ProgressCallback): Promise<UploadResult> {
+  // Mock upload for testing
+  console.log('Test upload started', file.name)
+  const steps = 10
+  for (let i = 1; i <= steps; i++) {
+    await new Promise(resolve => setTimeout(resolve, 200))
+    onProgress(i * 10)
+  }
+  
+  return {
+    url: 'https://example.com/test/' + file.name,
+    thumbUrl: 'https://example.com/test/thumb/' + file.name
   }
 }
 // uploadZpic

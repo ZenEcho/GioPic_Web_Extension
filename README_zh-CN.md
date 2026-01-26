@@ -1,33 +1,34 @@
 # GioPic
 
-GioPic 是一个多节点、多图床的浏览器图片上传扩展，一次操作即可将图片同时分发到多个对象存储、图床或自建服务。
+[English Docs](./README.md)
 
-[English Documentation](./README.md)
+GioPic 是一个支持多节点并发的浏览器图片上传扩展，一次操作即可将图片同时分发到多个对象存储、图床平台或自定义服务接口。
 
 [![Chrome](https://img.shields.io/badge/Chromium-chrome-blue?style=for-the-badge&logo=googlechrome)](https://chromewebstore.google.com/detail/giopic/cjmhdboadkifegpfnflaflbjeehndmak)
 
 ## 🌟 功能特性
 
-- **多节点分发**：配置多个「分发节点」，一次上传并行推送到多个目标。
-- **丰富图床与存储支持**：
-  - Lsky Pro、EasyImages、Chevereto、ImgURL、Hellohao、SM.MS、Imgur
-  - 阿里云 OSS、腾讯云 COS、AWS S3、GitHub 仓库、自定义 HTTP 接口
-- **便捷上传方式**：
-  - 拖拽上传、点击选择、粘贴剪贴板图片
-  - 网页图片右键菜单「GioPic 上传图片」
-- **网页集成**：
-  - 网页侧边可拖动 GioPic 手柄，点击后在页面内打开上传面板
-  - 浮动上传列表实时显示上传进度，一键复制或注入链接
-- **历史记录与批量管理**：支持搜索、筛选、排序和批量删除上传记录。
-- **云存储增强**：内置阿里云 / 腾讯云 COS / AWS S3 的 CORS 与 ACL 可视化配置。
-- **多语言与多布局**：简体中文 / English，经典 / 控制台 / 中心 / 极简布局，深色 / 浅色主题与多种主题色。
+- **多节点分发**: 配置多个「分发节点」，一次上传即可并行推送到所有目标。
+- **广泛的图床支持**:
+  - **图床平台**: Lsky Pro (兰空图床), EasyImages (简单图床), Chevereto, ImgURL, Hellohao, SM.MS, Imgur
+  - **对象存储**: 阿里云 OSS, 腾讯云 COS, AWS S3
+  - **其他**: GitHub 仓库, 自定义 HTTP 接口
+- **便捷上传体验**:
+  - 支持拖拽、点击选择、剪贴板粘贴上传。
+  - 网页右键菜单「GioPic 上传图片」。
+- **无缝网页集成**:
+  - 网页侧边悬浮球（可拖动），点击即可在当前页面打开上传面板。
+  - 浮动上传列表实时显示进度，支持一键复制链接或注入到页面输入框。
+- **历史记录与批量管理**: 支持搜索、筛选、排序和批量删除上传记录。
+- **云存储辅助工具**: 内置阿里云 OSS / 腾讯云 COS / AWS S3 的 CORS 与 ACL 可视化配置工具。
+- **个性化定制**: 支持 简体中文 / English，提供 经典 / 控制台 / 中心 / 极简 等多种布局，适配深色 / 浅色模式及多种主题色。
 
 ## 🔧 支持的浏览器
 
-- Google Chrome (最新版本)
-- Microsoft Edge (最新版本)
+- Google Chrome (最新版)
+- Microsoft Edge (最新版)
 
-## 演示图
+## 演示
 
 [![](https://i.mji.rip/2026/01/14/2bafa0a93887a7bb20d16454648edcd5.png)](https://i.mji.rip/2026/01/14/2bafa0a93887a7bb20d16454648edcd5.png)
 [![](https://i.mji.rip/2026/01/14/3c36933ae6050a35b25e5624c2d50517.png)](https://i.mji.rip/2026/01/14/3c36933ae6050a35b25e5624c2d50517.png)
@@ -35,6 +36,17 @@ GioPic 是一个多节点、多图床的浏览器图片上传扩展，一次操�
 [![](https://i.mji.rip/2026/01/20/7234d8599422e583241f0553b6928922.png)](https://i.mji.rip/2026/01/20/7234d8599422e583241f0553b6928922.png)
 [![](https://i.mji.rip/2026/01/20/0a473ec9fadb00999173f0e462f73a82.png)](https://i.mji.rip/2026/01/20/0a473ec9fadb00999173f0e462f73a82.png)
 [![](https://i.mji.rip/2026/01/20/86b0aebb56aba750299fd67648401456.png)](https://i.mji.rip/2026/01/20/86b0aebb56aba750299fd67648401456.png)
+### 自动注入演示
+![image](https://i.111666.best/image/Qnzu6AP19ob4IkIth6l59k.gif)
+### 右键上传演示
+![image](https://wmimg.com/i/1550/2026/01/69707abba7d4b.gif)
+### 多节点同步上传
+![image](https://i.111666.best/image/RbI1KqI1n3EaXHiL1Xc7q6.png)
+### 一键配置
+对于支持的站点（如兰空图床、简单图床），当您访问该站点时，GioPic 可能会检测到并提供 "一键添加" 按钮，自动配置扩展。
+![image](https://i.111666.best/image/qNQku34RLRXWki2TxepAbV.png)
+![image](https://i.111666.best/image/pJFdLusLREDjVE39Bz4c50.png)
+
 
 ## 🛠️ 安装
 
@@ -43,14 +55,14 @@ GioPic 是一个多节点、多图床的浏览器图片上传扩展，一次操�
 3. 开启 "开发者模式"。
 4. 点击 "加载已解压的扩展程序"，选择 `dist` 目录。
 
-### 浏览器商店安装
+### 商店安装
 
-- [Chrome 扩展商店](https://chromewebstore.google.com/detail/giopic/cjmhdboadkifegpfnflaflbjeehndmak)
-- [Edge 扩展商店(待审核)](https://chromewebstore.google.com/detail/giopic/cjmhdboadkifegpfnflaflbjeehndmak)
+- [Chrome Web Store](https://chromewebstore.google.com/detail/giopic/cjmhdboadkifegpfnflaflbjeehndmak)
+- [Edge Add-ons (Pending)](https://chromewebstore.google.com/detail/giopic/cjmhdboadkifegpfnflaflbjeehndmak)
 
 ## 📖 使用指南
 
-### 添加图床
+### 添加存储节点
 
 1. **打开扩展**: 点击浏览器工具栏中的扩展图标。
 2. **添加节点**: 点击侧边栏中的 "+" 按钮 ("添加新接口")。
@@ -101,59 +113,74 @@ pnpm build:firefox
 pnpm test
 ```
 
-### 添加新图床
+### 添加新存储节点支持
 
-添加对新图床的支持需要修改以下两个文件：
+添加对新存储节点的支持需要修改以下 4 个文件：
 
-1. **定义配置表单**:
-   编辑 `src/constants/driveSchemas.ts`，添加新图床所需的配置项定义。
+1.  **更新类型定义**:
+    编辑 `src/types/index.ts`:
+    - 将新的类型字符串添加到 `DriveType` 联合类型中。
+    - 定义一个新的 Config 接口（例如 `NewHostConfig`），继承自 `BaseConfig`。
+    - 将新的 Config 接口添加到 `DriveConfig` 联合类型中。
 
-   示例:
-   ```typescript
-   export const DRIVE_SCHEMAS: Record<string, FieldSchema[]> = {
-     // ...
-     new_host: [
-       { key: 'apiUrl', label: 'API URL', type: 'text', required: true },
-       { key: 'token', label: 'Token', type: 'password', required: true },
-     ],
-   }
+2.  **注册节点配置**:
+    编辑 `src/constants/driveSchemas.ts`:
+    - 在 `DRIVE_REGISTRY` 对象中添加新条目，包含标签、图标、主题色、分类和表单配置。
 
-   // 别忘了添加到 DRIVE_TYPE_OPTIONS 选项列表中
-   export const DRIVE_TYPE_OPTIONS = [
-     // ...
-     { label: 'New Host Name', value: 'new_host' },
-   ]
-   ```
+    示例:
+    ```typescript
+    export const DRIVE_REGISTRY: Record<string, DriveRegistryItem> = {
+      // ...
+      new_host: {
+        key: 'new_host',
+        label: 'New Host Name',
+        icon: 'i-ph-cloud-duotone', // 图标类名
+        color: 'text-blue-600 bg-blue-100', // 主题色
+        darkColor: 'dark:text-blue-300 dark:bg-blue-900/30', // 暗色模式主题色
+        category: 'custom', // 分类: self-hosted, cloud, public, custom
+        fields: [
+          { key: 'apiUrl', label: 'config.form.apiUrl', type: 'text', required: true },
+          { key: 'token', label: 'config.form.token', type: 'password', required: true },
+        ]
+      }
+    }
+    ```
 
-2. **实现上传逻辑**:
-   编辑 `src/services/uploader.ts`，实现上传函数并在主 `uploadImage` 函数中注册。
+3.  **添加多语言翻译**:
+    编辑 `src/locales/zh-CN.ts` 和 `src/locales/en-US.ts`:
+    - 在 `providers` 对象下添加节点名称。
 
-   示例:
-   ```typescript
-   // 1. 在 uploadImage 中注册
-   export async function uploadImage(...) {
-     switch (config.type) {
-       // ...
-       case 'new_host':
-         return uploadNewHost(file, config, onProgress)
-     }
-   }
+    示例:
+    ```typescript
+    // src/locales/en-US.ts
+    providers: {
+      // ...
+      new_host: 'New Host Name',
+    }
+    ```
 
-   // 2. 实现具体的上传函数
-   async function uploadNewHost(file: File, config: any, onProgress: ProgressCallback): Promise<UploadResult> {
-     // 实现上传逻辑
-     const formData = new FormData()
-     formData.append('file', file)
-     
-     const res = await fetchUpload(config.apiUrl, formData, {
-       'Authorization': config.token
-     }, onProgress)
+4.  **实现上传逻辑**:
+    编辑 `src/services/uploader.ts`:
+    - 导入新的 Config 接口。
+    - 实现上传函数（如 `uploadNewHost`）。
+    - 在主 `uploadImage` 函数中注册新类型。
 
-     return {
-       url: res.data.url
-     }
-   }
-   ```
+    示例:
+    ```typescript
+    // 1. 在 uploadImage 中注册
+    export async function uploadImage(...) {
+      switch (config.type) {
+        // ...
+        case 'new_host':
+          return uploadNewHost(file, config as NewHostConfig, onProgress)
+      }
+    }
+
+    // 2. 实现函数
+    async function uploadNewHost(file: File, config: NewHostConfig, onProgress: ProgressCallback): Promise<UploadResult> {
+      // Implement upload logic...
+    }
+    ```
 
 ## 🏗️ 技术栈
 

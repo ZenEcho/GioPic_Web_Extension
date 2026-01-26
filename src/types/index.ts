@@ -1,4 +1,4 @@
-export type DriveType = 'lsky' | 'easyimages' | 'chevereto' | 'imgurl' | 'zpic' | 'aliyun' | 'aws' | 'tencent' | 'imgurl' | 'smms' | 'hellohao' | 'imgur' | 'custom' | 'github';
+export type DriveType = 'lsky' | 'easyimages' | 'chevereto' | 'imgurl' | 'zpic' | 'aliyun' | 'aws' | 'tencent' | 'imgurl' | 'smms' | 'hellohao' | 'imgur' | 'custom' | 'github' | 'test';
 
 export interface BaseConfig {
   id: string;
@@ -80,7 +80,13 @@ export interface CustomConfig extends Omit<BaseConfig, 'type'> {
   urlSuffix?: string; // 自定义URL后缀，例如.jpg
 }
 
-export type DriveConfig = WebUploaderConfig | AliyunConfig | S3Config | TencentConfig | GithubConfig | CustomConfig;
+export interface TestConfig extends BaseConfig {
+  type: 'test';
+  apiUrl: string;
+  token: string;
+}
+
+export type DriveConfig = WebUploaderConfig | AliyunConfig | S3Config | TencentConfig | GithubConfig | CustomConfig | TestConfig;
 
 export interface UploadRecord {
   id: string;

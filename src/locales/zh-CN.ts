@@ -9,6 +9,7 @@ export default {
     aws: 'AWS S3',
     github: 'GitHub',
     custom: '自定义 (Custom)',
+    test: '测试图床',
   },
   common: {
     edit: '编辑',

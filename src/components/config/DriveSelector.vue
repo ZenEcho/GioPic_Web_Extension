@@ -1,8 +1,7 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { DRIVE_TYPE_OPTIONS } from '@/constants/driveSchemas'
-import { getStorageIcon } from '@/utils/icon'
+import { DRIVE_REGISTRY, type DriveCategory } from '@/constants/driveSchemas'
 
 const props = defineProps<{
     modelValue?: string
@@ -16,67 +15,45 @@ const emit = defineEmits<{
 const { t } = useI18n()
 const searchQuery = ref('')
 
-// Drive Categories Definition
-const DRIVE_CATEGORIES = [
-  {
-    id: 'self-hosted',
-    title: 'config.categories.selfHosted',
-    types: ['lsky', 'easyimages', 'chevereto', 'imgurl', 'zpic', 'hellohao']
-  },
-  {
-    id: 'cloud',
-    title: 'config.categories.cloud',
-    types: ['aliyun', 'tencent', 'aws']
-  },
-  {
-    id: 'public',
-    title: 'config.categories.public',
-    types: ['smms', 'imgur', 'github']
-  },
-  {
-    id: 'custom',
-    title: 'config.categories.custom',
-    types: ['custom']
-  }
+// Categories Definition (Order and Title)
+const CATEGORY_DEFINITIONS: { id: DriveCategory, title: string }[] = [
+  { id: 'self-hosted', title: 'config.categories.selfHosted' },
+  { id: 'cloud', title: 'config.categories.cloud' },
+  { id: 'public', title: 'config.categories.public' },
+  { id: 'custom', title: 'config.categories.custom' }
 ]
 
-const DRIVE_META: Record<string, { color: string, darkColor?: string }> = {
-    // Self-hosted
-    lsky: { color: 'text-blue-600 bg-blue-100', darkColor: 'dark:text-blue-300 dark:bg-blue-900/30' },
-    easyimages: { color: 'text-green-600 bg-green-100', darkColor: 'dark:text-green-300 dark:bg-green-900/30' },
-    chevereto: { color: 'text-orange-600 bg-orange-100', darkColor: 'dark:text-orange-300 dark:bg-orange-900/30' },
-    imgurl: { color: 'text-purple-600 bg-purple-100', darkColor: 'dark:text-purple-300 dark:bg-purple-900/30' },
-    zpic: { color: 'text-pink-600 bg-pink-100', darkColor: 'dark:text-pink-300 dark:bg-pink-900/30' },
-    hellohao: { color: 'text-indigo-600 bg-indigo-100', darkColor: 'dark:text-indigo-300 dark:bg-indigo-900/30' },
-    
-    // Cloud
-    aliyun: { color: 'text-orange-600 bg-orange-100', darkColor: 'dark:text-orange-300 dark:bg-orange-900/30' },
-    tencent: { color: 'text-blue-600 bg-blue-100', darkColor: 'dark:text-blue-300 dark:bg-blue-900/30' },
-    aws: { color: 'text-yellow-600 bg-yellow-100', darkColor: 'dark:text-yellow-300 dark:bg-yellow-900/30' },
-    
-    // Public
-    smms: { color: 'text-blue-500 bg-blue-50', darkColor: 'dark:text-blue-300 dark:bg-blue-900/30' },
-    imgur: { color: 'text-green-500 bg-green-50', darkColor: 'dark:text-green-300 dark:bg-green-900/30' },
-    github: { color: 'text-gray-700 bg-gray-200', darkColor: 'dark:text-gray-300 dark:bg-gray-700' },
-    
-    // Custom
-    custom: { color: 'text-gray-600 bg-gray-100', darkColor: 'dark:text-gray-300 dark:bg-gray-800' }
-}
+// Dynamically generate categories from Registry
+const DRIVE_CATEGORIES = CATEGORY_DEFINITIONS.map(cat => ({
+  ...cat,
+  types: Object.values(DRIVE_REGISTRY)
+    .filter(item => item.category === cat.id)
+    .map(item => item.key)
+}))
 
 function getDriveLabel(value: string) {
-    const option = DRIVE_TYPE_OPTIONS.find(opt => opt.value === value)
-    return option ? option.label : value
+    const item = DRIVE_REGISTRY[value]
+    // 优先使用翻译，如果本地化键不存在则回退到 label
+    // 注意：理想情况下应使用 t('providers.' + value)，但目前沿用已有模式
+    // 如果注册表中的 label 是英文名称，而我们希望显示本地化名称：
+    // 实际上，之前使用的是带 label 的 DRIVE_TYPE_OPTIONS
+    return item ? item.label : value
 }
 
 function getDriveMeta(type: string) {
-    const meta = DRIVE_META[type] || { 
-        color: 'text-gray-600 bg-gray-100', 
-        darkColor: 'dark:text-gray-300 dark:bg-gray-800'
+    const item = DRIVE_REGISTRY[type]
+    if (!item) {
+        return {
+             color: 'text-gray-600 bg-gray-100',
+             darkColor: 'dark:text-gray-300 dark:bg-gray-800',
+             icon: 'i-ph-hard-drive-duotone'
+        }
     }
     
     return {
-        ...meta,
-        icon: getStorageIcon(type)
+        color: item.color,
+        darkColor: item.darkColor,
+        icon: item.icon
     }
 }
 
