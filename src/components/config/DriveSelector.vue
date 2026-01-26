@@ -2,6 +2,7 @@
 import { ref, computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { DRIVE_TYPE_OPTIONS } from '@/constants/driveSchemas'
+import { getStorageIcon } from '@/utils/icon'
 
 const props = defineProps<{
     modelValue?: string
@@ -39,27 +40,27 @@ const DRIVE_CATEGORIES = [
   }
 ]
 
-const DRIVE_META: Record<string, { color: string, icon: string, darkColor?: string }> = {
+const DRIVE_META: Record<string, { color: string, darkColor?: string }> = {
     // Self-hosted
-    lsky: { color: 'text-blue-600 bg-blue-100', darkColor: 'dark:text-blue-300 dark:bg-blue-900/30', icon: 'i-ph-cloud-arrow-up-duotone' },
-    easyimages: { color: 'text-green-600 bg-green-100', darkColor: 'dark:text-green-300 dark:bg-green-900/30', icon: 'i-ph-image-duotone' },
-    chevereto: { color: 'text-orange-600 bg-orange-100', darkColor: 'dark:text-orange-300 dark:bg-orange-900/30', icon: 'i-ph-images-square-duotone' },
-    imgurl: { color: 'text-purple-600 bg-purple-100', darkColor: 'dark:text-purple-300 dark:bg-purple-900/30', icon: 'i-ph-link-duotone' },
-    zpic: { color: 'text-pink-600 bg-pink-100', darkColor: 'dark:text-pink-300 dark:bg-pink-900/30', icon: 'i-ph-lightning-duotone' },
-    hellohao: { color: 'text-indigo-600 bg-indigo-100', darkColor: 'dark:text-indigo-300 dark:bg-indigo-900/30', icon: 'i-ph-chat-circle-dots-duotone' },
+    lsky: { color: 'text-blue-600 bg-blue-100', darkColor: 'dark:text-blue-300 dark:bg-blue-900/30' },
+    easyimages: { color: 'text-green-600 bg-green-100', darkColor: 'dark:text-green-300 dark:bg-green-900/30' },
+    chevereto: { color: 'text-orange-600 bg-orange-100', darkColor: 'dark:text-orange-300 dark:bg-orange-900/30' },
+    imgurl: { color: 'text-purple-600 bg-purple-100', darkColor: 'dark:text-purple-300 dark:bg-purple-900/30' },
+    zpic: { color: 'text-pink-600 bg-pink-100', darkColor: 'dark:text-pink-300 dark:bg-pink-900/30' },
+    hellohao: { color: 'text-indigo-600 bg-indigo-100', darkColor: 'dark:text-indigo-300 dark:bg-indigo-900/30' },
     
     // Cloud
-    aliyun: { color: 'text-orange-600 bg-orange-100', darkColor: 'dark:text-orange-300 dark:bg-orange-900/30', icon: 'i-ph-cube-duotone' },
-    tencent: { color: 'text-blue-600 bg-blue-100', darkColor: 'dark:text-blue-300 dark:bg-blue-900/30', icon: 'i-ph-cloud-duotone' },
-    aws: { color: 'text-yellow-600 bg-yellow-100', darkColor: 'dark:text-yellow-300 dark:bg-yellow-900/30', icon: 'i-ph-database-duotone' },
+    aliyun: { color: 'text-orange-600 bg-orange-100', darkColor: 'dark:text-orange-300 dark:bg-orange-900/30' },
+    tencent: { color: 'text-blue-600 bg-blue-100', darkColor: 'dark:text-blue-300 dark:bg-blue-900/30' },
+    aws: { color: 'text-yellow-600 bg-yellow-100', darkColor: 'dark:text-yellow-300 dark:bg-yellow-900/30' },
     
     // Public
-    smms: { color: 'text-blue-500 bg-blue-50', darkColor: 'dark:text-blue-300 dark:bg-blue-900/30', icon: 'i-ph-image-duotone' },
-    imgur: { color: 'text-green-500 bg-green-50', darkColor: 'dark:text-green-300 dark:bg-green-900/30', icon: 'i-ph-arrow-fat-up-duotone' },
-    github: { color: 'text-gray-700 bg-gray-200', darkColor: 'dark:text-gray-300 dark:bg-gray-700', icon: 'i-ph-github-logo-duotone' },
+    smms: { color: 'text-blue-500 bg-blue-50', darkColor: 'dark:text-blue-300 dark:bg-blue-900/30' },
+    imgur: { color: 'text-green-500 bg-green-50', darkColor: 'dark:text-green-300 dark:bg-green-900/30' },
+    github: { color: 'text-gray-700 bg-gray-200', darkColor: 'dark:text-gray-300 dark:bg-gray-700' },
     
     // Custom
-    custom: { color: 'text-gray-600 bg-gray-100', darkColor: 'dark:text-gray-300 dark:bg-gray-800', icon: 'i-ph-code-duotone' }
+    custom: { color: 'text-gray-600 bg-gray-100', darkColor: 'dark:text-gray-300 dark:bg-gray-800' }
 }
 
 function getDriveLabel(value: string) {
@@ -68,10 +69,14 @@ function getDriveLabel(value: string) {
 }
 
 function getDriveMeta(type: string) {
-    return DRIVE_META[type] || { 
+    const meta = DRIVE_META[type] || { 
         color: 'text-gray-600 bg-gray-100', 
-        darkColor: 'dark:text-gray-300 dark:bg-gray-800', 
-        icon: 'i-ph-hard-drive-duotone' 
+        darkColor: 'dark:text-gray-300 dark:bg-gray-800'
+    }
+    
+    return {
+        ...meta,
+        icon: getStorageIcon(type)
     }
 }
 
