@@ -1,5 +1,5 @@
 
-export type DetectorType = 'lsky' | 'lskyOpen' | 'easyimages' | 'chevereto' | '16best' | 'Zpic'
+export type DetectorType = 'lsky' | 'lskyOpen' | 'easyimages' | 'chevereto' | '16best' | 'Zpic' | 'cloudflareImg' | 'telegraphImg'
 
 export interface DetectionResult {
   type: DetectorType
@@ -115,6 +115,36 @@ export const detectors = {
   //   }
   //   return null
   // },
+  cloudflareImg: (): DetectionResult | null => {
+    //  查找结构
+    //      <div class="header">
+    //       <a href="https://github.com/MarSeventh/CloudFlare-ImgBed" target="_blank" class="">
+    //       </a>
+    //       <h1 class="title">
+    //           <a class="main-title" href="https://github.com/MarSeventh/CloudFlare-ImgBed" target="_blank"></a>
+    //       </h1>
+    //   </div>
+    const target = 'https://github.com/MarSeventh/CloudFlare-ImgBed'
+    const titleLink = document.querySelector(`.header h1 .main-title[href="${target}"]`)
+
+    if (titleLink && !isIgnored()) {
+      return { type: 'cloudflareImg' }
+    }
+    return null
+  },
+  telegraphImg: (): DetectionResult | null => {
+    // <div class="footer" >
+    //  基于 <a href="https://github.com/cf-pages/Telegraph-Image" target="_blank">Telegraph</a> 的图片上传工具
+    // </div>
+    const target = 'https://github.com/cf-pages/Telegraph-Image'
+    const link = document.querySelector(`.footer a[href="${target}"]`)
+
+    if (link && !isIgnored()) {
+      return { type: 'telegraphImg' }
+    }
+
+    return null
+  },
 }
 
 export async function detectSite(): Promise<DetectionResult | null> {
@@ -133,6 +163,12 @@ export async function detectSite(): Promise<DetectionResult | null> {
 
   const best = detectors.best16()
   if (best) return best
+
+  const cloudflareImg = detectors.cloudflareImg()
+  if (cloudflareImg) return cloudflareImg
+
+  const telegraphImg = detectors.telegraphImg()
+  if (telegraphImg) return telegraphImg
 
   return null
 }

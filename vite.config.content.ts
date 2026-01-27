@@ -5,6 +5,7 @@ import AutoImport from 'unplugin-auto-import/vite'
 import Components from 'unplugin-vue-components/vite'
 import { NaiveUiResolver } from 'unplugin-vue-components/resolvers'
 import UnoCSS from 'unocss/vite'
+import presetUno from 'unocss/preset-uno'
 import { isDev } from './manifest/utils'
 
 console.log('vite.config.content.ts', isDev);
@@ -12,7 +13,13 @@ console.log('vite.config.content.ts', isDev);
 export default defineConfig({
   plugins: [
     vue(),
-    UnoCSS(),
+    UnoCSS({
+      presets: [
+        presetUno({
+          preflight: false,
+        }),
+      ],
+    }),
     AutoImport({
       imports: [
         'vue',

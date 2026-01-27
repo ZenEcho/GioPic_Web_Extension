@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, onUnmounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { NCard } from 'naive-ui'
 import browser from 'webextension-polyfill'
@@ -11,33 +11,84 @@ import DetectorLskyOpen from '@/content/components/detectors/DetectorLskyOpen.vu
 import DetectorEasyImages from '@/content/components/detectors/DetectorEasyImages.vue'
 import DetectorChevereto from '@/content/components/detectors/DetectorChevereto.vue'
 import Detector16best from '@/content/components/detectors/Detector16best.vue'
+import DetectorCloudFlareImg from '@/content/components/detectors/DetectorCloudFlareImg.vue'
+import DetectorTelegraphImg from '@/content/components/detectors/DetectorTelegraphImg.vue'
 
 const { t } = useI18n()
 
 const showDetector = ref(false)
 const detectorType = ref<DetectorType | null>(null)
 const lskyVersion = ref<'v1' | 'v2'>('v1')
+let observer: MutationObserver | null = null
+let urlInterval: ReturnType<typeof setInterval> | null = null
+let debounceTimer: ReturnType<typeof setTimeout> | null = null
 
 const getCurrentDomain = () => window.location.hostname
 
 const ignoreSite = () => {
   localStorage.setItem(getCurrentDomain(), 'true')
   showDetector.value = false
+  stopObserver() // 用户手动忽略后，停止后续检测
 }
 
 const closeDetector = () => {
   showDetector.value = false
+  // 用户关闭后，暂时停止检测，直到页面刷新或 URL 变化
+  stopObserver()
 }
 
 const checkSite = async () => {
+  // 如果已经显示探测器，不再重复检测
+  if (showDetector.value) {
+    stopObserver()
+    return true
+  }
+
   const result = await detectSite()
+  // console.log(result);
+  
   if (result) {
     detectorType.value = result.type
     if (result.version) {
       lskyVersion.value = result.version
     }
     showDetector.value = true
+    stopObserver() // 检测成功后，停止监听 DOM 变化以节省性能
+    return true
   }
+  return false
+}
+
+// 停止 DOM 监听
+const stopObserver = () => {
+  if (observer) {
+    observer.disconnect()
+    observer = null
+  }
+}
+
+// 启动 DOM 监听
+const startObserver = () => {
+  // 先清理旧的
+  stopObserver()
+  
+  // 立即执行一次检查
+  void checkSite()
+
+  // 创建新的 Observer
+  observer = new MutationObserver(() => {
+    // 防抖处理：避免 DOM 频繁变动导致频繁 check
+    if (debounceTimer) clearTimeout(debounceTimer)
+    debounceTimer = setTimeout(() => {
+      void checkSite()
+    }, 500)
+  })
+
+  // 监听整个文档树的变化
+  observer.observe(document.body, {
+    childList: true,
+    subtree: true
+  })
 }
 
 async function saveConfig(type: DriveType = 'lsky', extra: Partial<DriveConfig> = {}) {
@@ -74,18 +125,34 @@ async function saveConfig(type: DriveType = 'lsky', extra: Partial<DriveConfig> 
 }
 
 onMounted(() => {
+  // 1. 初始启动监听
   if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', () => { void checkSite() }, { once: true })
+    document.addEventListener('DOMContentLoaded', startObserver, { once: true })
   } else {
-    void checkSite()
+    startObserver()
   }
+
+  // 2. 监听 URL 变化 (SPA 路由支持)
   let lastPath = window.location.pathname
-  setInterval(() => {
+  urlInterval = setInterval(() => {
     if (window.location.pathname !== lastPath) {
       lastPath = window.location.pathname
-      void checkSite()
+      // URL 变化意味着进入了新页面/路由，重置状态并重启 DOM 监听
+      // 注意：这里不重置 showDetector.value 为 false，除非你想在每个页面都重新探测
+      // 通常如果已经在当前域探测到了，可能不需要再次探测？
+      // 但如果是不同子路径对应不同图床（较少见），或者用户之前关闭了探测器
+      // 这里保守策略：如果当前没显示，就重新开始监听
+      if (!showDetector.value) {
+        startObserver()
+      }
     }
   }, 1000)
+})
+
+onUnmounted(() => {
+  stopObserver()
+  if (urlInterval) clearInterval(urlInterval)
+  if (debounceTimer) clearTimeout(debounceTimer)
 })
 </script>
 
@@ -130,7 +197,20 @@ onMounted(() => {
           @ignore="ignoreSite"
           @close="closeDetector"
         />
-
+        <DetectorCloudFlareImg
+          v-if="detectorType === 'cloudflareImg'"
+          :appName="t('app.name')"
+          :saveConfig="saveConfig"
+          @ignore="ignoreSite"
+          @close="closeDetector"
+        />
+        <DetectorTelegraphImg
+          v-if="detectorType === 'telegraphImg'"
+          :appName="t('app.name')"
+          :saveConfig="saveConfig"
+          @ignore="ignoreSite"
+          @close="closeDetector"
+        />
       </div>
     </NCard>
 

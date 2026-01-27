@@ -14,7 +14,7 @@ const server = http.createServer((req, res) => {
         return;
     }
 
-    // 1. JSON 响应测试
+    // 1. JSON 响应测试 (标准对象)
     if (req.method === 'POST' && req.url === '/upload') {
         setTimeout(() => {
             const responseData = {
@@ -33,6 +33,41 @@ const server = http.createServer((req, res) => {
             res.end(JSON.stringify(responseData));
             console.log(`[POST /upload] Handled JSON upload`);
         }, 200);
+        return;
+    }
+
+    // 1.1 JSON 响应测试 (直接返回对象 - 无嵌套)
+    if (req.method === 'POST' && req.url === '/upload/flat') {
+        const responseData = {
+            "status": "success",
+            "url": `http://localhost:${PORT}/f/flat_image.png`,
+            "delete_url": `http://localhost:${PORT}/del/flat_id`
+        };
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify(responseData));
+        console.log(`[POST /upload/flat] Handled Flat JSON upload`);
+        return;
+    }
+
+    // 1.2 JSON 响应测试 (直接返回数组)
+    if (req.method === 'POST' && req.url === '/upload/array') {
+        const responseData = [
+            {
+                "name": "image.png",
+                "src": `http://localhost:${PORT}/f/array_image.png`
+            }
+        ];
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify(responseData));
+        console.log(`[POST /upload/array] Handled Array JSON upload`);
+        return;
+    }
+
+    // 1.3 纯文本响应测试
+    if (req.method === 'POST' && req.url === '/upload/text') {
+        res.writeHead(200, { 'Content-Type': 'text/plain' });
+        res.end(`http://localhost:${PORT}/f/text_image.png`);
+        console.log(`[POST /upload/text] Handled Text upload`);
         return;
     }
 

@@ -79,11 +79,6 @@ function syncStyles(shadowRoot: ShadowRoot) {
         if (cssrId && !shadowRoot.querySelector(`style[cssr-id="${cssrId}"]`)) {
             shadowRoot.appendChild(style.cloneNode(true))
         }
-        
-        // For UnoCSS/Tailwind in dev/prod
-        if (!cssrId && style.textContent?.includes('--un-')) {
-             shadowRoot.appendChild(style.cloneNode(true))
-        }
     })
 }
 

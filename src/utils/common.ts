@@ -32,7 +32,8 @@ export async function copyToClipboard(text: string): Promise<void> {
 export function getValueByPath(obj: any, path: string): any {
     if (!path) return undefined
     // Support array syntax like data[0].url -> data.0.url
-    const normalizedPath = path.replace(/\[(\d+)\]/g, '.$1')
+    // Also remove leading dot if path starts with array index like [0].src -> .0.src -> 0.src
+    const normalizedPath = path.replace(/\[(\d+)\]/g, '.$1').replace(/^\./, '')
     return normalizedPath.split('.').reduce((acc, part) => acc && acc[part], obj)
 }
 

@@ -29,9 +29,6 @@ export async function getManifest() {
                 js: [
                     "content/content.js",
                 ],
-                css: [
-                    "content/content.css",
-                ],
             }
         ],
         web_accessible_resources: [

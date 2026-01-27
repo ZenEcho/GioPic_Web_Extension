@@ -307,7 +307,17 @@ async function uploadCustom(file: File, config: CustomConfig, onProgress: Progre
     // 4. Parse Response
     let url: string | undefined
 
-    const responseBody = response.data
+    let responseBody = response.data
+
+    // 自动转换：如果 responseType 是 json，但返回的是字符串，尝试 parse JSON
+    if (config.responseType === 'json' && typeof responseBody === 'string') {
+      try {
+        responseBody = JSON.parse(responseBody)
+      } catch (e) {
+        // 如果解析失败，可能是真的纯文本，保持原样，后续可能会报错或按路径取不到值
+        console.warn('Failed to parse JSON string response:', e)
+      }
+    }
 
     if (config.responseType === 'regex') {
       // Regex Mode

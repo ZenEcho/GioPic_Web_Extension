@@ -147,8 +147,27 @@ onMounted(() => {
     checkVersion()
 })
 
-async function checkVersion() {
+async function checkVersion(force = false) {
     if (isChecking.value) return
+
+    // Check cache first if not forced  检查缓存是否过期
+    if (!force) {
+        try {
+            const cached = localStorage.getItem('giopic-version-check')
+            if (cached) {
+                const { time, version } = JSON.parse(cached)
+                // Cache valid for 6 hours 中文 缓存过期时间 6 小时
+                if (Date.now() - time < 6 * 60 * 60 * 1000) {
+                    latestVersion.value = version
+                    hasUpdate.value = version !== currentVersion.value
+                    return
+                }
+            }
+        } catch (e) {
+            console.warn('Failed to parse version cache', e)
+        }
+    }
+
     isChecking.value = true
     checkError.value = false
     try {
@@ -179,6 +198,12 @@ async function checkVersion() {
         if (tagName) {
             latestVersion.value = tagName.replace(/^v/, '')
             hasUpdate.value = latestVersion.value !== currentVersion.value
+
+            // Save to cache
+            localStorage.setItem('giopic-version-check', JSON.stringify({
+                time: Date.now(),
+                version: latestVersion.value
+            }))
         }
     } catch (e) {
         console.error('Failed to check version', e)
@@ -205,7 +230,7 @@ async function handleResetExtension() {
 
                 // Restore default settings
                 await browser.storage.local.set(getDefaultSettings())
-                
+
                 message.success(t('settings.dangerZone.resetSuccess'))
                 setTimeout(() => {
                     window.location.reload()
@@ -234,7 +259,6 @@ async function handleResetExtension() {
                             class="giopic-link-btn giopic-link-btn-primary flex-1 py-2 border font-medium text-sm flex items-center justify-center gap-2"
                             :class="!themeStore.isDark ? 'text-white' : 'border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'"
                             :style="!themeStore.isDark ? { backgroundColor: 'var(--giopic-primary)' } : {}"
-
                             @click="themeStore.isDark = false">
                             <div class="i-ph-sun" /> {{ t('settings.lightMode') }}
                         </button>
@@ -242,7 +266,6 @@ async function handleResetExtension() {
                             class="giopic-link-btn giopic-link-btn-primary flex-1 py-2 border font-medium text-sm flex items-center justify-center gap-2"
                             :class="themeStore.isDark ? 'text-white' : 'border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'"
                             :style="themeStore.isDark ? { backgroundColor: 'var(--giopic-primary)' } : {}"
-
                             @click="themeStore.isDark = true">
                             <div class="i-ph-moon" /> {{ t('settings.darkMode') }}
                         </button>
@@ -255,17 +278,17 @@ async function handleResetExtension() {
                         <div class="i-ph-translate" /> {{ t('settings.language') }}
                     </div>
                     <div class="flex gap-2">
-                        <button class="giopic-link-btn giopic-link-btn-primary flex-1 py-2 border font-medium text-sm flex items-center justify-center gap-2"
+                        <button
+                            class="giopic-link-btn giopic-link-btn-primary flex-1 py-2 border font-medium text-sm flex items-center justify-center gap-2"
                             :class="locale === 'zh-CN' ? 'text-white' : 'border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'"
                             :style="locale === 'zh-CN' ? { backgroundColor: 'var(--giopic-primary)' } : {}"
-
                             @click="changeLocale('zh-CN')">
                             中文
                         </button>
-                        <button class="giopic-link-btn giopic-link-btn-primary flex-1 py-2 border font-medium text-sm flex items-center justify-center gap-2"
+                        <button
+                            class="giopic-link-btn giopic-link-btn-primary flex-1 py-2 border font-medium text-sm flex items-center justify-center gap-2"
                             :class="locale === 'en-US' ? 'text-white' : 'border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'"
                             :style="locale === 'en-US' ? { backgroundColor: 'var(--giopic-primary)' } : {}"
-
                             @click="changeLocale('en-US')">
                             English
                         </button>
@@ -281,7 +304,6 @@ async function handleResetExtension() {
                             class="flex-1 py-2 rounded-lg border transition-all font-medium text-sm flex items-center justify-center gap-2"
                             :class="openMode === mode ? 'text-white' : 'border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'"
                             :style="openMode === mode ? { backgroundColor: 'var(--giopic-primary)' } : {}"
-
                             @click="setOpenMode(mode)">
                             <div :class="openModeIcons[mode]" /> {{ t(`settings.openModes.${mode}`) }}
                         </button>
@@ -298,7 +320,6 @@ async function handleResetExtension() {
                             class="giopic-link-btn giopic-link-btn-primary flex-1 py-2 border font-medium text-sm rounded-lg transition-all flex items-center justify-center gap-2"
                             :class="themeStore.uiMode === mode ? 'text-white' : 'border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'"
                             :style="themeStore.uiMode === mode ? { backgroundColor: 'var(--giopic-primary)' } : {}"
-
                             @click="themeStore.setUiMode(mode as any)">
                             <div :class="uiModeIcons[mode]" /> {{ t(`settings.uiModes.${mode}`) }}
                         </button>
@@ -342,7 +363,7 @@ async function handleResetExtension() {
                     <div
                         class="flex items-center justify-between p-3 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-700/30">
                         <span class="text-sm font-medium text-gray-700 dark:text-gray-200">{{ t('settings.autoInject')
-                        }}</span>
+                            }}</span>
                         <n-switch v-model:value="autoInject" @update:value="setAutoInject" />
                     </div>
                 </div>
@@ -360,7 +381,7 @@ async function handleResetExtension() {
                         </div>
                         <div class="flex items-center justify-between text-xs">
                             <span class="text-gray-500 dark:text-gray-400">{{ t('settings.desktopLink.statusLabel')
-                            }}</span>
+                                }}</span>
                             <span :class="desktopStatusClass">
                                 {{ desktopStatusText }}
                             </span>
@@ -383,7 +404,7 @@ async function handleResetExtension() {
                         </span>
                         <button class="text-xs px-2 py-1 rounded border transition-colors"
                             :class="isChecking ? 'text-gray-400 border-gray-200 cursor-not-allowed' : 'text-blue-500 border-blue-500 hover:bg-blue-500 hover:text-white'"
-                            :disabled="isChecking" @click="checkVersion">
+                            :disabled="isChecking" @click="checkVersion(true)">
                             {{ isChecking ? t('settings.version.checking') : t('settings.version.check') }}
                         </button>
                     </div>
