@@ -7,12 +7,12 @@ Background Service Worker 是浏览器扩展的“后端”，负责处理长期
 
 ```text
 src/background/
-├── index.ts                  # 入口文件：初始化监听器，管理生命周期
+├── index.ts                  # 入口文件：初始化监听器，管理生命周期，Side Panel 状态同步
 ├── polyfill.ts               # 兼容性补丁 (主要针对 Firefox/Chrome API 差异)
 └── services/                 # 核心业务逻辑模块
     ├── actionManager.ts      # 扩展图标点击行为管理 (Popup vs Tab vs Window)
     ├── contextMenu.ts        # 右键菜单管理 ("上传图片")
-    ├── desktopLink.ts        # 桌面快捷方式逻辑 (PWA 相关)
+    ├── desktopLink.ts        # 桌面快捷方式逻辑 (PWA/桌面版通信)
     ├── imageService.ts       # 图片下载与处理服务
     ├── messageService.ts     # 消息路由中心 (处理 Content Script 请求)
     └── notificationService.ts # 系统通知服务
@@ -28,6 +28,7 @@ Background 采用**服务化 (Service-based)** 架构，每个 `service` 模块�
 | **Message Router** | 处理来自 Content Script 或 Popup 的请求 | `runtime.onMessage` |
 | **Context Menu** | 提供右键上传功能 | `contextMenus.onClicked` |
 | **Web Request** | 拦截请求以获取图床 Token | `webRequest.onBeforeSendHeaders` |
+| **Desktop Link** | 与桌面客户端/PWA 进行状态同步 | `runtime.sendMessage` |
 
 ## 4. 核心模块详解 (Core Modules)
 
@@ -36,7 +37,8 @@ Background 采用**服务化 (Service-based)** 架构，每个 `service` 模块�
 *   **职责**:
     *   注册生命周期事件 (`onInstalled`, `onStartup`)。
     *   初始化各个服务 (`setupContextMenus`, `startAuthTokenMonitor`)。
-    *   **Side Panel 兼容**: 针对 Chrome 处理 Side Panel API 的初始化和状态同步。
+    *   **Side Panel 兼容**: 针对 Chrome 处理 Side Panel API 的初始化和状态同步 (将面板状态同步到 `storage.local` 以便其他组件感知)。
+    *   **点击行为**: 监听 `action.onClicked`，根据配置决定打开 Popup、新标签页还是新窗口。
 
 ### 4.2 消息服务 (`services/messageService.ts`)
 *   **角色**: 路由器。

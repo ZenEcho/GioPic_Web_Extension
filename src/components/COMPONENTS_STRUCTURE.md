@@ -11,6 +11,7 @@ src/components/
 │   ├── AclConfig.vue     # 访问控制列表 (ACL) 配置
 │   ├── ConfigModal.vue   # 配置弹窗容器
 │   ├── CorsConfig.vue    # CORS 代理设置
+│   ├── DriveSelector.vue # [核心] 图床驱动选择器 (分类展示)
 │   ├── DynamicConfigForm.vue # [核心] 动态配置表单 (支持魔术变量预览)
 │   └── KvInput.vue       # 键值对输入组件 (Header/Body配置)
 ├── history/              # 上传历史记录模块
@@ -31,8 +32,9 @@ src/components/
 │   └── upload/           # 上传交互
 │       └── UploadZone.vue # 拖拽上传区域
 └── settings/             # 全局设置
-    ├── SettingsModal.vue # 设置弹窗
-    └── SidebarSettings.vue # 侧边栏偏好设置
+    ├── SettingsModal.vue # 设置弹窗 (集成各子设置)
+    ├── SidebarSettings.vue # 侧边栏 (Content Script) 偏好设置
+    └── SiteEditorSettings.vue # [核心] 网站-编辑器自动绑定管理
 ```
 
 ## 3. 架构概览 (Architecture Overview)
@@ -41,16 +43,16 @@ src/components/
 
 | 模块 (Module) | 职责 (Responsibility) | 关键交互 |
 | :--- | :--- | :--- |
-| **Config** | 管理不同图床驱动（S3, GitHub, Custom 等）的配置表单 | 动态表单渲染、魔术变量预览、配置验证 |
+| **Config** | 管理不同图床驱动（S3, GitHub, Custom 等）的配置表单 | 动态表单渲染、魔术变量预览、配置验证、驱动选择 |
 | **Home** | 构建主控制台的布局与核心工作流 | 侧边栏导航、文件拖拽上传、队列管理 |
 | **History** | 展示与管理历史上传记录 | 分页加载、搜索过滤、复制链接 |
-| **Settings** | 管理扩展的全局偏好设置 | 界面定制、快捷键设置、语言切换 |
+| **Settings** | 管理扩展的全局偏好设置 | 界面定制、快捷键设置、语言切换、编辑器自动绑定管理 |
 
 ## 4. 核心模块详解 (Core Modules)
 
-### 4.1 动态配置系统 (`config/DynamicConfigForm.vue`)
-*   **角色**: 通用配置渲染引擎。
-*   **职责**:
+### 4.1 动态配置系统 (`config/`)
+*   **DriveSelector.vue**: 提供分类（自托管、云存储、公共图床）的驱动选择界面，优化用户体验。
+*   **DynamicConfigForm.vue**:
     *   根据 Drive Schema 动态生成表单项。
     *   **魔术变量预览**: 实时演示 `{uuid}`, `{year}` 等变量的替换结果。
     *   处理表单验证与数据绑定。
@@ -60,19 +62,23 @@ src/components/
 *   **UploadZone**: 核心交互区域，支持拖拽文件、粘贴上传。
 *   **UploadQueue**: 管理上传任务队列，展示进度条与状态（成功/失败）。
 
-### 4.3 历史记录 (`history/`)
-*   **HistoryGrid**: 采用虚拟滚动或分页方式展示图片预览。
-*   **交互**: 支持多选删除、一键复制 Markdown/URL。
+### 4.3 全局设置 (`settings/`)
+*   **SettingsModal**: 统一的设置入口，集成通用设置、外观设置等。
+*   **SiteEditorSettings**:
+    *   管理“域名-编辑器”的绑定关系。
+    *   支持手动添加/删除绑定规则。
+    *   配合 Content Script 实现编辑器的自动识别与精准注入。
 
 ## 5. 关键流程与数据流 (Key Processes & Data Flow)
 
 ### 5.1 配置新增/编辑流程
 1.  用户点击侧边栏 "Add Config" -> 打开 `ConfigModal`。
-2.  选择驱动类型 -> 加载对应的 Schema。
-3.  `DynamicConfigForm` 渲染表单 -> 用户输入 -> 实时预览变量。
+2.  `DriveSelector` 展示可用驱动 -> 用户选择驱动类型。
+3.  `DynamicConfigForm` 渲染对应 Schema 的表单 -> 用户输入 -> 实时预览变量。
 4.  保存 -> 数据写入 `storage.local` -> 触发 `REFRESH_CONFIG` 事件。
 
-### 5.2 文件上传流程 (Dashboard)
-1.  用户拖拽文件至 `UploadZone`。
-2.  `UploadQueue` 创建任务 -> 调用 `uploader` 服务。
-3.  上传成功 -> 刷新 `NodeList` (如果支持列表) 或更新 `HistoryGrid`。
+### 5.2 网站编辑器绑定流程
+1.  Content Script 成功注入图片到某网站编辑器 -> 自动记录“域名-编辑器类型”到 `storage.local`。
+2.  用户打开设置 -> `SiteEditorSettings` 读取并展示绑定列表。
+3.  用户手动修改/删除绑定 -> 更新 `storage.local`。
+4.  下次访问该网站 -> Content Script 优先使用绑定的编辑器适配器。

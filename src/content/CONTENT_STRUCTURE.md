@@ -13,12 +13,16 @@ src/content/
 │   ├── ContentOverlay.vue    # [核心] 统一 UI 容器，管理所有悬浮层
 │   ├── WebSidebar.vue        # 悬浮球与侧边栏
 │   ├── UploadList.vue        # 上传进度列表
-│   ├── TokenDetector.vue     # Token 自动获取弹窗
-│   └── NotificationView.vue  # 全局通知组件
+│   ├── TokenDetector.vue     # Token 自动获取弹窗 (UI)
+│   ├── NotificationView.vue  # 全局通知组件
+│   └── detectors/            # [新增] 站点专属 Token 探测器组件 (Chevereto, Lsky 等)
 ├── composables/              # Vue 组合式函数 (如 useDraggable)
 ├── page/                     # 运行在 Main World 的脚本 (Page Script)
 │   ├── index.ts              # Page Script 入口
-│   └── editorInjector/       # 编辑器识别与注入逻辑
+│   └── EditorInjector/       # [核心] 编辑器识别与注入逻辑
+│       ├── adapters.ts       # 各种编辑器的适配器实现
+│       ├── index.ts          # 探测与注入管理器 (Detector 类)
+│       └── meta.ts           # 编辑器元数据定义
 ├── services/                 # 业务逻辑服务 (如 driveDetector)
 └── utils/                    # 工具函数 (如 mount.ts)
 ```
@@ -41,19 +45,15 @@ GioPic 将注入逻辑分为两个独立的层级，分别运行在不同的上�
     *   通过 Shadow DOM 挂载到页面 (`#giopic-content-overlay`)。
     *   管理 `pointer-events`，确保透明区域不遮挡页面操作。
 
-### 4.2 注入引导 (`index.ts`)
-*   **角色**: 启动脚本。
-*   **职责**:
-    1.  通过 `document.createElement('script')` 将 `page.js` 注入到 `<head>`。
-    2.  调用 `mountComponent` 将 `ContentOverlay` 挂载到 Shadow Root。
-    3.  监听 Background 消息 (`UPLOAD_EVENT`) 并转发给 Page Script。
+### 4.2 编辑器注入系统 (`page/EditorInjector/`)
+*   **Detector 类**: 核心探测器。
+    *   `detect()`: 遍历适配器列表，识别当前页面的编辑器。
+    *   `inject()`: 执行图片 URL 注入。支持 **Preferred Editor Type** 机制，即优先使用用户绑定或上次成功使用的编辑器类型。
+    *   **自动绑定**: 注入成功后，会触发成功事件，Content Script 捕获后记录域名与编辑器的绑定关系。
 
-### 4.3 编辑器注入 (`page/editorInjector/`)
-*   **角色**: 页面逻辑探测器。
-*   **职责**:
-    *   自动识别页面使用的编辑器（如 Monaco, CodeMirror）。
-    *   监听文件粘贴事件。
-    *   处理 `GIOPIC_INJECT` 消息，将上传后的图片链接插入编辑器光标处。
+### 4.3 Token 探测系统 (`components/detectors/` & `services/driveDetector.ts`)
+*   **探测器组件**: 针对特定图床系统（如 Chevereto, Lsky Pro）的 Vue 组件。
+*   **工作流**: 当用户访问支持的图床网站时，对应的探测器组件激活，尝试自动获取认证 Token 并提示用户保存。
 
 ## 5. 关键流程与数据流 (Key Processes & Data Flow)
 
@@ -63,7 +63,10 @@ GioPic 将注入逻辑分为两个独立的层级，分别运行在不同的上�
 3.  Vue 应用 (`ContentOverlay`) 挂载到 Shadow Root 中。
 4.  用户看到悬浮球，但页面 CSS 无法影响它。
 
-### 5.2 图片上传与注入流程
+### 5.2 图片上传与智能注入流程
 1.  **上传**: 用户通过悬浮球上传图片 -> Background 完成上传 -> 发送 `UPLOAD_EVENT` 消息。
-2.  **中转**: `content/index.ts` 收到消息 -> 通过 `window.postMessage` 转发给 Main World。
-3.  **注入**: `page/index.ts` (Main World) 监听到消息 -> 调用 `editorInjector` -> 将 Markdown 插入当前聚焦的编辑器。
+2.  **中转**: `content/index.ts` 收到消息 -> 读取 `storage.local` 中的 `siteEditorConfig` (获取该网站绑定的编辑器类型) -> 通过 `window.postMessage` 将配置和图片数据转发给 Main World。
+3.  **注入**: `page/index.ts` (Main World) 监听到消息 -> 调用 `Detector.inject(url, preferredType)`。
+    *   如果存在 `preferredType`，直接使用对应适配器注入。
+    *   如果不存在，尝试自动探测并注入。
+4.  **反馈**: 注入成功后，Page Script 发送成功消息 -> Content Script 更新 `siteEditorConfig` 绑定关系。
