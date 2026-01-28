@@ -29,6 +29,13 @@ export default {
     collapse: 'Collapse',
     change: 'Change',
     back: 'Back',
+    add: 'Add',
+    noData: 'No Data',
+    search: 'Search',
+    clear: 'Clear',
+    clearConfirm: 'Are you sure you want to clear all data? This action cannot be undone.',
+    deleteSearchResults: 'Delete Search Results',
+    deleteSearchResultsConfirm: 'Are you sure you want to delete all search results? This action cannot be undone.',
   },
   home: {
     nodes: 'Nodes',
@@ -298,6 +305,11 @@ export default {
   },
   settings: {
     title: 'Settings',
+    tabs: {
+      general: 'General',
+      features: 'Features',
+      about: 'About & Reset',
+    },
     language: 'Language',
     sidebar: 'Sidebar Settings',
     theme: 'Theme Color',
@@ -380,6 +392,12 @@ export default {
       reset: 'Reset Extension',
       resetConfirm: 'This will clear all configurations, history, and settings. This action cannot be undone. Continue?',
       resetSuccess: 'Reset successful, page will reload',
+    },
+    siteEditor: {
+      title: 'Site Editor Configuration',
+      description: 'Manage editor injection methods for specific websites. When you upload an image on a website, the editor type will be automatically recorded. You can also manually add or modify it here.',
+      manage: 'Manage Editor Config',
+      hostnamePlaceholder: 'Enter hostname (e.g. example.com)'
     }
   },
   background: {

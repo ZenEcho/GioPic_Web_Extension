@@ -1,7 +1,6 @@
 import process from 'node:process';
 import { resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { log } from 'node:console';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 

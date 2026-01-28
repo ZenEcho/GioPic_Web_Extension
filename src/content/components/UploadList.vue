@@ -1,9 +1,13 @@
 <template>
     <Transition name="fade">
-        <div v-if="isVisible" class="fixed inset-0 pointer-events-none z-[2147483646] " >
+        <div v-if="isVisible" class="fixed inset-0 pointer-events-none z-[2147483646]">
             <div ref="containerRef"
                 class="absolute w-[380px] pointer-events-auto backdrop-blur-md bg-white/95 dark:bg-gray-800/95 shadow-2xl rounded-xl overflow-hidden flex flex-col font-sans text-sm border border-gray-200 dark:border-gray-700/50 transition-shadow duration-300"
-                :class="{ dark: isDark }" :style="{ left: (position.x - 8) + 'px', top: position.y + 'px' }">
+                :class="{ dark: isDark }"
+                :style="{ left: (position.x - 8) + 'px', top: position.y + 'px' }"
+                @click.stop
+                @mousedown.stop
+                @pointerdown.stop>
             <!-- Header -->
            <div ref="headerRef"
     class="px-4 py-2.5 flex justify-between items-center select-none cursor-move transition-colors duration-300

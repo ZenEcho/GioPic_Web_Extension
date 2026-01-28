@@ -59,6 +59,28 @@ const { onFilesDropped } = useUploadInput((files) => {
     emit('filesDropped', files)
 })
 
+const clickTimer = ref<ReturnType<typeof setTimeout> | null>(null)
+
+const handleNodeClick = (config: DriveConfig) => {
+    if (clickTimer.value) {
+        clearTimeout(clickTimer.value)
+    }
+    clickTimer.value = setTimeout(() => {
+        const idx = configStore.selectedIds.indexOf(config.id)
+        if (idx > -1) configStore.selectedIds.splice(idx, 1)
+        else configStore.selectedIds.push(config.id)
+        clickTimer.value = null
+    }, 200)
+}
+
+const handleNodeDblClick = (config: DriveConfig) => {
+    if (clickTimer.value) {
+        clearTimeout(clickTimer.value)
+        clickTimer.value = null
+    }
+    emit('editConfig', config)
+}
+
 </script>
 
 
@@ -99,11 +121,9 @@ const { onFilesDropped } = useUploadInput((files) => {
                     class="px-3 py-1 rounded-full text-xs font-medium transition-all border"
                     :class="configStore.selectedIds.includes(config.id)
                         ? 'bg-primary text-white border-primary shadow-sm shadow-primary/30'
-                        : 'bg-white dark:bg-gray-800 text-gray-500 dark:text-gray-400 border-gray-200 dark:border-gray-700 hover:border-primary/30'" :title="t('home.nodeTip')" @click="() => {
-                            const idx = configStore.selectedIds.indexOf(config.id);
-                            if (idx > -1) configStore.selectedIds.splice(idx, 1);
-                            else configStore.selectedIds.push(config.id);
-                        }" @contextmenu.prevent="emit('editConfig', config)" @dblclick="emit('editConfig', config)">
+                        : 'bg-white dark:bg-gray-800 text-gray-500 dark:text-gray-400 border-gray-200 dark:border-gray-700 hover:border-primary/30'"
+                    :title="t('home.nodeTip')" @click="handleNodeClick(config)"
+                    @contextmenu.prevent="emit('editConfig', config)" @dblclick="handleNodeDblClick(config)">
                     {{ config.name }}
                 </button>
                 <div class="flex items-center gap-2 ml-1">

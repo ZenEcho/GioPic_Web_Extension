@@ -1,21 +1,7 @@
 
-export type EditorType =
-    | 'nodeseek'
-    | 'V2EX'
-    | 'lowendtalk'
-    | 'Discuz'
-    | 'Typecho'
-    | 'Halo'
-    | 'phpBB'
-    | 'CodeMirror5'
-    | 'CodeMirror6'
-    | 'GutenbergEditor'
-    | 'TinyMCE'
-    | 'wangEditor'
-    | 'CKEditor4'
-    | 'CKEditor5'
-    | 'UEditor'
-    | 'unknown';
+import type { EditorType } from './meta';
+
+export type { EditorType };
 
 export interface DetectionResult {
     type: EditorType;
@@ -25,6 +11,12 @@ export interface DetectionResult {
 
 export interface InjectableDetectionResult extends DetectionResult {
     inject: (url: string) => Promise<boolean> | boolean;
+}
+
+export interface EditorAdapter {
+    id: EditorType;
+    detect: () => DetectionResult | null;
+    inject: (url: string) => boolean | Promise<boolean>;
 }
 
 // Global Window Interfaces
@@ -86,6 +78,13 @@ export interface WPElementType {
     [key: string]: any;
 }
 
+export interface CodeMirrorElementType extends HTMLElement {
+    CodeMirror?: {
+        getValue: () => string;
+        setValue: (value: string) => void;
+    };
+}
+
 declare global {
     interface Window {
         phpbb?: PhpBBType;
@@ -95,12 +94,4 @@ declare global {
         UE?: UEType;
         wp?: WPElementType;
     }
-}
-
-// Helper interface for CodeMirror
-export interface CodeMirrorElementType extends HTMLElement {
-    CodeMirror: {
-        getValue: () => string;
-        setValue: (value: string) => void;
-    };
 }

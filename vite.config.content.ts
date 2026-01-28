@@ -8,7 +8,6 @@ import UnoCSS from 'unocss/vite'
 import presetUno from 'unocss/preset-uno'
 import { isDev } from './manifest/utils'
 
-console.log('vite.config.content.ts', isDev);
 
 export default defineConfig({
   plugins: [

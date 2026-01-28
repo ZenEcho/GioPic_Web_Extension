@@ -10,7 +10,6 @@ const POPUP_URL = 'index.html'
 const SIDE_PANEL_STATE_KEY = 'giopic-sidepanel-open-tabs'
 const SIDE_PANEL_PATH = 'index.html'
 
-console.log('GioPic background script started')
 
 // 初始化
 updateActionBehavior()

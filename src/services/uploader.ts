@@ -544,7 +544,6 @@ async function uploadImgURL(file: File, config: WebUploaderConfig, onProgress: P
 
 async function uploadTest(file: File, config: TestConfig, onProgress: ProgressCallback): Promise<UploadResult> {
   // Mock upload for testing
-  console.log('Test upload started', file.name)
   const steps = 10
   for (let i = 1; i <= steps; i++) {
     await new Promise(resolve => setTimeout(resolve, 200))

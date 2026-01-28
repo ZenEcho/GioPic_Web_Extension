@@ -1,43 +1,26 @@
-import { Detector as RawDetector } from '../EditorInjector/detectors';
-import type { DetectionResult, InjectableDetectionResult, EditorType } from '../EditorInjector/types';
-import * as Handlers from '../EditorInjector/handlers';
 
-const handlerMap: Record<EditorType, (url: string) => boolean | Promise<boolean>> = {
-    'Discuz': Handlers.handleDiscuz,
-    'Halo': Handlers.handleHalo,
-    'Typecho': Handlers.handleTypecho,
-    'phpBB': Handlers.handlePHPBB,
-    'V2EX': Handlers.handleV2ex,
-    'nodeseek': Handlers.handleCodeMirror5,
-    'lowendtalk': Handlers.handleLowEndTalk,
-    'CodeMirror5': Handlers.handleCodeMirror5,
-    'CodeMirror6': Handlers.handleCodeMirror6,
-    'GutenbergEditor': Handlers.handleGutenberg,
-    'TinyMCE': Handlers.handleTinyMCE,
-    'wangEditor': Handlers.handleWangEditor,
-    'CKEditor4': Handlers.handleCKEditor4,
-    'CKEditor5': Handlers.handleCKEditor5,
-    'UEditor': Handlers.handleUEditor,
-    'unknown': () => false
-};
-
-function enrichResult(result: DetectionResult): InjectableDetectionResult {
-    return {
-        ...result,
-        inject: (url: string) => {
-            const handler = handlerMap[result.type];
-            if (handler) {
-                return handler(url);
-            }
-            return false;
-        }
-    };
-}
+import { adapters } from './adapters';
+import type { InjectableDetectionResult, EditorType } from './types';
 
 export class Detector {
     static detect(): InjectableDetectionResult[] {
-        const results = RawDetector.detect();
-        return results.map(enrichResult);
+        const results: InjectableDetectionResult[] = [];
+        
+        for (const adapter of adapters) {
+            try {
+                const result = adapter.detect();
+                if (result) {
+                    results.push({
+                        ...result,
+                        inject: adapter.inject
+                    });
+                }
+            } catch (e) {
+                console.warn(`[GioPic] Adapter ${adapter.id} detection failed:`, e);
+            }
+        }
+        
+        return results;
     }
 
     static detectWhenReady(options: {
@@ -45,32 +28,95 @@ export class Detector {
         maxWaitTime?: number;
         callback: (results: InjectableDetectionResult[]) => void;
     }): void {
-        RawDetector.detectWhenReady({
-            ...options,
-            callback: (results) => {
-                const enriched = results.map(enrichResult);
-                options.callback(enriched);
+        const { stabilityDelay = 1000, maxWaitTime = 5000, callback } = options;
+        let lastResultCount = 0;
+        let stabilityTimer: any = null;
+        let maxWaitTimer: any = null;
+
+        const check = () => {
+            const results = this.detect();
+            
+            // If results changed, reset stability timer
+            if (results.length !== lastResultCount) {
+                lastResultCount = results.length;
+                if (stabilityTimer) clearTimeout(stabilityTimer);
+                
+                stabilityTimer = setTimeout(() => {
+                    cleanup();
+                    callback(results);
+                }, stabilityDelay);
             }
+        };
+
+        const cleanup = () => {
+            if (maxWaitTimer) clearTimeout(maxWaitTimer);
+            if (stabilityTimer) clearTimeout(stabilityTimer);
+            observer.disconnect();
+        };
+
+        // Initial check
+        check();
+
+        // Observe DOM changes
+        const observer = new MutationObserver(check);
+        observer.observe(document.body, {
+            childList: true,
+            subtree: true
         });
+
+        // Max wait time fallback
+        maxWaitTimer = setTimeout(() => {
+            cleanup();
+            callback(this.detect());
+        }, maxWaitTime);
     }
 
     /**
      * 自动检测并注入图片 URL
      * 会选择置信度最高的结果进行注入
      * @param url 图片地址
+     * @param preferredType 首选编辑器类型
      * @returns 是否注入成功
      */
-    static async inject(url: string): Promise<boolean> {
+    static async inject(url: string, preferredType?: EditorType): Promise<boolean> {
+        // Direct injection via preferred type if provided
+        if (preferredType) {
+            const adapter = adapters.find(a => a.id === preferredType);
+            if (adapter) {
+                console.log(`[Detector] Using preferred adapter: ${preferredType}`);
+                try {
+                    const success = await adapter.inject(url);
+                    if (success) return true;
+                } catch (e) {
+                    console.warn(`[Detector] Preferred adapter ${preferredType} failed:`, e);
+                }
+            }
+        }
+
+        // Auto-detection fallback
         const results = this.detect();
         if (results.length === 0) {
             return false;
         }
 
-        // 按置信度排序，取最高的一个
+        // Sort by certainty
         results.sort((a, b) => b.certainty - a.certainty);
         const bestMatch = results[0];
         
-        return bestMatch?.inject(url) ?? false;
+        if (bestMatch) {
+            console.log(`[Detector] Auto-detected best match: ${bestMatch.type}`);
+            const success = await bestMatch.inject(url);
+            if (success) {
+                // 发送成功消息，用于自动绑定
+                window.postMessage({
+                    type: 'GIOPIC_EDITOR_SUCCESS',
+                    hostname: window.location.hostname,
+                    editorType: bestMatch.type
+                }, '*');
+            }
+            return success;
+        }
+        return false;
     }
 
     /**
@@ -98,11 +144,11 @@ export class Detector {
 
             if (event.data?.type === 'GIOPIC_INJECT' && event.data?.url) {
                 console.log('[Detector] 收到注入请求:', event.data.url);
-                await this.inject(event.data.url);
+                await this.inject(event.data.url, event.data.preferredType);
             }
         });
     }
 }
 
-export * from '../EditorInjector/types';
-
+export * from './types';
+export * from './meta';

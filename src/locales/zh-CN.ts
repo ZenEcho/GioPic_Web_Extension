@@ -29,6 +29,13 @@ export default {
     collapse: '折叠',
     change: '更换',
     back: '返回',
+    add: '添加',
+    noData: '暂无数据',
+    search: '搜索',
+    clear: '清空',
+    clearConfirm: '确定要清空所有数据吗？此操作无法撤销。',
+    deleteSearchResults: '删除搜索结果',
+    deleteSearchResultsConfirm: '确定要删除所有搜索到的数据吗？此操作无法撤销。',
   },
   home: {
     nodes: '分发节点',
@@ -312,6 +319,11 @@ export default {
   },
   settings: {
     title: '设置',
+    tabs: {
+      general: '常规设置',
+      features: '功能集成',
+      about: '关于与重置',
+    },
     language: '语言',
     sidebar: '侧边栏设置',
     theme: '主题色',
@@ -373,6 +385,12 @@ export default {
       disabledSites: '禁用站点',
       noDisabledSites: '没有禁用站点',
       remove: '移除'
+    },
+    siteEditor: {
+      title: '网站编辑器配置',
+      description: '管理特定网站的编辑器注入方式。当您在某个网站上传图片后，该网站的编辑器类型将被自动记录。您也可以在此处手动添加或修改。',
+      manage: '管理编辑器配置',
+      hostnamePlaceholder: '输入域名 (例如 example.com)'
     },
     version: {
       title: '关于版本',

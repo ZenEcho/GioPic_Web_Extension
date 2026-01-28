@@ -36,24 +36,51 @@ browser.runtime.onMessage.addListener(async (message: any) => {
         if (!url) return
 
         // 检查是否开启自动注入，且当前是触发上传的源标签页
-        const storage = await browser.storage.local.get('giopic-auto-inject')
+        const storage = await browser.storage.local.get(['giopic-auto-inject', 'siteEditorConfig'])
         if (storage['giopic-auto-inject'] !== false && isOrigin) {
+            const config = (storage.siteEditorConfig || {}) as Record<string, string>;
+            const preferredType = config[window.location.hostname];
+
             // 通过 postMessage 发送给页面脚本 (Main World)
             window.postMessage({
                 type: 'GIOPIC_INJECT',
-                url: url
+                url: url,
+                preferredType
             }, '*')
         }
     } else if (message.type === 'MANUAL_INJECT') {
         const { url } = message.payload
         if (url) {
+            const storage = await browser.storage.local.get('siteEditorConfig');
+            const config = (storage.siteEditorConfig || {}) as Record<string, string>;
+            const preferredType = config[window.location.hostname];
+
              window.postMessage({
                 type: 'GIOPIC_INJECT',
-                url: url
+                url: url,
+                preferredType
             }, '*')
         }
     }
 })
+
+// 监听来自页面脚本的消息 (用于更新编辑器绑定)
+window.addEventListener('message', async (event) => {
+    if (event.source !== window) return;
+    if (event.data?.type === 'GIOPIC_EDITOR_SUCCESS') {
+        const { hostname, editorType } = event.data;
+        if (hostname && editorType) {
+            const res = await browser.storage.local.get('siteEditorConfig');
+            const config = (res.siteEditorConfig || {}) as Record<string, string>;
+            
+            // 如果配置发生变化，则更新存储
+            if (config[hostname] !== editorType) {
+                config[hostname] = editorType;
+                await browser.storage.local.set({ siteEditorConfig: config });
+            }
+        }
+    }
+});
 
 console.log('GioPic content script loaded')
 

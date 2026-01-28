@@ -1,6 +1,6 @@
 # GioPic
 
-[Chinese Documentation](./README_zh-CN.md)
+[中文文档](./README_zh-CN.md)
 
 GioPic is a browser extension for multi-node concurrent image uploading that enables simultaneous distribution of images to multiple object storage services, image hosting platforms, or custom service interfaces with a single operation.
 

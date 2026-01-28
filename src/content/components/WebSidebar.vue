@@ -1,6 +1,10 @@
 <template>
-    <div v-if="isVisible" ref="ballRef" class="giopic-floating-ball" :style="ballStyle" @click="onClick"
-        @mouseenter="isHovering = true" @mouseleave="isHovering = false">
+    <div v-if="isVisible" ref="ballRef" class="giopic-floating-ball" :style="ballStyle"
+        @click.stop="onClick"
+        @mousedown.stop
+        @pointerdown.stop
+        @mouseenter="isHovering = true"
+        @mouseleave="isHovering = false">
 
         <!-- Logo Icon -->
         <div class="giopic-ball-content">
@@ -20,13 +24,20 @@
     </div>
 
     <!-- Iframe Overlay -->
-    <div v-if="isVisible" class="giopic-web-overlay" :style="overlayStyle" @click="hideIframe">
+    <div v-if="isVisible" class="giopic-web-overlay" :style="overlayStyle"
+        @click.stop="hideIframe"
+        @mousedown.stop
+        @pointerdown.stop>
     </div>
 
-    <iframe v-if="isVisible" ref="iframeRef" :src="iframeSrc" :style="iframeStyle" allow="clipboard-write"></iframe>
+    <iframe v-if="isVisible" ref="iframeRef" :src="iframeSrc" :style="iframeStyle" allow="clipboard-write"
+        @click.stop @load="() => { }"></iframe>
 
     <!-- Close Confirmation Dialog -->
-    <div v-if="showCloseDialog" class="giopic-dialog-overlay" @click="showCloseDialog = false">
+    <div v-if="showCloseDialog" class="giopic-dialog-overlay"
+        @click.stop="showCloseDialog = false"
+        @mousedown.stop
+        @pointerdown.stop>
         <div class="giopic-dialog" ref="dialogRef" @click.stop :style="dialogStyle">
             <div class="giopic-dialog-header">
                 <span class="font-bold text-gray-800 dark:text-gray-200">{{ t('home.sidebar.closeDialog.title')

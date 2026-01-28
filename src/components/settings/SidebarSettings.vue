@@ -1,5 +1,5 @@
 <template>
-    <n-modal :show="show" @update:show="(val: boolean) => emit('update:show', val)" class="w-[500px]" preset="card"
+    <n-modal :show="show" @update:show="(val: boolean) => emit('update:show', val)" class="w-full max-w-[500px]" preset="card"
         :title="t('settings.sidebarSetting.title')" :bordered="false">
 
         <div class="flex flex-col gap-6">
@@ -29,15 +29,48 @@
 
             <!-- Disabled Sites -->
             <div class="border-t pt-4 dark:border-gray-700">
-                <h4 class="font-medium mb-3">{{ t('settings.sidebarSetting.disabledSites') }}</h4>
+                <div class="flex items-center justify-between mb-3">
+                    <h4 class="font-medium">{{ t('settings.sidebarSetting.disabledSites') }}</h4>
+                    <div class="flex gap-1">
+                        <n-popconfirm v-if="searchText" @positive-click="deleteSearchResults"
+                            :positive-text="t('common.confirm')" :negative-text="t('common.cancel')">
+                            <template #trigger>
+                                <n-button type="error" ghost size="small"
+                                    :disabled="filteredDisabledSites.length === 0">
+                                    {{ t('common.deleteSearchResults') }}
+                                </n-button>
+                            </template>
+                            {{ t('common.deleteSearchResultsConfirm') }}
+                        </n-popconfirm>
+                        <n-popconfirm @positive-click="clearAllDisabledSites" :positive-text="t('common.confirm')"
+                            :negative-text="t('common.cancel')">
+                            <template #trigger>
+                                <n-button type="error" ghost size="small" :disabled="disabledSites.length === 0">
+                                    {{ t('common.clear') }}
+                                </n-button>
+                            </template>
+                            {{ t('common.clearConfirm') }}
+                        </n-popconfirm>
 
-                <div v-if="disabledSites.length === 0"
+                    </div>
+                </div>
+
+                <div class="mb-3 flex gap-2">
+                    <n-input v-model:value="searchText" :placeholder="t('common.search')" size="small" class="flex-1">
+                        <template #prefix>
+                            <div class="i-ph-magnifying-glass text-gray-400" />
+                        </template>
+                    </n-input>
+
+                </div>
+
+                <div v-if="filteredDisabledSites.length === 0"
                     class="text-gray-400 text-sm italic text-center py-4 bg-gray-50 dark:bg-gray-800 rounded">
                     {{ t('settings.sidebarSetting.noDisabledSites') }}
                 </div>
 
                 <div v-else class="max-h-[200px] overflow-y-auto space-y-2 custom-scrollbar">
-                    <div v-for="site in disabledSites" :key="site"
+                    <div v-for="site in filteredDisabledSites" :key="site"
                         class="flex items-center justify-between p-2 bg-gray-50 dark:bg-gray-800 rounded border border-gray-100 dark:border-gray-700">
                         <span class="text-sm truncate flex-1 mr-2">{{ site }}</span>
                         <button @click="removeSite(site)"
@@ -52,14 +85,14 @@
         <template #footer>
             <div class="flex flex-row justify-end">
                 <n-button type="warning" size="small" @click="resetSettings">{{ t('settings.sidebarSetting.reset')
-                }}</n-button>
+                    }}</n-button>
             </div>
         </template>
     </n-modal>
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted, watch } from "vue";
+import { ref, onMounted, onUnmounted, watch, computed } from "vue";
 
 import browser from "webextension-polyfill";
 import { useI18n } from "vue-i18n";
@@ -88,6 +121,7 @@ const settings = ref<SidebarSettings>({
 });
 
 const disabledSites = ref<string[]>([]);
+const searchText = ref('');
 
 const props = defineProps<{
     show: boolean
@@ -97,6 +131,12 @@ const emit = defineEmits<{
     (e: 'update:show', value: boolean): void;
     (e: 'save'): void;
 }>();
+
+const filteredDisabledSites = computed(() => {
+    if (!searchText.value) return disabledSites.value;
+    const lower = searchText.value.toLowerCase();
+    return disabledSites.value.filter(site => site.toLowerCase().includes(lower));
+});
 
 // Auto-save watcher
 watch([settings, disabledSites], async () => {
@@ -117,6 +157,17 @@ const resetSettings = (): void => {
 
 const removeSite = (site: string) => {
     disabledSites.value = disabledSites.value.filter(s => s !== site);
+};
+
+const clearAllDisabledSites = () => {
+    disabledSites.value = [];
+};
+
+const deleteSearchResults = () => {
+    if (!searchText.value) return;
+    // Remove sites that are currently filtered (i.e., visible in search results)
+    disabledSites.value = disabledSites.value.filter(site => !site.toLowerCase().includes(searchText.value.toLowerCase()));
+    searchText.value = '';
 };
 
 const handleStorageChange = (changes: Record<string, any>, area: string) => {
