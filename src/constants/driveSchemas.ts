@@ -1,4 +1,3 @@
-
 export interface FieldSchema {
   key: string
   label: string // i18n key or raw string
@@ -183,6 +182,30 @@ export const DRIVE_REGISTRY: Record<string, DriveRegistryItem> = {
     fields: [
       { key: 'apiUrl', label: 'config.form.apiUrl', type: 'text', placeholder: 'https://api.imgur.com/3/upload (默认为官方)', defaultValue: 'https://api.imgur.com/3/upload/' },
       { key: 'token', label: 'Client ID', type: 'password', required: true },
+    ]
+  },
+  imgdd: {
+    key: 'imgdd',
+    label: 'ImgDD',
+    icon: 'i-ph-image-duotone',
+    color: 'text-red-500 bg-red-50',
+    darkColor: 'dark:text-red-300 dark:bg-red-900/30',
+    category: 'public',
+    fields: [
+      { key: 'apiUrl', label: 'config.form.apiUrl', type: 'text', placeholder: 'https://imgdd.com/api/v1/upload', defaultValue: 'https://imgdd.com/upload', required: true },
+    ]
+  },
+  oneimg: {
+    key: 'oneimg',
+    label: 'OneImg',
+    icon: 'i-ph-image-duotone',
+    color: 'text-red-500 bg-red-50',
+    darkColor: 'dark:text-red-300 dark:bg-red-900/30',
+    category: 'self-hosted',
+    fields: [
+      { key: 'apiUrl', label: 'config.form.apiUrl', type: 'text', required: true, placeholder: 'https://example.com/api/v1/upload' },
+      { key: 'token', label: 'config.form.token', type: 'password' },
+      { key: 'strategyId', label: 'config.form.strategyId', type: 'text', required: true },
     ]
   },
   aliyun: {

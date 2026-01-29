@@ -46,6 +46,10 @@ export async function uploadImage(
       return uploadHellohao(file, config as WebUploaderConfig, onProgress)
     case 'imgur':
       return uploadImgur(file, config as WebUploaderConfig, onProgress)
+    case 'imgdd':
+      return uploadImgdd(file, config as WebUploaderConfig, onProgress)
+    case 'oneimg':
+      return uploadOneImg(file, config as WebUploaderConfig, onProgress)
     case 'aliyun':
       return uploadAliyun(file, config as AliyunConfig, onProgress)
     case 'aws':
@@ -190,7 +194,8 @@ async function fetchUpload(
   url: string,
   formData: FormData,
   headers: Record<string, string>,
-  onProgress: ProgressCallback
+  onProgress: ProgressCallback,
+  extraConfig: Record<string, any> = {}
 ): Promise<any> {
   try {
     const res = await axios.post(url, formData, {
@@ -202,7 +207,8 @@ async function fetchUpload(
           const percent = Math.floor((progressEvent.loaded * 100) / progressEvent.total)
           onProgress(percent)
         }
-      }
+      },
+      ...extraConfig
     })
 
     return res.data
@@ -549,7 +555,7 @@ async function uploadTest(file: File, config: TestConfig, onProgress: ProgressCa
     await new Promise(resolve => setTimeout(resolve, 200))
     onProgress(i * 10)
   }
-  
+
   return {
     url: 'https://example.com/test/' + file.name,
     thumbUrl: 'https://example.com/test/thumb/' + file.name
@@ -662,6 +668,67 @@ async function uploadImgur(file: File, config: WebUploaderConfig, onProgress: Pr
     thumbUrl: res.data.link
   }
 }
+// uploadImgdd
+async function uploadImgdd(file: File, config: WebUploaderConfig, onProgress: ProgressCallback): Promise<UploadResult> {
+  const formData = new FormData()
+  // 上传来源
+  formData.append('upload-source', 'giopic/盘络上传2.0')
+  formData.append('image', file)
+
+  let url = config.apiUrl.replace(/\/$/, '')
+  if (!url.endsWith('/upload')) {
+    url += '/upload'
+  }
+
+  const res = await fetchUpload(url, formData, {}, onProgress)
+  console.log(res);
+  if (!res.url) throw new Error(res.msg || 'ImgDD upload failed')
+  return {
+    url: res.url,
+    thumbUrl: res.url
+  }
+}
+// oneimg
+async function uploadOneImg(file: File, config: WebUploaderConfig, onProgress: ProgressCallback): Promise<UploadResult> {
+  const formData = new FormData()
+  formData.append('images[]', file)
+  if (config.strategyId) {
+    formData.append('bucket_id', config.strategyId)
+  }
+
+  let url = config.apiUrl.replace(/\/$/, '')
+  if (!url.endsWith('/api/upload/images')) {
+    url += '/api/upload/images'
+  }
+
+  const headers: Record<string, string> = {
+    'Accept': 'application/json'
+  }
+
+  if (config.token && config.token !== 'null') {
+    headers['Authorization'] = `Bearer ${config.token}`
+  }
+
+  const res = await fetchUpload(url, formData, headers, onProgress, { withCredentials: true })
+  
+  if (res.code !== 200) throw new Error(res.msg || res.message || 'OneImg upload failed')
+  
+  let fileUrl = res.data.files[0].url
+  if (!fileUrl.startsWith('http')) {
+    try {
+      const u = new URL(config.apiUrl)
+      fileUrl = `${u.origin}${fileUrl}`
+    } catch (e) {
+      console.warn('Failed to construct absolute URL', e)
+    }
+  }
+
+  return {
+    url: fileUrl,
+    thumbUrl: fileUrl
+  }
+}
+
 
 async function uploadAliyun(file: File, config: AliyunConfig, onProgress: ProgressCallback): Promise<UploadResult> {
 

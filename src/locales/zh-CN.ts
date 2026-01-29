@@ -4,11 +4,15 @@ export default {
     nameSuffix: 'SYNC',
   },
   providers: {
+    lsky: '兰空图床',
+    easyimages: '简单图床',
     aliyun: '阿里云',
     tencent: '腾讯云',
     aws: 'AWS S3',
     github: 'GitHub',
     custom: '自定义 (Custom)',
+    oneimg: '初春图床',
+    imgdd: 'ImgDD(免登)',
     test: '测试图床',
   },
   common: {
@@ -433,7 +437,7 @@ export default {
     lskyOpenContent: '填入邮箱和密码后，点击【添加到 {appName}】按钮，可一键配置扩展',
     easyimagesOpenContent: '填入邮箱和密码后，点击【添加到 {appName}】按钮，可一键配置扩展',
     cheveretoContent: '点击【重新生成密钥】按钮，在【创建成功】页点击【添加到 {appName}】按钮，可加载到 {appName} 扩展。',
-    best16Content: '点击【添加到 {appName}】按钮，可加载到 {appName} 扩展。',
+    commonContent: '点击【添加到 {appName}】按钮，可加载到 {appName} 扩展。',
 
     addToApp: '添加到 {appName}',
     ignore: '本站不再提示',

@@ -46,7 +46,7 @@ const handleAdd = async () => {
 
 <template>
   <div class="info-text">
-    <p>{{ t('detector.best16Content', { appName }) }}</p>
+    <p>{{ t('detector.commonContent', { appName }) }}</p>
   </div>
   <NSpace justify="end" :size="12" style="margin-top: 16px;">
     <NButton size="small" secondary @click="emit('ignore')">{{ t('detector.ignore') }}</NButton>

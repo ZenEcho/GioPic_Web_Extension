@@ -32,11 +32,16 @@ const DRIVE_CATEGORIES = CATEGORY_DEFINITIONS.map(cat => ({
 }))
 
 function getDriveLabel(value: string) {
+    // 尝试翻译 providers.{key}
+    const i18nKey = `providers.${value}`
+    const translated = t(i18nKey)
+    
+    // 如果翻译结果与键名不同，说明找到了翻译
+    if (translated !== i18nKey) {
+        return translated
+    }
+
     const item = DRIVE_REGISTRY[value]
-    // 优先使用翻译，如果本地化键不存在则回退到 label
-    // 注意：理想情况下应使用 t('providers.' + value)，但目前沿用已有模式
-    // 如果注册表中的 label 是英文名称，而我们希望显示本地化名称：
-    // 实际上，之前使用的是带 label 的 DRIVE_TYPE_OPTIONS
     return item ? item.label : value
 }
 

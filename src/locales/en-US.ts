@@ -4,11 +4,15 @@ export default {
     nameSuffix: 'SYNC',
   },
   providers: {
+    lsky: 'Lsky Pro',
+    easyimages: 'Easy Images',
     aliyun: 'Aliyun',
     tencent: 'Tencent Cloud',
     aws: 'AWS S3',
     github: 'GitHub',
     custom: 'Custom',
+    oneimg: 'OneImg',
+    imgdd: 'ImgDD(Free)',
     test: 'Test Drive',
   },
   common: {
@@ -433,7 +437,7 @@ export default {
     lskyOpenContent: 'Enter email and password, then click [Add to {appName}] button to configure extension.',
     easyimagesOpenContent: 'Enter email and password, then click [Add to {appName}] button to configure extension.',
     cheveretoContent: 'Click [Regenerate Key] button, then on [Success] page click [Add to {appName}] button to load into {appName} extension.',
-    best16Content: 'Click [Add to {appName}] button to load into {appName} extension.',
+    commonContent: 'Click [Add to {appName}] button to load into {appName} extension.',
 
     addToApp: 'Add to {appName}',
     ignore: 'Don\'t ask again for this site',
