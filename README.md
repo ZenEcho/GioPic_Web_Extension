@@ -9,15 +9,18 @@ GioPic is a browser extension for multi-node concurrent image uploading that ena
 ## 🌟 Features
 
 - **Multi-node Distribution**: Configure multiple "distribution nodes" to push images to all targets in parallel with a single upload.
+- **Powerful Plugin System**: Support importing JavaScript plugins (.json) to extend support for any image host, running in a secure Sandbox environment.
 - **Extensive Provider Support**:
   - **Image Hosting Platforms**: Lsky Pro, EasyImages, Chevereto, ImgURL, Hellohao, SM.MS, Imgur
   - **Object Storage**: Alibaba Cloud OSS, Tencent Cloud COS, AWS S3
   - **Others**: GitHub Repository, Custom HTTP Interface
+  - **Plugin Extensions**: Support user-defined JavaScript plugins
 - **Convenient Upload Experience**:
   - Supports drag-and-drop, click-to-select, and clipboard paste uploads.
   - Right-click menu "GioPic Upload Image" on web pages.
-- **Seamless Page Integration**:
-  - Draggable floating button on the side of web pages; click to open the upload panel on the current page.
+- **Seamless Page Integration & Smart Adaptation**:
+  - **Smart Editor Detection**: Automatically detects editors like Discuz!, Markdown, RichText, and supports manual binding of site-to-editor types.
+  - **Enhanced Floating Ball**: Supports position memory, opacity adjustment, and auto-hiding.
   - Floating upload list shows real-time progress and supports one-click link copying or injection into page input fields.
 - **History & Batch Management**: Supports searching, filtering, sorting, and batch deletion of upload records.
 - **Cloud Storage Tools**: Built-in visual configuration tools for CORS and ACL for Alibaba Cloud OSS / Tencent Cloud COS / AWS S3.
@@ -116,9 +119,18 @@ pnpm build:firefox
 pnpm test
 ```
 
-### Adding Support for New Storage Providers
+### Extending Storage Support
 
-Adding support for a new storage provider requires modifying the following 4 files:
+You can extend storage support in two ways:
+
+#### 1. Develop a Plugin (Recommended)
+
+No need to modify the source code. Just write a plugin file in JSON format. Plugins run in a secure sandbox.
+See details: [Plugin System Architecture](./plugins/plugin_architecture.md)
+
+#### 2. Native Integration
+
+If you want to build the provider into the extension, you need to modify the following 4 files:
 
 1.  **Update Type Definitions**:
     Edit `src/types/index.ts`:
