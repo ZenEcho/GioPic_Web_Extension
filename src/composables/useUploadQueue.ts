@@ -71,8 +71,10 @@ export function useUploadQueue() {
 
         await Promise.all(promises)
 
-        if (item.tasks.some(t => t.status === 'error')) {
-            throw new Error('Some tasks failed')
+        const failedTasks = item.tasks.filter(t => t.status === 'error')
+        if (failedTasks.length > 0) {
+            const errorDetails = failedTasks.map(t => `${t.configId}: ${t.error}`).join('; ')
+            throw new Error(`Tasks failed: ${errorDetails}`)
         }
     }
 

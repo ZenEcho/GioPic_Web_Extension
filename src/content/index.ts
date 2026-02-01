@@ -11,6 +11,73 @@ function injectPageBundle() {
     if (root.hasAttribute('data-giopic-page-bundle')) return // 已注入则不重复
     root.setAttribute('data-giopic-page-bundle', 'true') // 标记页面已注入
 
+    // 同步 hover preview 设置
+    browser.storage.local.get(['giopic-hover-preview', 'preview_disabled_sites']).then(res => {
+        const globalEnabled = res['giopic-hover-preview'] !== false;
+        const disabledSites = (res['preview_disabled_sites'] || []) as string[];
+        
+        const currentUrl = window.location.href;
+        const currentHostname = window.location.hostname;
+        const isSiteDisabled = disabledSites.some(site => {
+            const normalize = (s: string) => s.trim().replace(/\/+$/, '').toLowerCase();
+            const siteNorm = normalize(site);
+            const currentNorm = normalize(currentUrl);
+            const hostnameNorm = currentHostname.toLowerCase();
+
+            if (siteNorm === hostnameNorm) return true;
+
+            if (site.includes('://') || site.includes('/')) {
+                if (site.includes('://')) {
+                    return currentNorm.startsWith(siteNorm);
+                }
+                const currentNoProto = currentNorm.replace(/^https?:\/\//, '');
+                return currentNoProto.startsWith(siteNorm);
+            }
+            return false;
+        });
+        
+        root.setAttribute('data-giopic-hover-preview', String(globalEnabled && !isSiteDisabled));
+    });
+
+    // 监听 storage 变化
+    browser.storage.onChanged.addListener((changes, area) => {
+        if (area === 'local') {
+            let shouldUpdate = false;
+            if (changes['giopic-hover-preview']) shouldUpdate = true;
+            if (changes['preview_disabled_sites']) shouldUpdate = true;
+
+            if (shouldUpdate) {
+                // 重新获取最新状态以确保一致性
+                browser.storage.local.get(['giopic-hover-preview', 'preview_disabled_sites']).then(res => {
+                    const globalEnabled = res['giopic-hover-preview'] !== false;
+                    const disabledSites = (res['preview_disabled_sites'] || []) as string[];
+                    
+                    const currentUrl = window.location.href;
+                    const currentHostname = window.location.hostname;
+                    const isSiteDisabled = disabledSites.some(site => {
+                        const normalize = (s: string) => s.trim().replace(/\/+$/, '').toLowerCase();
+                        const siteNorm = normalize(site);
+                        const currentNorm = normalize(currentUrl);
+                        const hostnameNorm = currentHostname.toLowerCase();
+
+                        if (siteNorm === hostnameNorm) return true;
+
+                        if (site.includes('://') || site.includes('/')) {
+                            if (site.includes('://')) {
+                                return currentNorm.startsWith(siteNorm);
+                            }
+                            const currentNoProto = currentNorm.replace(/^https?:\/\//, '');
+                            return currentNoProto.startsWith(siteNorm);
+                        }
+                        return false;
+                    });
+
+                    root.setAttribute('data-giopic-hover-preview', String(globalEnabled && !isSiteDisabled));
+                });
+            }
+        }
+    });
+
     const headOrRoot = doc.head || root
 
     const styleHref = browser.runtime.getURL('content/page.css')
@@ -39,7 +106,21 @@ browser.runtime.onMessage.addListener(async (message: any) => {
         const storage = await browser.storage.local.get(['giopic-auto-inject', 'siteEditorConfig'])
         if (storage['giopic-auto-inject'] !== false && isOrigin) {
             const config = (storage.siteEditorConfig || {}) as Record<string, string>;
-            const preferredType = config[window.location.hostname];
+            let preferredType = config[window.location.hostname];
+
+            // Support URL-level config (Higher priority)
+            const currentUrl = window.location.href;
+            const normalize = (s: string) => s.trim().replace(/\/+$/, '').toLowerCase();
+            const currentNorm = normalize(currentUrl);
+            const currentNoProto = currentNorm.replace(/^https?:\/\//, '');
+
+            const urlMatch = Object.keys(config).find(key => {
+                if (!key.includes('://') && !key.includes('/')) return false;
+                const keyNorm = normalize(key);
+                if (key.includes('://')) return currentNorm.startsWith(keyNorm);
+                return currentNoProto.startsWith(keyNorm);
+            });
+            if (urlMatch) preferredType = config[urlMatch];
 
             // 通过 postMessage 发送给页面脚本 (Main World)
             window.postMessage({
@@ -53,7 +134,21 @@ browser.runtime.onMessage.addListener(async (message: any) => {
         if (url) {
             const storage = await browser.storage.local.get('siteEditorConfig');
             const config = (storage.siteEditorConfig || {}) as Record<string, string>;
-            const preferredType = config[window.location.hostname];
+            let preferredType = config[window.location.hostname];
+
+            // Support URL-level config (Higher priority)
+            const currentUrl = window.location.href;
+            const normalize = (s: string) => s.trim().replace(/\/+$/, '').toLowerCase();
+            const currentNorm = normalize(currentUrl);
+            const currentNoProto = currentNorm.replace(/^https?:\/\//, '');
+
+            const urlMatch = Object.keys(config).find(key => {
+                if (!key.includes('://') && !key.includes('/')) return false;
+                const keyNorm = normalize(key);
+                if (key.includes('://')) return currentNorm.startsWith(keyNorm);
+                return currentNoProto.startsWith(keyNorm);
+            });
+            if (urlMatch) preferredType = config[urlMatch];
 
              window.postMessage({
                 type: 'GIOPIC_INJECT',
@@ -96,5 +191,5 @@ mountComponent(
     'giopic-content-overlay',
     true,
     {},
-    true // Use Provider for Message/Dialog
+    true 
 )

@@ -1,0 +1,60 @@
+{
+  "id": "cc.pixelpunk.plugin",
+  "name": "PixelPunk",
+  "version": "1.0.2",
+  "author": "GioPic",
+  "authorUrl": "https://github.com/ZenEcho/GioPic_Web_Extension",
+  "description": "Upload to PixelPunk",
+  "homepage": "https://pixelpunk.cc",
+  "icon": "https://pixelpunk.cc/logo.png",
+  "inputs": [
+    {
+      "name": "apiUrl",
+      "label": "API Endpoint",
+      "type": "text",
+      "required": true,
+      "placeholder": "https://your-domain.com/api/v1/external/upload",
+      "help": "Full API URL (e.g. /api/v1/external/upload)"
+    },
+    {
+      "name": "apiKey",
+      "label": "API Key",
+      "type": "password",
+      "required": true,
+      "help": "Admin Panel -> System Settings -> API Config"
+    },
+    {
+      "name": "accessLevel",
+      "label": "Access Level",
+      "type": "select",
+      "required": false,
+      "default": "public",
+      "options": [
+        { "label": "Public", "value": "public" },
+        { "label": "Private", "value": "private" },
+        { "label": "Protected", "value": "protected" }
+      ]
+    },
+    {
+      "name": "filePath",
+      "label": "File Path",
+      "type": "text",
+      "required": false,
+      "placeholder": "e.g. uploads/2024"
+    },
+    {
+      "name": "folderId",
+      "label": "Folder ID",
+      "type": "text",
+      "required": false,
+      "placeholder": "Optional Folder ID"
+    },
+    {
+      "name": "optimize",
+      "label": "Optimize",
+      "type": "checkbox",
+      "default": true
+    }
+  ],
+  "script": "return async function(config, file, ctx) { const blob = await (await fetch(file.data)).blob(); const fd = new FormData(); fd.append('file', blob, file.name); if (config.accessLevel) fd.append('access_level', config.accessLevel); if (config.optimize !== undefined) fd.append('optimize', config.optimize.toString()); if (config.filePath) fd.append('filePath', config.filePath); if (config.folderId) fd.append('folderId', config.folderId); const res = await ctx.fetch(config.apiUrl, { method: 'POST', headers: { 'x-pixelpunk-key': config.apiKey }, body: fd }); const json = res.body; if (json.code !== 200) throw new Error(json.message || 'Upload failed'); return json.data.uploaded.url; }"
+}

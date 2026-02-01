@@ -62,8 +62,13 @@ export async function getManifest() {
             "notifications",
             "cookies",
             "webRequest",
+            "offscreen",
             ...(isFirefox ? [] : ["declarativeNetRequestWithHostAccess", "declarativeNetRequestFeedback", "sidePanel"]),
         ],
+        // @ts-ignore
+        sandbox: {
+            pages: ["src/sandbox/index.html"]
+        },
         host_permissions: [
             "*://*/*",
         ],

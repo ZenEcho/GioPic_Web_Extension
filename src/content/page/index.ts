@@ -11,5 +11,4 @@ if (!window.__GioPicPageScriptLoaded__) {
   
   // 启动编辑器注入监听
   Detector.startListening()
-
 }

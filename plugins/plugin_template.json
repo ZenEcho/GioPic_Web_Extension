@@ -1,0 +1,24 @@
+{
+  "id": "org.example.plugin",
+  "name": "Example Plugin",
+  "version": "1.0.0",
+  "author": "Your Name",
+  "description": "A short description of your plugin",
+  "icon": "i-ph-puzzle-piece",
+  "inputs": [
+    {
+      "name": "token",
+      "label": "API Token",
+      "type": "password",
+      "required": true,
+      "help": "Get your token from https://example.com/settings"
+    },
+    {
+      "name": "albumId",
+      "label": "Album ID",
+      "type": "text",
+      "required": false
+    }
+  ],
+  "script": "return async function(config, file, ctx) { \n  // 1. Convert file to Blob\n  const blob = await (await fetch(file.data)).blob();\n  \n  // 2. Prepare FormData\n  const fd = new FormData();\n  fd.append('file', blob, file.name);\n  fd.append('token', config.token);\n  if (config.albumId) fd.append('album_id', config.albumId);\n  \n  // 3. Send Request\n  // ctx.fetch is a sandboxed fetch wrapper\n  const res = await ctx.fetch('https://api.example.com/upload', {\n    method: 'POST',\n    body: fd\n  });\n  \n  // 4. Handle Response\n  if (!res.ok) throw new Error('HTTP ' + res.status);\n  const data = res.body;\n  \n  if (!data.success) throw new Error(data.message || 'Upload failed');\n  \n  // 5. Return URL\n  return data.url;\n}"
+}

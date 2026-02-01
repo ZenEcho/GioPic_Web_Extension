@@ -13,16 +13,19 @@ src/content/
 │   ├── ContentOverlay.vue    # [核心] 统一 UI 容器，管理所有悬浮层
 │   ├── WebSidebar.vue        # 悬浮球与侧边栏
 │   ├── UploadList.vue        # 上传进度列表
+│   ├── LinkPreview.vue       # 链接预览组件 (UI)
 │   ├── TokenDetector.vue     # Token 自动获取弹窗 (UI)
 │   ├── NotificationView.vue  # 全局通知组件
 │   └── detectors/            # [新增] 站点专属 Token 探测器组件 (Chevereto, Lsky 等)
 ├── composables/              # Vue 组合式函数 (如 useDraggable)
 ├── page/                     # 运行在 Main World 的脚本 (Page Script)
 │   ├── index.ts              # Page Script 入口
+│   ├── style.css             # Page Script 样式
 │   └── EditorInjector/       # [核心] 编辑器识别与注入逻辑
 │       ├── adapters.ts       # 各种编辑器的适配器实现
 │       ├── index.ts          # 探测与注入管理器 (Detector 类)
-│       └── meta.ts           # 编辑器元数据定义
+│       ├── meta.ts           # 编辑器元数据定义
+│       └── types.ts          # 类型定义
 ├── services/                 # 业务逻辑服务 (如 driveDetector)
 └── utils/                    # 工具函数 (如 mount.ts)
 ```
@@ -54,6 +57,13 @@ GioPic 将注入逻辑分为两个独立的层级，分别运行在不同的上�
 ### 4.3 Token 探测系统 (`components/detectors/` & `services/driveDetector.ts`)
 *   **探测器组件**: 针对特定图床系统（如 Chevereto, Lsky Pro）的 Vue 组件。
 *   **工作流**: 当用户访问支持的图床网站时，对应的探测器组件激活，尝试自动获取认证 Token 并提示用户保存。
+
+### 4.4 链接预览系统 (`components/LinkPreview.vue`)
+*   **功能**: 在鼠标悬停在图片链接上时展示图片预览。
+*   **特性**:
+    *   **智能识别**: 自动识别页面中的图片链接（a标签或文本）。
+    *   **条件触发**: 支持黑名单机制（禁用特定站点预览）、Session 级别禁用。
+    *   **UI 渲染**: 集成在 `ContentOverlay` 中，利用 Shadow DOM 实现样式隔离。
 
 ## 5. 关键流程与数据流 (Key Processes & Data Flow)
 

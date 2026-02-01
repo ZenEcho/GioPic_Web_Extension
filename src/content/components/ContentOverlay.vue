@@ -9,6 +9,9 @@
     <!-- Token 检测器 (不可见，但可能弹窗) -->
     <TokenDetector />
     
+    <!-- 链接预览 (悬浮) -->
+    <LinkPreview />
+
     <!-- 全局通知占位符 (由 NNotificationProvider 管理) -->
     <NotificationView />
   </div>
@@ -19,6 +22,7 @@ import WebSidebar from './WebSidebar.vue'
 import UploadList from './UploadList.vue'
 import TokenDetector from './TokenDetector.vue'
 import NotificationView from './NotificationView.vue'
+import LinkPreview from './LinkPreview.vue'
 </script>
 
 <style scoped>
@@ -36,6 +40,7 @@ import NotificationView from './NotificationView.vue'
 :deep(.giopic-floating-ball),
 :deep(.giopic-dialog-overlay),
 :deep(.giopic-web-overlay),
+:deep(.giopic-preview-dialog-overlay),
 :deep(iframe) {
   pointer-events: auto;
 }

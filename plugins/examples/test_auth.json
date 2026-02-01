@@ -1,0 +1,25 @@
+{
+  "id": "com.test.auth",
+  "name": "Local Auth Test",
+  "version": "1.0.0",
+  "author": "GioPic",
+  "description": "Upload to Local Mock Server (Auth)",
+  "icon": "i-ph-lock-key",
+  "inputs": [
+    {
+      "name": "apiUrl",
+      "label": "API URL",
+      "type": "text",
+      "default": "http://localhost:3333/upload/auth",
+      "required": true
+    },
+    {
+      "name": "token",
+      "label": "Bearer Token",
+      "type": "password",
+      "default": "test-token-123",
+      "required": true
+    }
+  ],
+  "script": "return async function(config, file, ctx) { const fd = new FormData(); fd.append('file', await (await fetch(file.data)).blob(), file.name); const res = await ctx.fetch(config.apiUrl, { method: 'POST', headers: { 'Authorization': 'Bearer ' + config.token }, body: fd }); if (!res.ok) throw new Error('HTTP ' + res.status); const data = res.body; if (!data.success) throw new Error(data.msg || 'Error'); return data.payload.url; }"
+}

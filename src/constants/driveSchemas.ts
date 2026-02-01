@@ -1,7 +1,7 @@
 export interface FieldSchema {
   key: string
   label: string // i18n key or raw string
-  type: 'text' | 'password' | 'number' | 'switch' | 'select' | 'textarea' | 'kv-pairs'
+  type: 'text' | 'password' | 'number' | 'switch' | 'select' | 'textarea' | 'kv-pairs' | 'checkbox' 
   placeholder?: string
   required?: boolean
   defaultValue?: any
@@ -13,7 +13,7 @@ export const COMMON_FIELDS: FieldSchema[] = [
   { key: 'customDomain', label: 'config.form.customDomain', type: 'text', placeholder: 'config.form.placeholder.customUrlPrefix' },
 ]
 
-export type DriveCategory = 'self-hosted' | 'cloud' | 'public' | 'custom'
+export type DriveCategory = 'self-hosted' | 'cloud' | 'public' | 'custom' | 'plugin'
 
 export interface DriveRegistryItem {
   key: string

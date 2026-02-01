@@ -44,6 +44,8 @@ export default defineConfig({
     rollupOptions: {
       input: {
         main: fileURLToPath(new URL('./index.html', import.meta.url)),
+        sandbox: fileURLToPath(new URL('./src/sandbox/index.html', import.meta.url)),
+        offscreen: fileURLToPath(new URL('./src/offscreen/offscreen.html', import.meta.url)),
       },
     }
   }

@@ -33,6 +33,18 @@ writeManifest()
 // 输出 文件夹
 async function Out() {
     await fsExtra.copy(`src/assets/icons`, `dist/assets/icons`);
+    
+    // Copy Sandbox
+    await ensureDir(`dist/src/sandbox`);
+    let sandboxHtml = await readFile(`src/sandbox/index.html`, 'utf-8');
+    sandboxHtml = sandboxHtml.replace('.ts', '.js');
+    await writeFile(`dist/src/sandbox/index.html`, sandboxHtml, 'utf-8');
+
+    // Copy Offscreen
+    await ensureDir(`dist/src/offscreen`);
+    let offscreenHtml = await readFile(`src/offscreen/offscreen.html`, 'utf-8');
+    offscreenHtml = offscreenHtml.replace('.ts', '.js');
+    await writeFile(`dist/src/offscreen/offscreen.html`, offscreenHtml, 'utf-8');
 }
 
 // 如果是开发环境

@@ -1,10 +1,11 @@
-import type { DriveConfig, WebUploaderConfig, AliyunConfig, S3Config, TencentConfig, GithubConfig, CustomConfig, TestConfig } from '@/types'
+import type { DriveConfig, WebUploaderConfig, AliyunConfig, S3Config, TencentConfig, GithubConfig, CustomConfig, TestConfig, PluginDriveConfig } from '@/types'
 import OSS from 'ali-oss'
 import { S3Client } from '@aws-sdk/client-s3'
 import { Upload } from '@aws-sdk/lib-storage'
 import axios from 'axios'
 import { getValueByPath, parseJsonConfig } from '@/utils/common'
 import { replaceMagicVariables } from '@/utils/variables'
+import { runPlugin } from '@/services/pluginRunner'
 
 
 export interface UploadResult {
@@ -63,7 +64,16 @@ export async function uploadImage(
     case 'test':
       return uploadTest(file, config as TestConfig, onProgress)
     default:
-      throw new Error('Unknown config type')
+        // Try plugin
+        try {
+            const url = await runPlugin(config as PluginDriveConfig, file, onProgress);
+            return { url };
+        } catch (e: any) {
+            if (e.message?.includes('not found')) {
+                throw new Error('Unknown config type');
+            }
+            throw e;
+        }
   }
 }
 

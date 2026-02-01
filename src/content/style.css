@@ -1,4 +1,4 @@
-/* GioPic Content Script Custom Styles */
+/* GioPic Content Script Custom Styles */ 
 /* Naive UI styles are injected via JS, this file is for extra custom overrides if needed */
 
 /* Reset base styles within Shadow DOM to prevent inheritance if Shadow DOM is open (though we use closed) */

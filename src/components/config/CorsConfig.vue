@@ -1,3 +1,20 @@
+<!--
+ * Component Name: CorsConfig
+ * Author: GioPic Team
+ * Description: 跨域资源共享 (CORS) 配置组件，用于设置云存储桶的跨域访问规则。
+ * 
+ * Functional Domain:
+ * Config (配置模块) - 高级配置子组件
+ * 
+ * Key Features:
+ * - 跨域规则管理：设置允许的来源、方法、头部等
+ * - 多云支持：适配阿里云 OSS、腾讯云 COS、AWS S3
+ * - 一键获取/应用：从云端拉取或推送配置
+ * 
+ * Props:
+ * - config (AliyunConfig | TencentConfig | S3Config): 图床配置对象
+ * - type ('aliyun' | 'tencent' | 'aws'): 图床类型
+ -->
 <script setup lang="ts">
 import { ref, computed } from 'vue'
 import { useMessage } from 'naive-ui'
@@ -19,6 +36,7 @@ const { t } = useI18n()
 const message = useMessage()
 const loading = ref(false)
 
+// 根据图床类型显示对应的标题
 const titleType = computed(() => {
     switch (props.type) {
         case 'aliyun': return 'Aliyun'
@@ -28,6 +46,7 @@ const titleType = computed(() => {
     }
 })
 
+// 表单数据模型。虽然后端支持多条规则，但为了 UI 简洁，此处仅维护单条规则（通常足够使用）。
 // We maintain a single rule for simplicity as per UI screenshot, 
 // but backend supports array. We'll just edit the first rule or create one.
 const formModel = ref({
@@ -38,7 +57,7 @@ const formModel = ref({
     maxAgeSeconds: 600
 })
 
-// Methods options
+// HTTP 方法选项
 const methodOptions = [
     { label: 'GET', value: 'GET' },
     { label: 'POST', value: 'POST' },
@@ -47,6 +66,7 @@ const methodOptions = [
     { label: 'HEAD', value: 'HEAD' }
 ]
 
+// 从云端获取当前 CORS 设置
 async function handleGetCors() {
     loading.value = true
     try {
@@ -80,6 +100,7 @@ async function handleGetCors() {
     }
 }
 
+// 将当前配置应用到云端存储桶
 async function handleSetCors() {
     loading.value = true
     try {
@@ -110,6 +131,7 @@ async function handleSetCors() {
     }
 }
 
+// 重置为默认推荐配置
 function handleReset() {
     formModel.value = {
         allowedOrigins: '*',

@@ -1,4 +1,34 @@
-export type DriveType = 'lsky' | 'easyimages' | 'chevereto' | 'imgurl' | 'zpic' | 'aliyun' | 'aws' | 'tencent' | 'imgurl' | 'smms' | 'hellohao' | 'imgur' | 'custom' | 'github' | 'test'|'imgdd'|'oneimg';
+export type DriveType = 'lsky' | 'easyimages' | 'chevereto' | 'imgurl' | 'zpic' | 'aliyun' | 'aws' | 'tencent' | 'imgurl' | 'smms' | 'hellohao' | 'imgur' | 'custom' | 'github' | 'test'|'imgdd'|'oneimg' | (string & {});
+
+export interface PluginInputSchema {
+  name: string;
+  label: string;
+  type: 'text' | 'password' | 'checkbox' | 'select';
+  required?: boolean;
+  default?: any;
+  options?: { label: string; value: any }[];
+  placeholder?: string;
+  help?: string; // Helper text
+}
+
+export interface PluginMeta {
+  id: string;
+  name: string;
+  version: string;
+  author: string;
+  description: string;
+  icon: string; // icon class or url
+  homepage?: string; // Plugin homepage
+  authorUrl?: string; // Author contact/homepage
+  inputs: PluginInputSchema[];
+  script: string;
+  enabled?: boolean;
+}
+
+export interface PluginDriveConfig extends BaseConfig {
+  [key: string]: any;
+}
+
 
 export interface BaseConfig {
   id: string;
@@ -86,7 +116,7 @@ export interface TestConfig extends BaseConfig {
   token: string;
 }
 
-export type DriveConfig = WebUploaderConfig | AliyunConfig | S3Config | TencentConfig | GithubConfig | CustomConfig | TestConfig;
+export type DriveConfig = WebUploaderConfig | AliyunConfig | S3Config | TencentConfig | GithubConfig | CustomConfig | TestConfig | PluginDriveConfig;
 
 export interface UploadRecord {
   id: string;

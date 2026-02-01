@@ -1,10 +1,32 @@
+<!--
+ * Component Name: SettingsModal
+ * Author: GioPic Team
+ * Description: 全局设置中心，集成了通用设置、功能开关、关于信息等模块。
+ * 
+ * Functional Domain:
+ * Settings (全局设置) - 核心容器
+ * 
+ * Key Features:
+ * - 分类导航：通用 (General)、功能 (Features)、关于 (About)
+ * - 外观设置：亮/暗色模式切换
+ * - 桌面端联动：显示桌面端助手连接状态
+ * - 版本检查：自动检查 GitHub Release 更新
+ * - 危险区：恢复出厂设置（清除所有数据）
+ * 
+ * Props:
+ * - show (boolean): 模态框显示状态
+ * 
+ * Events:
+ * - update:show: 更新显示状态
+ -->
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
 import { useThemeStore, themeColors } from '@/stores/theme'
 import { computed, ref, onMounted, onBeforeUnmount } from 'vue'
 import browser from 'webextension-polyfill'
-import SidebarSettings from './SidebarSettings.vue'
+import FloatingBallSettings from './FloatingBallSettings.vue'
 import SiteEditorSettings from './SiteEditorSettings.vue'
+import PluginManagerModal from './PluginManagerModal.vue'
 import { useMessage, useDialog } from 'naive-ui'
 import { db } from '@/utils/storage'
 import { getDefaultSettings } from '@/constants/defaultSettings'
@@ -27,8 +49,10 @@ const dialog = useDialog()
 const openMode = ref('tab')
 
 const autoInject = ref(false)
-const showSidebarSettings = ref(false)
+const hoverPreview = ref(true)
+const showFloatingBallSettings = ref(false)
 const showSiteEditorSettings = ref(false)
+const showPluginManager = ref(false)
 
 const desktopEnabled = ref(false)
 const desktopStatus = ref<DesktopLinkStatusType>('disabled')
@@ -57,6 +81,7 @@ function applyDesktopStatus(payload: any) {
     }
 }
 
+// 监听 Background 发来的桌面端连接状态更新
 const handleRuntimeMessage = (message: any) => {
     if (message.type === 'DESKTOP_LINK_STATUS' && message.payload) {
         applyDesktopStatus(message.payload)
@@ -84,6 +109,10 @@ onMounted(async () => {
     }
     const inject = await browser.storage.local.get('giopic-auto-inject')
     autoInject.value = !!inject['giopic-auto-inject']
+
+    const preview = await browser.storage.local.get('giopic-hover-preview')
+    hoverPreview.value = preview['giopic-hover-preview'] !== false // Default true
+
     browser.runtime.onMessage.addListener(handleRuntimeMessage)
     await refreshDesktopStatus()
 })
@@ -95,6 +124,12 @@ onBeforeUnmount(() => {
 async function setAutoInject(val: boolean) {
     autoInject.value = val
     await browser.storage.local.set({ 'giopic-auto-inject': val })
+}
+
+async function setHoverPreview(val: boolean) {
+    hoverPreview.value = val
+    await browser.storage.local.set({ 'giopic-hover-preview': val })
+    // Notify content scripts? Or just let them read storage change if they listen
 }
 
 async function setOpenMode(mode: string) {
@@ -156,6 +191,7 @@ onMounted(() => {
     checkVersion()
 })
 
+// 检查 GitHub 最新版本（带缓存机制）
 async function checkVersion(force = false) {
     if (isChecking.value) return
 
@@ -222,6 +258,7 @@ async function checkVersion(force = false) {
     }
 }
 
+// 恢复出厂设置（清除所有数据并重载）
 async function handleResetExtension() {
     dialog.warning({
         title: t('settings.dangerZone.title'),
@@ -255,14 +292,16 @@ async function handleResetExtension() {
 
 <template>
     <n-modal :show="show" @update:show="(val: boolean) => emit('update:show', val)" preset="card"
-        :title="t('settings.title')" class="w-full max-w-3xl rounded-2xl" :segmented="false" :content-style="{ padding: 0 }">
+        :title="t('settings.title')" class="w-full max-w-3xl rounded-2xl" :segmented="false"
+        :content-style="{ padding: 0 }">
         <div class="flex flex-col md:flex-row ">
             <!-- Sidebar -->
-            <div class="flex md:flex-col flex-row md:w-48 shrink-0 overflow-x-auto md:overflow-visible border-b md:border-b-0 md:border-r border-gray-100 dark:border-gray-800 bg-gray-50/50 dark:bg-gray-800/20 p-2 gap-1">
+            <div
+                class="flex md:flex-col flex-row md:w-48 shrink-0 overflow-x-auto md:overflow-visible border-b md:border-b-0 md:border-r border-gray-100 dark:border-gray-800 bg-gray-50/50 dark:bg-gray-800/20 p-2 gap-1">
                 <button v-for="tab in tabs" :key="tab.key"
                     class="flex-1 md:flex-none w-full text-left px-3 py-2 rounded-lg text-sm font-medium transition-colors flex items-center justify-center md:justify-start gap-2 whitespace-nowrap"
-                    :class="activeTab === tab.key 
-                        ? 'bg-white dark:bg-gray-700 text-primary shadow-sm' 
+                    :class="activeTab === tab.key
+                        ? 'bg-white dark:bg-gray-700 text-primary shadow-sm'
                         : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700/50'"
                     :style="activeTab === tab.key ? { color: 'var(--giopic-primary)' } : {}"
                     @click="activeTab = tab.key">
@@ -374,16 +413,16 @@ async function handleResetExtension() {
                 <!-- Features Tab -->
                 <div v-show="activeTab === 'features'" class="space-y-6">
                     <div class="grid gap-6">
-                        <!-- Sidebar -->
+                        <!-- Floating Ball -->
                         <div>
                             <div class="text-sm font-bold text-gray-500 mb-2 flex items-center gap-1">
-                                <div class="i-ph-sidebar" /> {{ t('settings.sidebar') }}
+                                <div class="i-ph-sidebar" /> {{ t('settings.floatingBall.title') }}
                             </div>
                             <button
                                 class="giopic-link-btn giopic-link-btn-primary w-full py-2 border font-medium text-sm flex items-center justify-center gap-2"
                                 :class="'border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'"
-                                @click="showSidebarSettings = true">
-                                <div class="i-ph-sliders-horizontal" /> {{ t('settings.sidebar') }}
+                                @click="showFloatingBallSettings = true">
+                                <div class="i-ph-sliders-horizontal" /> {{ t('settings.floatingBall.title') }}
                             </button>
                         </div>
 
@@ -393,9 +432,17 @@ async function handleResetExtension() {
                                 <div class="i-ph-magic-wand" /> {{ t('settings.automation') }}
                             </div>
                             <div class="space-y-2">
-                                <div class="flex items-center justify-between p-3 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-700/30">
-                                    <span class="text-sm font-medium text-gray-700 dark:text-gray-200">{{ t('settings.autoInject') }}</span>
+                                <div
+                                    class="flex items-center justify-between p-3 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-700/30">
+                                    <span class="text-sm font-medium text-gray-700 dark:text-gray-200">{{
+                                        t('settings.autoInject') }}</span>
                                     <n-switch v-model:value="autoInject" @update:value="setAutoInject" />
+                                </div>
+                                <div
+                                    class="flex items-center justify-between p-3 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-700/30">
+                                    <span class="text-sm font-medium text-gray-700 dark:text-gray-200">{{
+                                        t('settings.hoverPreview') }}</span>
+                                    <n-switch v-model:value="hoverPreview" @update:value="setHoverPreview" />
                                 </div>
                                 <button
                                     class="giopic-link-btn giopic-link-btn-primary w-full py-2 border font-medium text-sm flex items-center justify-center gap-2"
@@ -406,18 +453,34 @@ async function handleResetExtension() {
                             </div>
                         </div>
 
+                        <!-- Plugins -->
+                        <div>
+                            <div class="text-sm font-bold text-gray-500 mb-2 flex items-center gap-1">
+                                <div class="i-ph-plug" /> {{ t('settings.plugins.title') }}
+                            </div>
+                            <button
+                                class="giopic-link-btn giopic-link-btn-primary w-full py-2 border font-medium text-sm flex items-center justify-center gap-2"
+                                :class="'border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'"
+                                @click="showPluginManager = true">
+                                <div class="i-ph-puzzle-piece" /> {{ t('settings.plugins.title') }}
+                            </button>
+                        </div>
+
                         <!-- Desktop Link -->
                         <div>
                             <div class="text-sm font-bold text-gray-500 mb-2 flex items-center gap-1">
                                 <div class="i-ph-desktop" /> {{ t('settings.desktopLink.title') }}
                             </div>
-                            <div class="space-y-2 p-3 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-700/30">
+                            <div
+                                class="space-y-2 p-3 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-700/30">
                                 <div class="flex items-center justify-between">
-                                    <span class="text-sm font-medium text-gray-700 dark:text-gray-200">{{ t('settings.desktopLink.enabled') }}</span>
+                                    <span class="text-sm font-medium text-gray-700 dark:text-gray-200">{{
+                                        t('settings.desktopLink.enabled') }}</span>
                                     <n-switch v-model:value="desktopEnabled" @update:value="setDesktopLinkEnabled" />
                                 </div>
                                 <div class="flex items-center justify-between text-xs">
-                                    <span class="text-gray-500 dark:text-gray-400">{{ t('settings.desktopLink.statusLabel') }}</span>
+                                    <span class="text-gray-500 dark:text-gray-400">{{
+                                        t('settings.desktopLink.statusLabel') }}</span>
                                     <span :class="desktopStatusClass">{{ desktopStatusText }}</span>
                                 </div>
                                 <div class="text-xs text-gray-400 dark:text-gray-500">
@@ -435,7 +498,8 @@ async function handleResetExtension() {
                         <div class="text-sm font-bold text-gray-500 mb-2 flex items-center gap-1">
                             <div class="i-ph-info" /> {{ t('settings.version.title') }}
                         </div>
-                        <div class="p-3 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-700/30">
+                        <div
+                            class="p-3 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-700/30">
                             <div class="flex items-center justify-between" :class="latestVersion ? 'mb-2' : ''">
                                 <span class="text-sm font-medium text-gray-700 dark:text-gray-200">
                                     {{ t('settings.version.current') }}: v{{ currentVersion }}
@@ -466,12 +530,14 @@ async function handleResetExtension() {
 
                             <div class="mt-3 pt-3 border-t border-gray-200 dark:border-gray-700">
                                 <div class="flex items-center justify-between mb-2">
-                                    <span class="text-sm font-medium text-gray-700 dark:text-gray-200">{{ t('settings.about.developer') }}</span>
+                                    <span class="text-sm font-medium text-gray-700 dark:text-gray-200">{{
+                                        t('settings.about.developer') }}</span>
                                     <a href="https://github.com/ZenEcho" target="_blank"
                                         class="text-sm text-gray-500 hover:text-blue-500 transition-colors">ZenEcho</a>
                                 </div>
                                 <div class="flex items-center justify-between">
-                                    <span class="text-sm font-medium text-gray-700 dark:text-gray-200">{{ t('settings.about.openSource') }}</span>
+                                    <span class="text-sm font-medium text-gray-700 dark:text-gray-200">{{
+                                        t('settings.about.openSource') }}</span>
                                     <a href="https://github.com/ZenEcho/GioPic_Web_Extension/" target="_blank"
                                         class="text-sm text-blue-500 hover:underline flex items-center gap-1">
                                         <div class="i-ph-github-logo" /> GitHub
@@ -486,7 +552,8 @@ async function handleResetExtension() {
                         <div class="text-sm font-bold text-red-500 mb-2 flex items-center gap-1">
                             <div class="i-ph-warning-circle" /> {{ t('settings.dangerZone.title') }}
                         </div>
-                        <div class="p-3 rounded-lg border border-red-200 dark:border-red-900/50 bg-red-50 dark:bg-red-900/20">
+                        <div
+                            class="p-3 rounded-lg border border-red-200 dark:border-red-900/50 bg-red-50 dark:bg-red-900/20">
                             <button
                                 class="w-full py-2 bg-red-500 hover:bg-red-600 text-white rounded-lg font-medium text-sm transition-colors flex items-center justify-center gap-2"
                                 @click="handleResetExtension">
@@ -498,6 +565,7 @@ async function handleResetExtension() {
             </div>
         </div>
     </n-modal>
-    <SidebarSettings v-model:show="showSidebarSettings" />
+    <FloatingBallSettings v-model:show="showFloatingBallSettings" />
     <SiteEditorSettings v-model:show="showSiteEditorSettings" />
+    <PluginManagerModal v-model:show="showPluginManager" />
 </template>

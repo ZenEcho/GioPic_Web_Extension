@@ -33,7 +33,8 @@ src/components/
 │       └── UploadZone.vue # 拖拽上传区域
 └── settings/             # 全局设置
     ├── SettingsModal.vue # 设置弹窗 (集成各子设置)
-    ├── SidebarSettings.vue # 侧边栏 (Content Script) 偏好设置
+    ├── FloatingBallSettings.vue # 悬浮球 (Content Script) 偏好设置
+    ├── PluginManagerModal.vue # 插件管理弹窗
     └── SiteEditorSettings.vue # [核心] 网站-编辑器自动绑定管理
 ```
 
@@ -64,6 +65,7 @@ src/components/
 
 ### 4.3 全局设置 (`settings/`)
 *   **SettingsModal**: 统一的设置入口，集成通用设置、外观设置等。
+*   **FloatingBallSettings**: 管理悬浮球的显示策略（如禁用站点、禁用预览）及黑名单管理。
 *   **SiteEditorSettings**:
     *   管理“域名-编辑器”的绑定关系。
     *   支持手动添加/删除绑定规则。

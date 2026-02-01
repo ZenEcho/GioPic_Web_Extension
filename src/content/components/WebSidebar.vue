@@ -141,7 +141,34 @@ const isVisible = computed(() => {
     // Removed: if (settings.value.mode === 'native') return false
     if (isSessionClosed.value) return false
     if (isPageClosed.value) return false
-    if (disabledSites.value.includes(window.location.hostname)) return false
+    
+    const currentUrl = window.location.href
+    const currentHostname = window.location.hostname
+    const isDisabled = disabledSites.value.some(site => {
+        // Normalize for comparison: remove trailing slash, lowercase, trim
+        const normalize = (s: string) => s.trim().replace(/\/+$/, '').toLowerCase()
+        const siteNorm = normalize(site)
+        const currentNorm = normalize(currentUrl)
+        const hostnameNorm = currentHostname.toLowerCase()
+
+        // 1. Hostname Exact Match
+        if (siteNorm === hostnameNorm) return true
+
+        // 2. URL/Path Match
+        if (site.includes('/') || site.includes('://')) {
+            // If site has protocol, direct comparison
+            if (site.includes('://')) {
+                return currentNorm.startsWith(siteNorm)
+            }
+            // If site has no protocol (e.g. example.com/foo), compare with protocol-stripped current url
+            const currentNoProto = currentNorm.replace(/^https?:\/\//, '')
+            return currentNoProto.startsWith(siteNorm)
+        }
+        
+        return false
+    })
+    
+    if (isDisabled) return false
     return true
 })
 
@@ -234,12 +261,23 @@ const handleConfirmClose = async () => {
             isSessionClosed.value = true
         } else if (closeOption.value === 'site') {
             const hostname = window.location.hostname
-            if (hostname && !disabledSites.value.includes(hostname)) {
+            // Check if not already disabled
+            const isDisabled = disabledSites.value.some(site => site === hostname)
+            
+            if (!isDisabled) {
                 // create new array ref to ensure reactivity triggers
                 const newSites = [...disabledSites.value, hostname]
                 disabledSites.value = newSites
                 // save plain array
                 await browser.storage.local.set({ sidebar_disabled_sites: newSites })
+
+                // Ensure siteEditorConfig has an entry to prevent auto-deletion when re-enabling
+                const res = await browser.storage.local.get('siteEditorConfig')
+                const config = (res.siteEditorConfig || {}) as Record<string, string>
+                if (!config[hostname]) {
+                    config[hostname] = ""
+                    await browser.storage.local.set({ siteEditorConfig: config })
+                }
             }
         } else if (closeOption.value === 'permanent') {
             settings.value.enabled = false
@@ -369,14 +407,18 @@ onMounted(async () => {
 
         // Ensure position is valid after render
         nextTick(() => {
-            // Force a re-evaluation of viewport constraints with the loaded position
-            // This helps if the loaded position is out of bounds on the current screen
-            // We trigger this by "pretending" the element resized
-            // But since we can't easily access ensureInViewport from here without exposing it,
-            // we rely on the fact that useDraggable's ResizeObserver will fire shortly.
-            // However, to be safe, we can manually trigger a small update if needed, but
-            // simply setting position.value usually works if useDraggable is watching it (it's not).
-            // The useDraggable internal position is the source of truth.
+            // 如果加载的位置超出当前屏幕，手动触发一次边界校正
+            // 由于 useDraggable 内部已做越界处理，仅需触发一次微小位移即可
+            const { innerWidth, innerHeight } = window
+            const { x, y } = position.value
+            // 水平方向：若超出右边界，则贴右；若超出左边界，则贴左
+            const clampedX = Math.max(0, Math.min(x, innerWidth - 44))
+            // 垂直方向：若超出下边界，则贴底；若超出上边界，则贴顶
+            const clampedY = Math.max(0, Math.min(y, innerHeight - 44))
+            // 只有真正越界时才更新，避免无意义刷新
+            if (clampedX !== x || clampedY !== y) {
+              position.value = { x: clampedX, y: clampedY }
+            }
         })
     }
 

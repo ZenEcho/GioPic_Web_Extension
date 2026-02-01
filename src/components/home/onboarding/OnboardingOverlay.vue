@@ -5,6 +5,7 @@ import { useThemeStore } from '@/stores/theme'
 import { useI18n } from 'vue-i18n'
 import browser from 'webextension-polyfill'
 import confetti from 'canvas-confetti'
+import PluginManagerModal from '@/components/settings/PluginManagerModal.vue'
 
 const props = defineProps<{
     show: boolean
@@ -22,6 +23,7 @@ const { t, locale } = useI18n()
 // 内部状态
 const isOnboardingMinimized = ref(false)
 const onboardingStep = ref<'language' | 'layout' | 'config'>('language')
+const showPluginManager = ref(false)
 // 方法
 
 function handleLanguageSelect(lang: string) {
@@ -90,6 +92,8 @@ defineExpose({
     <Transition name="fade">
         <div v-if="show" class="fixed inset-0 z-50 flex items-center justify-center"
             :class="isOnboardingMinimized ? 'pointer-events-none' : ''">
+
+            <PluginManagerModal v-model:show="showPluginManager" class="z-[100]" />
 
             <!-- Backdrop -->
             <div class="absolute inset-0 bg-black/40 backdrop-blur-sm transition-opacity duration-300"
@@ -247,6 +251,22 @@ defineExpose({
                                     <div class="font-bold text-gray-800 dark:text-gray-200">{{
                                         t('home.onboarding.config.import') }}</div>
                                     <div class="text-xs text-gray-500">{{ t('home.onboarding.config.importDesc') }}
+                                    </div>
+                                </div>
+                                <div class="i-ph-caret-right text-gray-400" />
+                            </div>
+
+                            <!-- Import Plugin -->
+                            <div class="relative group cursor-pointer rounded-xl border-2 border-gray-100 dark:border-gray-700 hover:border-primary/50 transition-all duration-300 p-4 hover:shadow-lg flex items-center gap-4"
+                                @click="showPluginManager = true">
+                                <div
+                                    class="w-12 h-12 rounded-lg bg-purple-500/10 flex items-center justify-center text-2xl text-purple-500">
+                                    <div class="i-ph-puzzle-piece-duotone" />
+                                </div>
+                                <div class="flex-1">
+                                    <div class="font-bold text-gray-800 dark:text-gray-200">{{
+                                        t('settings.plugins.import') }}</div>
+                                    <div class="text-xs text-gray-500">{{ t('settings.plugins.description') }}
                                     </div>
                                 </div>
                                 <div class="i-ph-caret-right text-gray-400" />
