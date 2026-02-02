@@ -447,7 +447,8 @@ onMounted(async () => {
   // 初始化配置
   const res = await browser.storage.local.get(['giopic-hover-preview', 'preview_disabled_sites'])
   globalEnabled.value = res['giopic-hover-preview'] !== false
-  disabledSites.value = (res['preview_disabled_sites'] || []) as string[]
+  const rawDisabled = res['preview_disabled_sites']
+  disabledSites.value = (Array.isArray(rawDisabled) ? rawDisabled : []) as string[]
   checkEnabled()
 
   // 监听 storage
@@ -458,7 +459,8 @@ onMounted(async () => {
         checkEnabled()
       }
       if (changes['preview_disabled_sites']) {
-        disabledSites.value = (changes['preview_disabled_sites'].newValue || []) as string[]
+        const next = changes['preview_disabled_sites'].newValue
+        disabledSites.value = (Array.isArray(next) ? next : []) as string[]
         checkEnabled()
       }
     }

@@ -334,6 +334,7 @@ export default {
     plugins: {
       title: 'Plugin Management',
       description: 'Import third-party drive plugins (JSON format) to support more image hosts.',
+      market: 'Plugin Market',
       import: 'Import Plugin',
       importSuccess: 'Plugin "{name}" imported successfully',
       importFailed: 'Import failed',

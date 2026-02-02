@@ -56,9 +56,9 @@ onMounted(async () => {
         console.warn('Failed to get manifest version or storage', e)
     }
 
-    browser.runtime.onMessage.addListener(async (message: any) => {
+    browser.runtime.onMessage.addListener((message: any) => {
         if (message.type === 'REFRESH_CONFIG') {
-            await configStore.reload()
+            configStore.reload()
         }
     })
 })

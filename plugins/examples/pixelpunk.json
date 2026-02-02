@@ -40,7 +40,7 @@
       "label": "File Path",
       "type": "text",
       "required": false,
-      "placeholder": "e.g. uploads/2024"
+      "placeholder": "uploads/2024"
     },
     {
       "name": "folderId",

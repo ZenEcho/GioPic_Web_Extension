@@ -24,6 +24,7 @@ import { useI18n } from 'vue-i18n'
 import { useMessage, useDialog } from 'naive-ui'
 import { usePluginStore } from '@/stores/plugin'
 import type { PluginMeta } from '@/types'
+import { validatePlugin } from '@/utils/pluginCore'
 
 const props = defineProps<{
     show: boolean
@@ -55,8 +56,9 @@ const onFileSelect = async (e: Event) => {
 
         // 基础格式验证
         // Basic validation
-        if (!plugin.id || !plugin.name || !plugin.version || !plugin.script) {
-            throw new Error('Invalid plugin format')
+        const validation = validatePlugin(plugin)
+        if (!validation.valid) {
+            throw new Error(validation.error || 'Invalid plugin format')
         }
 
         await pluginStore.addPlugin(plugin)
@@ -92,6 +94,11 @@ const handleDelete = (plugin: PluginMeta) => {
                 class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 p-4 rounded-xl bg-gray-50 dark:bg-white/5 border border-gray-100 dark:border-white/10">
                 <p class="text-sm text-gray-500 dark:text-gray-400 leading-relaxed max-w-md">
                     {{ t('settings.plugins.description') }}
+                    <a href="https://fileup.dev/plugins" target="_blank"
+                        class="text-primary hover:text-primary-hover font-medium inline-flex items-center gap-0.5 ml-1 transition-colors">
+                        {{ t('settings.plugins.market') }}
+                        <div class="i-ph-arrow-square-out text-xs" />
+                    </a>
                 </p>
                 <n-button type="primary" @click="handleImport" class="shrink-0 shadow-lg shadow-primary/20">
                     <template #icon>

@@ -40,9 +40,9 @@ const {
 } = useSidebar(props, emit as any)
 
 onMounted(() => {
-    browser.runtime.onMessage.addListener(async (message: any) => {
+    browser.runtime.onMessage.addListener((message: any) => {
         if (message.type === 'REFRESH_CONFIG') {
-            await configStore.reload()
+            configStore.reload()
         }
     })
 })

@@ -347,7 +347,8 @@ export default {
     title: '设置',
     plugins: {
       title: '图床插件管理',
-      description: '导入第三方图床适配插件 (JSON 格式)，扩展支持更多图床。',
+      description: '导入第三方图床插件 (JSON 格式) 以支持更多图床。',
+      market: '插件市场',
       import: '导入插件',
       importSuccess: '插件 "{name}" 导入成功',
       importFailed: '导入失败',

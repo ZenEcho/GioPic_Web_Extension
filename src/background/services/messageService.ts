@@ -4,8 +4,14 @@ import { db } from '@/utils/storage'
 import { updateActionBehavior } from './actionManager'
 import { updateContextMenuLocale } from './contextMenu'
 import i18n from '@/i18n'
-import type { DriveConfig } from '@/types'
+import type { DriveConfig, PluginMeta } from '@/types'
 import { getDesktopLinkStatus, setDesktopLinkEnabled } from './desktopLink'
+import { 
+    validatePlugin, 
+    installPluginToStorage, 
+    uninstallPluginFromStorage, 
+    togglePluginInStorage 
+} from '@/utils/pluginCore'
 
 const authTokenCache: Record<string, string> = {}
 const sidePanelOpenByTab: Record<number, boolean> = {}
@@ -153,6 +159,59 @@ export async function handleMessage(message: any, sender: Runtime.MessageSender)
         return await closeSidePanel(sender)
     } else if (message.type === 'TOGGLE_SIDE_PANEL') {
         return await toggleSidePanel(sender)
+    } else if (message.type === 'INSTALL_PLUGIN') {
+        return await handleInstallPlugin(message.plugin)
+    } else if (message.type === 'TOGGLE_PLUGIN') {
+        return await handleTogglePlugin(message.pluginId, message.enabled)
+    } else if (message.type === 'UNINSTALL_PLUGIN') {
+        return await handleUninstallPlugin(message.pluginId)
+    } else if (message.type === 'GET_INSTALLED_PLUGINS') {
+        return await handleGetInstalledPlugins()
+    }
+}
+
+async function handleGetInstalledPlugins() {
+    try {
+        const stored = await db.get<PluginMeta[]>('plugins')
+        return { success: true, plugins: stored || [] }
+    } catch (e: any) {
+        return { success: false, error: e.message }
+    }
+}
+
+async function handleTogglePlugin(pluginId: string, enabled: boolean) {
+    if (!pluginId) return { success: false, error: 'Invalid plugin ID' }
+    try {
+        const success = await togglePluginInStorage(pluginId, enabled)
+        if (success) return { success: true }
+        return { success: false, error: 'Plugin not found' }
+    } catch (e: any) {
+        return { success: false, error: e.message }
+    }
+}
+
+async function handleUninstallPlugin(pluginId: string) {
+    if (!pluginId) return { success: false, error: 'Invalid plugin ID' }
+    try {
+        const success = await uninstallPluginFromStorage(pluginId)
+        if (success) return { success: true }
+        return { success: false, error: 'Plugin not found' }
+    } catch (e: any) {
+        return { success: false, error: e.message }
+    }
+}
+
+async function handleInstallPlugin(plugin: PluginMeta) {
+    const validation = validatePlugin(plugin)
+    if (!validation.valid) {
+        return { success: false, error: validation.error }
+    }
+
+    try {
+        await installPluginToStorage(plugin)
+        return { success: true }
+    } catch (e: any) {
+        return { success: false, error: e.message }
     }
 }
 
@@ -200,25 +259,28 @@ async function closeSidePanel(sender: Runtime.MessageSender) {
     if (!tabId) return { success: false, error: 'No tab ID found' }
 
     const chromeSidePanel = (globalThis as any).chrome?.sidePanel
-    if (chromeSidePanel?.close) {
-        try {
-            await chromeSidePanel.close({ tabId })
-            sidePanelOpenByTab[tabId] = false
-            await setSidePanelOpenState(tabId, false)
-            return { success: true }
-        } catch (e: any) {
-            return { success: false, error: e?.message || 'Unknown error' }
-        }
-    }
-
     if (chromeSidePanel?.setOptions) {
         try {
             await chromeSidePanel.setOptions({ tabId, enabled: false })
+            setTimeout(() => {
+                chromeSidePanel.setOptions({ tabId, enabled: true, path: 'index.html' }).catch(() => { })
+            }, 100)
             sidePanelOpenByTab[tabId] = false
             await setSidePanelOpenState(tabId, false)
             return { success: true }
         } catch (e: any) {
-            return { success: false, error: e?.message || 'Unknown error' }
+            return { success: false, error: e?.message }
+        }
+    }
+    
+    if ((browser as any).sidebarAction?.close) {
+        try {
+            await (browser as any).sidebarAction.close()
+            sidePanelOpenByTab[tabId] = false
+            await setSidePanelOpenState(tabId, false)
+            return { success: true }
+        } catch (e: any) {
+             return { success: false, error: e?.message }
         }
     }
 
@@ -228,236 +290,88 @@ async function closeSidePanel(sender: Runtime.MessageSender) {
 async function toggleSidePanel(sender: Runtime.MessageSender) {
     const tabId = sender.tab?.id
     if (!tabId) return { success: false, error: 'No tab ID found' }
-
-    if (sidePanelOpenByTab[tabId]) {
-        const res = await closeSidePanel(sender)
-        if (res?.success) sidePanelOpenByTab[tabId] = false
-        return res
-    }
-    const res = await openSidePanel(sender)
-    if (res?.success) sidePanelOpenByTab[tabId] = true
-    return res
-}
-
-async function handleFetchImageBlob(message: any) {
-    const url = message.url
-    if (!url) return null
-
-    // Add dynamic rule for Referer
-    if (url.includes('i.111666.best')) {
-        try {
-            const ruleId = 111666
-            await browser.declarativeNetRequest.updateDynamicRules({
-                removeRuleIds: [ruleId],
-                addRules: [{
-                    id: ruleId,
-                    priority: 1,
-                    action: {
-                        type: 'modifyHeaders' as any,
-                        requestHeaders: [{
-                            header: 'Referer',
-                            operation: 'set' as any,
-                            value: url
-                        }]
-                    },
-                    condition: {
-                        urlFilter: url,
-                        resourceTypes: ['xmlhttprequest', 'other', 'image'] as any
-                    }
-                }]
-            })
-        } catch (e) {
-            console.error('Failed to set DNR rules', e)
-        }
-    }
-
-    try {
-        const response = await fetch(url)
-        const blob = await response.blob()
-        const reader = new FileReader()
-        return new Promise((resolve, reject) => {
-            reader.onloadend = () => resolve(reader.result)
-            reader.onerror = reject
-            reader.readAsDataURL(blob)
-        })
-    } catch (e) {
-        console.error('Fetch failed', e)
-        return null
+    
+    // Check if currently open
+    const isOpen = sidePanelOpenByTab[tabId] || false
+    if (isOpen) {
+        return await closeSidePanel(sender)
+    } else {
+        return await openSidePanel(sender)
     }
 }
 
 async function relayUploadSuccess(message: any, sender: Runtime.MessageSender) {
-    const senderTabId = sender.tab?.id
-    if (senderTabId) {
-        try {
-            await browser.tabs.sendMessage(senderTabId, {
-                type: 'UPLOAD_EVENT',
-                data: {
-                    event: 'success',
-                    id: message.id || 'relay',
-                    payload: message.payload,
-                    isOrigin: true
-                }
-            })
-        } catch (e) {
-            console.warn('Failed to relay upload success to sender tab', e)
-        }
-        return
-    }
-    try {
-        const store = await browser.storage.local.get('giopic-last-content-tab')
-        const lastTabId = store['giopic-last-content-tab'] as number | undefined
-        if (lastTabId) {
-            await browser.tabs.sendMessage(lastTabId, {
-                type: 'UPLOAD_EVENT',
-                data: {
-                    event: 'success',
-                    id: message.id || 'relay',
-                    payload: message.payload,
-                    isOrigin: true
-                }
-            })
-            return
-        }
-    } catch { }
-    const tabs = await browser.tabs.query({ active: true, currentWindow: true })
-    if (tabs && tabs.length > 0 && tabs[0]?.id) {
-        try {
-            await browser.tabs.sendMessage(tabs[0].id!, {
-                type: 'UPLOAD_EVENT',
-                data: {
-                    event: 'success',
-                    id: message.id || 'relay',
-                    payload: message.payload,
-                    isOrigin: true
-                }
-            })
-        } catch (e) {
-            console.warn('Failed to relay upload success to active tab', e)
-        }
+    // 转发给当前标签页 Content Script，用于通知网页上传成功
+    if (sender.tab?.id) {
+        browser.tabs.sendMessage(sender.tab.id, {
+            type: 'UPLOAD_EVENT',
+            data: {
+                event: 'success',
+                url: message.url,
+                ...message.data
+            }
+        }).catch(() => { })
     }
 }
 
 async function handleGetXsrfToken(message: any, sender: Runtime.MessageSender) {
-    const url = message.url as string
-    let xsrfToken = ''
-    let authToken = ''
-    let authorization = ''
-    console.log('Getting cookies for:', url);
-
+    // 简单实现：尝试从 Cookie 中获取 XSRF-TOKEN
+    // 注意：需要 'cookies' 权限和 host 权限
+    if (!sender.tab?.url) return
     try {
-        // 获取该 url 下的所有 cookies，以便调试和查找
-        const cookies = await browser.cookies.getAll({ url })
-        console.log('Found cookies:', cookies.map(c => `${c.name}=${c.value}`).join('; '))
-
-        // 查找 XSRF Token
-        const xsrfTargetNames = ['XSRF-TOKEN', 'XSRF_TOKEN', 'csrf_token', 'csrftoken', 'xsrf-token', '_csrf']
-        const xsrfCookie = cookies.find(c =>
-            xsrfTargetNames.includes(c.name) ||
-            xsrfTargetNames.includes(c.name.toUpperCase()) ||
-            c.name.toLowerCase().includes('csrf') ||
-            c.name.toLowerCase().includes('xsrf')
-        )
-        if (xsrfCookie) {
-            xsrfToken = decodeURIComponent(xsrfCookie.value)
-        } else {
-            // 兼容旧逻辑：尝试获取名为 'cookie' 的值作为备选（虽然不太常见）
-            const c1 = cookies.find(c => c.name === 'cookie')
-            if (c1) xsrfToken = decodeURIComponent(c1.value)
-        }
-
-        // 查找 Authorization Token
-        // 很多时候 Authorization token 也会存在 Cookie 中，如 access_token, authorization, token 等
-        const authTargetNames = ['authorization', 'Authorization', 'access_token', 'auth_token', 'token', 'TOKEN', 'id_token']
-        const authCookie = cookies.find(c =>
-            authTargetNames.includes(c.name) ||
-            c.name.toLowerCase().includes('auth') ||
-            c.name.toLowerCase().includes('token')
-        )
-        if (authCookie) {
-            authToken = decodeURIComponent(authCookie.value)
-            // 如果取到的是 Bearer Token 但没有前缀，可能需要根据具体情况处理，
-            // 但这里只负责原样获取值。
-        }
-
-        // 尝试从 Request Header 缓存中获取 Authorization (优先级更高)
-        try {
-            const origin = new URL(url).origin
-            if (authTokenCache[origin]) {
-                authorization = authTokenCache[origin]
-            }
-        } catch (e) {
-            console.error('Error parsing URL for auth cache:', e)
-        }
-
-    } catch (e) {
-        console.error('Failed to get cookies:', e)
-    }
-
-    if (sender.tab?.id) {
-        try {
-            await browser.tabs.sendMessage(sender.tab.id, {
-                XSRF_TOKEN: xsrfToken,
-                authToken: authToken,
-                Authorization: authorization
-            })
-        } catch (e) {
-            console.warn('Failed to send XSRF token to content script', e)
-        }
-    }
+        const url = new URL(sender.tab.url)
+        const cookie = await browser.cookies.get({
+            url: sender.tab.url,
+            name: 'XSRF-TOKEN'
+        })
+        return cookie?.value
+    } catch { return null }
 }
 
 async function handleAddConfig(message: any, sender: Runtime.MessageSender) {
-    const data = message.payload as Partial<DriveConfig>
-    if (!data) return
-    const id = `${(data.type || 'lsky')}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`
-    const defaultName = (() => {
-        try {
-            const u = sender.tab?.url ? new URL(sender.tab.url) : null
-            return u?.hostname || 'GioPic'
-        } catch {
-            return 'GioPic'
-        }
-    })()
-
-    const cfg = {
-        ...data,
-        id,
-        name: data.name || defaultName,
-        enabled: true,
-        type: data.type || 'lsky'
-    } as DriveConfig
+    // 处理一键配置
+    const { config } = message
+    if (!config || !config.type) return { success: false, error: 'Invalid config' }
 
     try {
-        const list = await db.get<DriveConfig[]>('giopic-configs')
-        const configs = list || []
-        configs.push(cfg)
-        await db.set('giopic-configs', configs)
+        const drives = await db.get<DriveConfig[]>('drives') || []
+        // Check duplicate
+        const exists = drives.some(d =>
+            d.type === config.type &&
+            (d as any).apiUrl === config.apiUrl &&
+            (d as any).token === config.token
+        )
 
-        const selected = (await db.get<string[]>('giopic-selected-ids')) || []
-        if (!selected.includes(id)) {
-            selected.push(id)
-            await db.set('giopic-selected-ids', selected)
-        }
-    } catch (e) {
-        console.error('Failed to add config', e)
+        if (exists) return { success: true, exists: true }
+
+        drives.push(config)
+        await db.set('drives', drives)
+        return { success: true }
+    } catch (e: any) {
+        return { success: false, error: e.message }
+    }
+}
+
+async function handleFetchImageBlob(message: any) {
+    // 代理获取图片 Blob (解决跨域和 Cookie 问题)
+    const { url } = message
+    if (!url) return { success: false, error: 'No URL' }
+
+    try {
+        const res = await fetch(url)
+        const blob = await res.blob()
+        const base64 = await new Promise((resolve) => {
+            const reader = new FileReader()
+            reader.onloadend = () => resolve(reader.result)
+            reader.readAsDataURL(blob)
+        })
+        return { success: true, base64, type: blob.type }
+    } catch (e: any) {
+        return { success: false, error: e.message }
     }
 }
 
 async function handleRegisterContent(sender: Runtime.MessageSender) {
-    const tabId = sender.tab?.id
-    if (!tabId) return
-    try {
-        await browser.storage.local.set({ 'giopic-last-content-tab': tabId })
-    } catch { }
-}
-
-function broadcastDesktopLinkStatus() {
-    const payload = getDesktopLinkStatus()
-    try {
-        browser.runtime.sendMessage({
-            type: 'DESKTOP_LINK_STATUS',
-            payload
-        })
-    } catch { }
+    // Content Script 注册（暂无特殊操作）
+    // console.log('Content script registered:', sender.tab?.id)
 }

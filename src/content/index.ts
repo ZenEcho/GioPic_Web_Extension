@@ -14,7 +14,8 @@ function injectPageBundle() {
     // 同步 hover preview 设置
     browser.storage.local.get(['giopic-hover-preview', 'preview_disabled_sites']).then(res => {
         const globalEnabled = res['giopic-hover-preview'] !== false;
-        const disabledSites = (res['preview_disabled_sites'] || []) as string[];
+        const rawDisabled = res['preview_disabled_sites'];
+        const disabledSites = (Array.isArray(rawDisabled) ? rawDisabled : []) as string[];
         
         const currentUrl = window.location.href;
         const currentHostname = window.location.hostname;
@@ -50,7 +51,8 @@ function injectPageBundle() {
                 // 重新获取最新状态以确保一致性
                 browser.storage.local.get(['giopic-hover-preview', 'preview_disabled_sites']).then(res => {
                     const globalEnabled = res['giopic-hover-preview'] !== false;
-                    const disabledSites = (res['preview_disabled_sites'] || []) as string[];
+                    const rawDisabled = res['preview_disabled_sites'];
+                    const disabledSites = (Array.isArray(rawDisabled) ? rawDisabled : []) as string[];
                     
                     const currentUrl = window.location.href;
                     const currentHostname = window.location.hostname;
@@ -156,14 +158,23 @@ browser.runtime.onMessage.addListener(async (message: any) => {
                 preferredType
             }, '*')
         }
+    } else if (message.type === 'REFRESH_PLUGINS') {
+        // 通知网页插件列表已更新
+        window.postMessage({
+            type: 'GIOPIC_PLUGINS_UPDATED'
+        }, '*');
     }
 })
 
 // 监听来自页面脚本的消息 (用于更新编辑器绑定)
 window.addEventListener('message', async (event) => {
     if (event.source !== window) return;
-    if (event.data?.type === 'GIOPIC_EDITOR_SUCCESS') {
-        const { hostname, editorType } = event.data;
+    
+    const data = event.data;
+    if (!data) return;
+
+    if (data.type === 'GIOPIC_EDITOR_SUCCESS') {
+        const { hostname, editorType } = data;
         if (hostname && editorType) {
             const res = await browser.storage.local.get('siteEditorConfig');
             const config = (res.siteEditorConfig || {}) as Record<string, string>;
@@ -173,6 +184,104 @@ window.addEventListener('message', async (event) => {
                 config[hostname] = editorType;
                 await browser.storage.local.set({ siteEditorConfig: config });
             }
+        }
+    }
+    
+    // 监听来自网页的插件安装请求 (Plugin Market Integration)
+    else if (data.type === 'GIOPIC_INSTALL_PLUGIN') {
+        const { plugin } = data;
+        
+        // 转发给 Background
+        try {
+            const res = (await browser.runtime.sendMessage({
+                type: 'INSTALL_PLUGIN',
+                plugin
+            })) as { success: boolean; error?: string };
+            
+            // 返回结果给网页
+            window.postMessage({
+                type: 'GIOPIC_INSTALL_PLUGIN_RESULT',
+                success: res?.success || false,
+                error: res?.error || (res ? undefined : 'No response from extension'),
+                pluginId: plugin?.id
+            }, '*');
+        } catch (e: any) {
+            window.postMessage({
+                type: 'GIOPIC_INSTALL_PLUGIN_RESULT',
+                success: false,
+                error: e.message || 'Extension communication error',
+                pluginId: plugin?.id
+            }, '*');
+        }
+    }
+    // 启用/禁用插件
+    else if (data.type === 'GIOPIC_TOGGLE_PLUGIN') {
+        const { pluginId, enabled } = data;
+        try {
+            const res = (await browser.runtime.sendMessage({
+                type: 'TOGGLE_PLUGIN',
+                pluginId,
+                enabled
+            })) as { success: boolean; error?: string };
+            
+            window.postMessage({
+                type: 'GIOPIC_TOGGLE_PLUGIN_RESULT',
+                success: res?.success || false,
+                error: res?.error || (res ? undefined : 'No response from extension'),
+                pluginId
+            }, '*');
+        } catch (e: any) {
+            window.postMessage({
+                type: 'GIOPIC_TOGGLE_PLUGIN_RESULT',
+                success: false,
+                error: e.message,
+                pluginId
+            }, '*');
+        }
+    }
+    // 卸载插件
+    else if (data.type === 'GIOPIC_UNINSTALL_PLUGIN') {
+        const { pluginId } = data;
+        try {
+            const res = (await browser.runtime.sendMessage({
+                type: 'UNINSTALL_PLUGIN',
+                pluginId
+            })) as { success: boolean; error?: string };
+            
+            window.postMessage({
+                type: 'GIOPIC_UNINSTALL_PLUGIN_RESULT',
+                success: res?.success || false,
+                error: res?.error || (res ? undefined : 'No response from extension'),
+                pluginId
+            }, '*');
+        } catch (e: any) {
+            window.postMessage({
+                type: 'GIOPIC_UNINSTALL_PLUGIN_RESULT',
+                success: false,
+                error: e.message,
+                pluginId
+            }, '*');
+        }
+    }
+    // 获取已安装插件列表
+    else if (data.type === 'GIOPIC_GET_INSTALLED_PLUGINS') {
+        try {
+            const res = (await browser.runtime.sendMessage({
+                type: 'GET_INSTALLED_PLUGINS'
+            })) as { success: boolean; plugins?: any[]; error?: string };
+            
+            window.postMessage({
+                type: 'GIOPIC_GET_INSTALLED_PLUGINS_RESULT',
+                success: res?.success || false,
+                plugins: res?.plugins,
+                error: res?.error || (res ? undefined : 'No response from extension')
+            }, '*');
+        } catch (e: any) {
+            window.postMessage({
+                type: 'GIOPIC_GET_INSTALLED_PLUGINS_RESULT',
+                success: false,
+                error: e.message
+            }, '*');
         }
     }
 });
@@ -186,10 +295,4 @@ try {
 } catch {}
 
 // 挂载单一容器
-mountComponent(
-    ContentOverlay,
-    'giopic-content-overlay',
-    true,
-    {},
-    true 
-)
+mountComponent(ContentOverlay, 'giopic-content-overlay', true, {}, true)
