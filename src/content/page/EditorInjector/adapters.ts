@@ -43,9 +43,28 @@ export const adapters: EditorAdapter[] = [
     {
         id: 'Discuz',
         detect: () => {
-            const bodyInnerText = document.body.innerText;
-            const isDiscuz = bodyInnerText.toLowerCase().includes("discuz") || bodyInnerText.toLowerCase().includes("论坛") == true;
-            return isDiscuz ? { type: 'Discuz', certainty: 0.8, source: 'TextIncludes' } : null;
+            // 1. 检查 Meta Generator (最准确，最快)
+            const isDiscuzMeta = document.querySelector("meta[name='generator'][content*='Discuz']") != null;
+            if (isDiscuzMeta) {
+                return { type: 'Discuz', certainty: 1, source: 'MetaGenerator' };
+            }
+            const bodyId = document.body.id;
+            if (bodyId && (bodyId.startsWith('nv_') || bodyId === 'discuz_uid')) {
+                return { type: 'Discuz', certainty: 0.95, source: 'BodyID' };
+            }
+            // 3. 检查 Discuz 特有的核心元素 ID
+            if (document.getElementById('discuz_tips') ||
+                (document.getElementById('toptb') && document.getElementById('ft'))) {
+                return { type: 'Discuz', certainty: 0.9, source: 'CoreElements' };
+            }
+            // 4. 最后的兜底：文本检测 (优化版)
+            // 并且只检测页脚区域，因为版权信息通常在那。
+            const footerText = (document.getElementById('ft') || document.body).textContent || "";
+            if (footerText.includes("Powered by Discuz") || footerText.includes("Discuz!")) {
+                return { type: 'Discuz', certainty: 0.6, source: 'FooterTextIncludes' };
+            }
+
+            return null;
         },
         inject: (url: string) => {
             const discuz = document.getElementById("fastpostmessage") as HTMLTextAreaElement | HTMLInputElement | null;
