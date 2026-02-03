@@ -29,6 +29,7 @@ export async function getManifest() {
                 js: [
                     "content/content.js",
                 ],
+                run_at: "document_end",
             }
         ],
         web_accessible_resources: [
@@ -62,18 +63,19 @@ export async function getManifest() {
             "notifications",
             "cookies",
             "webRequest",
-            "offscreen",
-            ...(isFirefox ? [] : ["declarativeNetRequestWithHostAccess", "declarativeNetRequestFeedback", "sidePanel"]),
+            ...(isFirefox ? [] : ["offscreen", "declarativeNetRequestWithHostAccess", "declarativeNetRequestFeedback", "sidePanel"]),
         ],
         // @ts-ignore
-        sandbox: {
-            pages: ["src/sandbox/index.html"]
-        },
+        ...(isFirefox ? {} : {
+            sandbox: {
+                pages: ["src/sandbox/index.html"]
+            }
+        }),
         host_permissions: [
             "*://*/*",
         ],
         content_security_policy: {
-            extension_pages: isDev
+            extension_pages: isDev 
                 ? `script-src \'self\' http://localhost:${port}; object-src \'self\'`
                 : 'script-src \'self\'; object-src \'self\'',
         },
