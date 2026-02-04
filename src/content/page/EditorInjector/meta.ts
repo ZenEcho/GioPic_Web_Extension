@@ -21,6 +21,12 @@ export type EditorType =
     | 'Tiptap'
     | 'Editorjs'
     | 'Summernote'
+    | 'Lexical'
+    | 'Trix'
+    | 'MediumEditor'
+    | 'Platejs'
+    | 'Slatejs'
+    | 'Blocknotejs'
     | 'unknown';
 
 export interface EditorMeta {
@@ -50,5 +56,11 @@ export const EDITOR_META: EditorMeta[] = [
     { id: 'Tiptap', name: 'Tiptap' },
     { id: 'Editorjs', name: 'Editorjs' },
     { id: 'Summernote', name: 'Summernote' },
+    { id: 'Lexical', name: 'Lexical' },
+    { id: 'Trix', name: 'Trix' },
+    { id: 'MediumEditor', name: 'MediumEditor' },
+    { id: 'Platejs', name: 'Platejs' },
+    { id: 'Slatejs', name: 'Slatejs' },
+    { id: 'Blocknotejs', name: 'Blocknotejs' },
     // { id: 'unknown', name: '未知编辑器' },
 ];

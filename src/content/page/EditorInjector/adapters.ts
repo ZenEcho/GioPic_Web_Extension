@@ -280,12 +280,14 @@ export const adapters: EditorAdapter[] = [
         inject: (url: string) => {
             try {
                 const editor = window.editor as WangEditorType | undefined;
-                if (editor && typeof editor.getEditableContainer === 'function') {
-                    const el = editor.getEditableContainer();
-                    if (el) {
-                        editor.dangerouslyInsertHtml(url);
-                        return true;
-                    }
+                if (editor && typeof editor.insertNode === 'function') {
+                    editor.insertNode({
+                        type: 'image',
+                        src: url,
+                        href: url, // 图片点击链接（可选）
+                        children: [{ text: '' }] // Lexical/Slate 架构要求的空子节点
+                    })
+
                 }
                 return false;
             } catch { return false; }
@@ -616,4 +618,316 @@ export const adapters: EditorAdapter[] = [
             }
         }
     },
+    // 22.lexical
+    {
+        id: 'Lexical',
+        detect: () => {
+            const editor = (document.querySelector(".ContentEditable__root") as any)?.__lexicalEditor;
+            return editor ? {
+                type: 'Lexical',
+                certainty: 0.95,
+                source: 'Lexical 编辑器实例'
+            } : null;
+        },
+        inject: (url: string): boolean => {
+            try {
+                // 1. 获取实例
+                const el = (document.querySelector(".ContentEditable__root") as HTMLElement & { __lexicalEditor?: any });
+                const editor = el?.__lexicalEditor;
+                if (!el || !editor) return false;
+
+                try {
+                    // 方案一：尝试使用 Lexical API 更新
+                    let apiSuccess = false;
+                    editor.update(() => {
+                        // 1. 获取 Lexical 核心类 (假设 Playground 中的 ImageNode 存在)
+                        // 你可能需要根据实际情况调整 'image' 这个键
+                        const ImageNode = editor._nodes.get('image')?.klass; // 尝试获取 ImageNode 类
+
+                        // 如果没有 ImageNode，说明可能不支持直接插入 Image 节点，跳过API更新，使用兜底粘贴
+                        if (!ImageNode) {
+                            return;
+                        }
+
+                        const ParagraphNode = editor._nodes.get('paragraph').klass;
+                        const root = editor._editorState._nodeMap.get('root');
+
+                        const imageNode = new ImageNode(url, "image");
+                        const paragraph = new ParagraphNode();
+                        paragraph.append(imageNode);
+                        root.append(paragraph);
+                        apiSuccess = true;
+                    }, { tag: 'history-merge' });
+
+                    if (apiSuccess) return true;
+                } catch (error) {
+                    console.warn('Lexical API 注入失败，尝试模拟粘贴:', error);
+                }
+
+                // 方案二：模拟 HTML 粘贴 (兜底方案)
+                // 适用于没有 ImageNode 或 API 调用失败的情况
+                try {
+                    el.focus();
+
+                    // 构建包含图片的 HTML 字符串
+                    const htmlContent = `<p><img src="${url}" alt="image" style="max-width: 100%;"></p>`;
+
+                    // 创建一个 DataTransfer 对象
+                    const clipboardData = new DataTransfer();
+                    clipboardData.setData('text/html', htmlContent); // 设置 HTML 数据
+                    clipboardData.setData('text/plain', `[Image: ${url}]`); // 也设置纯文本数据，以防万一
+
+                    const pasteEvent = new ClipboardEvent('paste', {
+                        clipboardData: clipboardData,
+                        bubbles: true,
+                        cancelable: true
+                    });
+
+                    el.dispatchEvent(pasteEvent);
+                    console.log("Lexical: 模拟粘贴图片 HTML 成功！");
+                    return true;
+                } catch (pasteError) {
+                    console.error('Lexical 模拟粘贴失败:', pasteError);
+                    return false;
+                }
+
+            } catch (err) {
+                console.error('Lexical 注入失败:', err);
+                return false;
+            }
+        }
+    },
+    // 23.trix
+    {
+        id: 'Trix',
+        detect: () => {
+            const editor = (document.querySelector(".trix-content") as any)?.editor;
+            return editor ? {
+                type: 'Trix',
+                certainty: 0.95,
+                source: 'Trix 编辑器实例'
+            } : null;
+        },
+        inject: (url: string): boolean => {
+            // 1. 获取实例
+            const el = (document.querySelector(".trix-content") as HTMLElement & { editor?: any });
+            const editor = el?.editor;
+            if (!el || !editor) return false;
+            try {
+                const Trix = (window as any).Trix;
+                if (!Trix || !Trix.Attachment) {
+                    console.error('Trix 未加载或版本不兼容');
+                    return false;
+                }
+                const attachment = new Trix.Attachment({
+                    contentType: "image/png",
+                    url: url,
+                    filename: url.split('/').pop() || 'image.png',
+                });
+
+                editor.insertAttachment(attachment);;
+                return true;
+            } catch (err) {
+                console.error('Trix 注入失败:', err);
+                return false;
+            }
+        }
+
+    },
+    // 24 .MediumEditor
+    {
+        id: 'MediumEditor',
+        detect: () => {
+            const editor = (window as any).editor || (window as any)._mediumEditors;
+            return editor ? {
+                type: 'MediumEditor',
+                certainty: 0.90,
+                source: 'MediumEditor 编辑器实例'
+            } : null;
+        },
+        inject: (url: string): boolean => {
+            const editors = (window as any)._mediumEditors;
+
+            // 增加空值检查，并确保 editors 是数组且其中元素不为 null/undefined
+            if (!editors || !Array.isArray(editors)) return false;
+
+            // 安全查找包含 elements 属性的编辑器实例
+            const editor = editors.find((item: any) => item && item.elements && item.elements.length > 0);
+
+            if (!editor) return false;
+            try {
+                const imageHtml = `<img src="${url}" alt="" style="max-width: 100%;">`;
+                // pasteHTML 是 MediumEditor 的标准 API
+                if (typeof editor.pasteHTML === 'function') {
+                    editor.pasteHTML(imageHtml);
+                    return true;
+                }
+            } catch (err) {
+                console.error('MediumEditor pasteHTML 注入失败:', err);
+            }
+
+            // 兜底方案
+            try {
+                if (editor.elements && editor.elements[0]) {
+                    editor.elements[0].focus();
+                    document.execCommand('insertImage', false, url);
+                    return true;
+                }
+            } catch (err) {
+                console.error('MediumEditor 原生注入失败:', err);
+            }
+            return false;
+        }
+    },
+    // 25 .platejs
+    {
+        id: 'Platejs',
+        detect: () => {
+            const editor = findPlateEditor();
+            return editor ? {
+                type: 'Platejs',
+                certainty: 0.9,
+                source: 'Platejs 编辑器实例'
+            } : null;
+        },
+        inject: (url: string) => {
+            try {
+                const editor = findPlateEditor();
+                if (!editor) return false;
+                const imageNode = {
+                    type: 'img',
+                    url: url,
+                    children: [{ text: '' }]
+                };
+
+                // 执行插入
+                editor.insertNodes(imageNode);
+                return true;
+            } catch (err) {
+                console.error('Platejs 注入失败:', err);
+                return false;
+            }
+        }
+    },
+    // 26 .slatejs
+    {
+        id: 'Slatejs',
+        detect: () => {
+            const editor = findSlateEditor();
+            return editor ? {
+                type: 'Slatejs',
+                certainty: 0.95,
+                source: 'Slatejs 编辑器实例'
+            } : null;
+        },
+        inject: (url: string) => {
+            try {
+                const editor = findSlateEditor();
+                if (!editor) return false;
+                const imageNode = {
+                    type: 'image', // 官网 Demo 通常使用 'image'
+                    url: url,
+                    children: [{ text: '' }] // Slate 要求所有元素节点必须包含 children
+                };
+
+                editor.apply({
+                    type: 'insert_node',
+                    path: [editor.children.length], // 插入到文档最后
+                    node: imageNode
+                });
+                return true;
+            } catch (err) {
+                console.error('Slatejs 注入失败:', err);
+                return false;
+            }
+        }
+    },
+    // 27 .Blocknotejs
+    {
+        id: 'Blocknotejs',
+        detect: () => {
+            const editor = findBlocknoteEditor();
+            return editor ? {
+                type: 'Blocknotejs',
+                certainty: 0.96,
+                source: 'Blocknotejs 编辑器实例'
+            } : null;
+        },
+        inject: (url: string) => {
+            try {
+                const editor = findBlocknoteEditor();
+                if (!editor) return false;
+                editor.insertBlocks(
+                    [
+                        {
+                            type: "image",
+                            props: {
+                                url: url,
+                                caption: "image",
+                                showPreview: true
+                            }
+                        }
+                    ],
+                    editor.getTextCursorPosition().block,
+                    "after"
+                )
+                return true;
+            } catch (err) {
+                console.error('Blocknotejs 注入失败:', err);
+                return false;
+            }
+        }
+    }
+
 ];
+
+const findPlateEditor = () => {
+    const root = document.querySelector('[contenteditable="true"]');
+    const key = root ? Object.keys(root).find(k => k.startsWith('__reactFiber')) : undefined;
+    const fiber = key ? (root as any)[key] : undefined;
+
+    // 递归寻找包含 slate editor 的 context
+    let curr = fiber;
+    while (curr) {
+        if (curr.pendingProps && curr.pendingProps.editor) {
+            return curr.pendingProps.editor;
+        }
+        if (curr.memoizedProps && curr.memoizedProps.editor) {
+            return curr.memoizedProps.editor;
+        }
+        curr = curr.return;
+    }
+
+};
+//查找Slate编辑器实例
+const findSlateEditor = () => {
+    const slateRoot = document.querySelector('[data-slate-editor="true"]');
+
+    // 2. 通过 React Fiber 抓取实例
+    const getSlateEditor = (el: HTMLElement) => {
+        const fiberKey = Object.keys(el).find(key => key.startsWith('__reactFiber'));
+        let curr = fiberKey ? (el as any)[fiberKey] : undefined;
+        while (curr) {
+            // Slate 会把 editor 实例放在 context 或 props 中
+            if (curr.pendingProps && curr.pendingProps.editor) return curr.pendingProps.editor;
+            if (curr.memoizedProps && curr.memoizedProps.editor) return curr.memoizedProps.editor;
+            curr = curr.return;
+        }
+    };
+    return slateRoot ? getSlateEditor(slateRoot as HTMLElement) : undefined;
+};
+const findBlocknoteEditor = () => {
+    const bnRoot = document.querySelector(".bn-editor");
+    // 2. 抓取实例
+    const getBlockNoteEditor = (el: any) => {
+        const fiberKey = Object.keys(el).find(key => key.startsWith('__reactFiber'));
+        let curr = fiberKey ? el[fiberKey] : undefined;
+        while (curr) {
+            // BlockNote 会在 props 中保留 editor 引用
+            if (curr.pendingProps && curr.pendingProps.editor) return curr.pendingProps.editor;
+            if (curr.memoizedProps && curr.memoizedProps.editor) return curr.memoizedProps.editor;
+            curr = curr.return;
+        }
+    };
+    return bnRoot ? getBlockNoteEditor(bnRoot) : undefined;
+};
