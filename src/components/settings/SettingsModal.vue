@@ -527,22 +527,92 @@ async function handleResetExtension() {
                             <div v-if="checkError" class="text-sm text-red-500 mt-2">
                                 {{ t('settings.version.failed') }}
                             </div>
+                        </div>
+                    </div>
 
-                            <div class="mt-3 pt-3 border-t border-gray-200 dark:border-gray-700">
-                                <div class="flex items-center justify-between mb-2">
-                                    <span class="text-sm font-medium text-gray-700 dark:text-gray-200">{{
-                                        t('settings.about.developer') }}</span>
-                                    <a href="https://github.com/ZenEcho" target="_blank"
-                                        class="text-sm text-gray-500 hover:text-blue-500 transition-colors">ZenEcho</a>
-                                </div>
-                                <div class="flex items-center justify-between">
-                                    <span class="text-sm font-medium text-gray-700 dark:text-gray-200">{{
-                                        t('settings.about.openSource') }}</span>
-                                    <a href="https://github.com/ZenEcho/GioPic_Web_Extension/" target="_blank"
-                                        class="text-sm text-blue-500 hover:underline flex items-center gap-1">
-                                        <div class="i-ph-github-logo" /> GitHub
-                                    </a>
-                                </div>
+                    <!-- Project Info -->
+                    <div>
+                        <div class="text-sm font-bold text-gray-500 mb-2 flex items-center gap-1">
+                            <div class="i-ph-info" /> {{ t('settings.about.projectInfo') }}
+                        </div>
+                        <div
+                            class="p-3 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-700/30">
+                            <div class="grid grid-cols-2 gap-3">
+                                <!-- Main Project -->
+                                <a href="https://github.com/isYangs/GioPic" target="_blank"
+                                    class="col-span-2 flex items-center gap-3 p-2 rounded-lg bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 hover:border-blue-500 dark:hover:border-blue-500 transition-colors group">
+                                    <div class="w-10 h-10 rounded-full bg-blue-50 dark:bg-blue-900/30 flex items-center justify-center text-xl text-blue-500">
+                                        <div class="i-ph-desktop" />
+                                    </div>
+                                    <div class="flex-1 min-w-0">
+                                        <div class="text-sm font-medium text-gray-900 dark:text-gray-100 truncate group-hover:text-blue-500">
+                                            GioPic Desktop
+                                        </div>
+                                        <div class="text-xs text-gray-500 truncate">
+                                            {{ t('settings.about.mainProject') }}
+                                        </div>
+                                    </div>
+                                    <div class="i-ph-arrow-square-out text-gray-400 group-hover:text-blue-500" />
+                                </a>
+
+                                <!-- Extension Repo -->
+                                <a href="https://github.com/ZenEcho/GioPic_Web_Extension/" target="_blank"
+                                    class="flex items-center gap-3 p-2 rounded-lg bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 hover:border-blue-500 dark:hover:border-blue-500 transition-colors group">
+                                    <div class="w-10 h-10 rounded-full bg-gray-100 dark:bg-gray-700 flex items-center justify-center text-xl">
+                                        <div class="i-ph-github-logo" />
+                                    </div>
+                                    <div class="flex-1 min-w-0">
+                                        <div class="text-sm font-medium text-gray-900 dark:text-gray-100 truncate group-hover:text-blue-500">
+                                            GioPic Extension
+                                        </div>
+                                        <div class="text-xs text-gray-500 truncate">
+                                            {{ t('settings.about.extensionRepo') }}
+                                        </div>
+                                    </div>
+                                </a>
+
+                                <!-- ZenEcho Card -->
+                                <a href="https://github.com/ZenEcho" target="_blank"
+                                    class="flex items-center gap-3 p-2 rounded-lg bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 hover:border-blue-500 dark:hover:border-blue-500 transition-colors group">
+                                    <div class="w-10 h-10 rounded-full bg-gray-100 dark:bg-gray-700 flex items-center justify-center text-xl">
+                                        🐼
+                                    </div>
+                                    <div class="flex-1 min-w-0">
+                                        <div class="text-sm font-medium text-gray-900 dark:text-gray-100 truncate group-hover:text-blue-500">
+                                            ZenEcho
+                                        </div>
+                                        <div class="text-xs text-gray-500 truncate">
+                                            Developer Team
+                                        </div>
+                                    </div>
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Friends -->
+                    <div>
+                        <div class="text-sm font-bold text-gray-500 mb-2 flex items-center gap-1">
+                            <div class="i-ph-users" /> {{ t('settings.about.friends') }}
+                        </div>
+                        <div
+                            class="p-3 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-700/30">
+                            <div class="grid grid-cols-2 gap-3">
+                                <!-- HostFBI -->
+                                <a href="https://hostfbi.com/" target="_blank"
+                                    class="flex items-center gap-3 p-2 rounded-lg bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 hover:border-blue-500 dark:hover:border-blue-500 transition-colors group">
+                                    <div class="w-10 h-10 rounded-full bg-indigo-50 dark:bg-indigo-900/30 flex items-center justify-center text-xl text-indigo-500">
+                                        <div class="i-ph-globe" />
+                                    </div>
+                                    <div class="flex-1 min-w-0">
+                                        <div class="text-sm font-medium text-gray-900 dark:text-gray-100 truncate group-hover:text-blue-500">
+                                            全球主机论坛
+                                        </div>
+                                        <div class="text-xs text-gray-500 truncate">
+                                            hostfbi.com
+                                        </div>
+                                    </div>
+                                </a>
                             </div>
                         </div>
                     </div>

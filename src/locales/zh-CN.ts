@@ -447,7 +447,11 @@ export default {
     },
     about: {
       developer: '开发者',
-      openSource: '开源地址'
+      openSource: '开源地址',
+      projectInfo: '项目信息',
+      friends: '友情链接',
+      mainProject: '桌面端主项目',
+      extensionRepo: '本扩展源码'
     },
     dangerZone: {
       title: '危险区域',

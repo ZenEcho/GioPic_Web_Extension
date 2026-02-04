@@ -11,8 +11,8 @@
  * 对应架构文档: plugins/plugin_architecture.md # Plugin Runner
  */
 
-import { usePluginStore } from '@/stores/plugin'
-import type { PluginDriveConfig } from '@/types'
+import { db } from '@/utils/storage'
+import type { PluginDriveConfig, PluginMeta } from '@/types'
 import browser from 'webextension-polyfill'
 
 // 辅助函数：将 File 对象转换为 Base64 字符串
@@ -70,12 +70,10 @@ if (typeof chrome !== 'undefined' && chrome.runtime) {
  * @returns 上传成功后的图片 URL
  */
 export async function runPlugin(config: PluginDriveConfig, file: File, onProgress?: (progress: number) => void): Promise<string> {
-  const store = usePluginStore();
-  // 确保插件列表已加载
-  if (store.plugins.length === 0) await store.loadPlugins();
+  // 直接从 Storage 读取插件列表，以支持 Background Service Worker 环境 (无 Pinia 实例)
+  const plugins = await db.get<PluginMeta[]>('plugins') || [];
+  const plugin = plugins.find(p => p.id === config.type && p.enabled !== false);
   
-  // 获取对应类型的插件代码
-  const plugin = store.getPlugin(config.type);
   if (!plugin) {
     throw new Error(`Plugin ${config.type} not found`);
   }

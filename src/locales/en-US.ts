@@ -423,7 +423,11 @@ export default {
     },
     about: {
       developer: 'Developer',
-      openSource: 'Open Source'
+      openSource: 'Open Source',
+      projectInfo: 'Project Info',
+      friends: 'Friends',
+      mainProject: 'Desktop Main Project',
+      extensionRepo: 'Extension Source'
     },
     dangerZone: {
       title: 'Danger Zone',
