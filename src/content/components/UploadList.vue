@@ -178,6 +178,12 @@ import browser from 'webextension-polyfill'
 import { useDraggable } from '@/content/composables/useDraggable'
 import { useI18n } from 'vue-i18n'
 import { formatLink, copyToClipboard as copyText, COPY_FORMATS, FORMAT_LABELS } from '@/utils/common'
+import { broadcastInjectMessage } from '../utils/injector'
+
+// Props
+const props = defineProps<{
+    // Optional props if needed
+}>()
 
 const { t, locale } = useI18n()
 
@@ -352,12 +358,9 @@ const copyToClipboard = async (url?: string) => {
     }
 }
 
-const handleInject = (url?: string) => {
+const handleInject = async (url?: string) => {
     if (!url) return
-    window.postMessage({
-        type: 'GIOPIC_INJECT',
-        url: url
-    }, '*')
+    await broadcastInjectMessage(url)
 }
 
 onMounted(() => {

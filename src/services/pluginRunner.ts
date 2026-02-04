@@ -42,7 +42,6 @@ if (typeof chrome !== 'undefined' && chrome.runtime) {
             if (task) {
                 // 处理插件执行结果 (PLUGIN_EXECUTION_RESULT)
                 if (msg.type === 'PLUGIN_EXECUTION_RESULT') {
-                    console.log('[PluginRunner] Received result for task', msg.taskId, msg);
                     if (msg.success) {
                         task.resolve(msg.result);
                     } else {
@@ -159,8 +158,6 @@ export async function runPlugin(config: PluginDriveConfig, file: File, onProgres
           }
       }, 30000);
 
-      console.log('[PluginRunner] Sending EXECUTE_PLUGIN message to Offscreen, taskId:', taskId);
-      
       // 5. 发送 EXECUTE_PLUGIN 消息给 Offscreen
       // Offscreen 收到后会转发给 Sandbox iframe
       // @ts-ignore

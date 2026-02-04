@@ -5,7 +5,7 @@ import type { InjectableDetectionResult, EditorType } from './types';
 export class Detector {
     static detect(): InjectableDetectionResult[] {
         const results: InjectableDetectionResult[] = [];
-        
+
         for (const adapter of adapters) {
             try {
                 const result = adapter.detect();
@@ -19,7 +19,6 @@ export class Detector {
                 console.warn(`[GioPic] Adapter ${adapter.id} detection failed:`, e);
             }
         }
-        
         return results;
     }
 
@@ -35,12 +34,12 @@ export class Detector {
 
         const check = () => {
             const results = this.detect();
-            
+
             // If results changed, reset stability timer
             if (results.length !== lastResultCount) {
                 lastResultCount = results.length;
                 if (stabilityTimer) clearTimeout(stabilityTimer);
-                
+
                 stabilityTimer = setTimeout(() => {
                     cleanup();
                     callback(results);
@@ -102,9 +101,8 @@ export class Detector {
         // Sort by certainty
         results.sort((a, b) => b.certainty - a.certainty);
         const bestMatch = results[0];
-        
+
         if (bestMatch) {
-            console.log(`[Detector] Auto-detected best match: ${bestMatch.type}`);
             const success = await bestMatch.inject(url);
             if (success) {
                 // 发送成功消息，用于自动绑定
@@ -139,11 +137,20 @@ export class Detector {
      */
     static startListening(): void {
         window.addEventListener('message', async (event) => {
-            // 只接受来自当前窗口的消息
-            if (event.source !== window) return;
+            // 接受来自当前窗口 或 父窗口/顶层窗口 的消息 (解决 iframe 跨域通讯问题)
+            const isSafeSource = event.source === window || 
+                               event.source === window.parent || 
+                               event.source === window.top;
+            
+            if (!isSafeSource) return;
 
             if (event.data?.type === 'GIOPIC_INJECT' && event.data?.url) {
-                console.log('[Detector] 收到注入请求:', event.data.url);
+                console.log('[Detector] 收到注入请求:', {
+                    url: event.data.url, // 图片 URL
+                    preferredType: event.data.preferredType, // 首选编辑器类型
+                    source: event.source === window ? 'Self' : 'Parent/Top', // 来源：当前窗口或父窗口/顶层窗口
+                    href: window.location.href // 当前页面 URL
+                });
                 await this.inject(event.data.url, event.data.preferredType);
             }
         });

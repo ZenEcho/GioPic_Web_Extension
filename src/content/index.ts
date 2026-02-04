@@ -1,6 +1,8 @@
 import { mountComponent } from './utils/mount'
 import ContentOverlay from './components/ContentOverlay.vue'
 import browser from 'webextension-polyfill'
+import { Detector } from './page/EditorInjector'
+import { broadcastInjectMessage } from './utils/injector'
 import 'virtual:uno.css'
 import './style.css'
 
@@ -16,7 +18,7 @@ function injectPageBundle() {
         const globalEnabled = res['giopic-hover-preview'] !== false;
         const rawDisabled = res['preview_disabled_sites'];
         const disabledSites = (Array.isArray(rawDisabled) ? rawDisabled : []) as string[];
-        
+
         const currentUrl = window.location.href;
         const currentHostname = window.location.hostname;
         const isSiteDisabled = disabledSites.some(site => {
@@ -36,7 +38,7 @@ function injectPageBundle() {
             }
             return false;
         });
-        
+
         root.setAttribute('data-giopic-hover-preview', String(globalEnabled && !isSiteDisabled));
     });
 
@@ -53,7 +55,7 @@ function injectPageBundle() {
                     const globalEnabled = res['giopic-hover-preview'] !== false;
                     const rawDisabled = res['preview_disabled_sites'];
                     const disabledSites = (Array.isArray(rawDisabled) ? rawDisabled : []) as string[];
-                    
+
                     const currentUrl = window.location.href;
                     const currentHostname = window.location.hostname;
                     const isSiteDisabled = disabledSites.some(site => {
@@ -81,7 +83,6 @@ function injectPageBundle() {
     });
 
     const headOrRoot = doc.head || root
-
     const styleHref = browser.runtime.getURL('content/page.css')
     const link = doc.createElement('link')
     link.rel = 'stylesheet'
@@ -89,51 +90,24 @@ function injectPageBundle() {
     link.setAttribute('data-giopic-page-style', 'true')
     headOrRoot.appendChild(link)
 
-    const scriptSrc = browser.runtime.getURL('content/page.js')
-    const script = doc.createElement('script')
-    script.type = 'text/javascript'
-    script.src = scriptSrc
-    script.setAttribute('data-giopic-page-script', 'true')
-    headOrRoot.appendChild(script)
 }
 
 async function injectImageToPage(url: string) {
-    const storage = await browser.storage.local.get('siteEditorConfig');
-    const config = (storage.siteEditorConfig || {}) as Record<string, string>;
-    let preferredType = config[window.location.hostname];
+    // 使用统一的注入广播工具
+    await broadcastInjectMessage(url);
 
-    // Support URL-level config (Higher priority)
-    const currentUrl = window.location.href;
-    const normalize = (s: string) => s.trim().replace(/\/+$/, '').toLowerCase();
-    const currentNorm = normalize(currentUrl);
-    const currentNoProto = currentNorm.replace(/^https?:\/\//, '');
-
-    const urlMatch = Object.keys(config).find(key => {
-        if (!key.includes('://') && !key.includes('/')) return false;
-        const keyNorm = normalize(key);
-        if (key.includes('://')) return currentNorm.startsWith(keyNorm);
-        return currentNoProto.startsWith(keyNorm);
-    });
-    if (urlMatch) preferredType = config[urlMatch];
-
-    // 通过 postMessage 发送给页面脚本 (Main World)
-    window.postMessage({
-        type: 'GIOPIC_INJECT',
-        url: url,
-        preferredType
-    }, '*')
 }
 
 // 监听来自后台的消息
 browser.runtime.onMessage.addListener(async (message: any) => {
     if (message.type === 'UPLOAD_EVENT' && message.data?.event === 'success') {
         const { url } = message.data.payload
-        const { isOrigin } = message.data
         if (!url) return
 
-        // 检查是否开启自动注入，且当前是触发上传的源标签页
+        // 检查是否开启自动注入
+        // Background 脚本会确保消息只发送给正确的 Tab
         const storage = await browser.storage.local.get(['giopic-auto-inject'])
-        if (storage['giopic-auto-inject'] !== false && isOrigin) {
+        if (storage['giopic-auto-inject'] !== false) {
             await injectImageToPage(url)
         }
     } else if (message.type === 'MANUAL_INJECT') {
@@ -152,7 +126,7 @@ browser.runtime.onMessage.addListener(async (message: any) => {
 // 监听来自页面脚本的消息 (用于更新编辑器绑定)
 window.addEventListener('message', async (event) => {
     if (event.source !== window) return;
-    
+
     const data = event.data;
     if (!data) return;
 
@@ -161,7 +135,7 @@ window.addEventListener('message', async (event) => {
         if (hostname && editorType) {
             const res = await browser.storage.local.get('siteEditorConfig');
             const config = (res.siteEditorConfig || {}) as Record<string, string>;
-            
+
             // 如果配置发生变化，则更新存储
             if (config[hostname] !== editorType) {
                 config[hostname] = editorType;
@@ -169,18 +143,18 @@ window.addEventListener('message', async (event) => {
             }
         }
     }
-    
+
     // 监听来自网页的插件安装请求 (Plugin Market Integration)
     else if (data.type === 'GIOPIC_INSTALL_PLUGIN') {
         const { plugin } = data;
-        
+
         // 转发给 Background
         try {
             const res = (await browser.runtime.sendMessage({
                 type: 'INSTALL_PLUGIN',
                 plugin
             })) as { success: boolean; error?: string };
-            
+
             // 返回结果给网页
             window.postMessage({
                 type: 'GIOPIC_INSTALL_PLUGIN_RESULT',
@@ -206,7 +180,7 @@ window.addEventListener('message', async (event) => {
                 pluginId,
                 enabled
             })) as { success: boolean; error?: string };
-            
+
             window.postMessage({
                 type: 'GIOPIC_TOGGLE_PLUGIN_RESULT',
                 success: res?.success || false,
@@ -230,7 +204,7 @@ window.addEventListener('message', async (event) => {
                 type: 'UNINSTALL_PLUGIN',
                 pluginId
             })) as { success: boolean; error?: string };
-            
+
             window.postMessage({
                 type: 'GIOPIC_UNINSTALL_PLUGIN_RESULT',
                 success: res?.success || false,
@@ -252,7 +226,7 @@ window.addEventListener('message', async (event) => {
             const res = (await browser.runtime.sendMessage({
                 type: 'GET_INSTALLED_PLUGINS'
             })) as { success: boolean; plugins?: any[]; error?: string };
-            
+
             window.postMessage({
                 type: 'GIOPIC_GET_INSTALLED_PLUGINS_RESULT',
                 success: res?.success || false,
@@ -275,7 +249,9 @@ injectPageBundle()
 
 try {
     browser.runtime.sendMessage({ type: 'REGISTER_CONTENT' })
-} catch {}
+} catch { }
 
 // 挂载单一容器
-mountComponent(ContentOverlay, 'giopic-content-overlay', true, {}, true)
+if (window.self === window.top) {
+    mountComponent(ContentOverlay, 'giopic-content-overlay', true, {}, true)
+}

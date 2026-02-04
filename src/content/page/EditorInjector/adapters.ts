@@ -10,9 +10,8 @@ import type {
 // =================================================================================
 // Helper Functions
 // =================================================================================
-
 function detectBySelector(selector: string, id: any, certainty: number = 0.8): DetectionResult | null {
-    return document.querySelector(selector) ? { type: id, certainty, source: `selector: ${selector}` } : null;
+    return document.querySelector(selector) ? { type: id, certainty, source: `selector: ${selector}` } : null;;
 }
 
 function detectById(elementId: string, id: any, certainty: number = 0.9): DetectionResult | null {
@@ -400,7 +399,7 @@ export const adapters: EditorAdapter[] = [
     // 17. Milkdown
     {
         id: 'milkdown',
-        detect: () => detectBySelector('.milkdown', 'milkdown'),
+        detect: () => detectBySelector('.milkdown', 'milkdown', 0.9),
         inject: (url: string) => {
             try {
                 const editor = document.querySelector(".milkdown .ProseMirror") as HTMLElement || document.querySelector(".milkdown") as HTMLElement;
@@ -419,6 +418,82 @@ export const adapters: EditorAdapter[] = [
                 }
                 return false;
             } catch { return false; }
+        }
+    },
+    // 18. Quill
+    {
+        id: 'Quill',
+        detect: () => detectBySelector('.ql-editor', 'Quill', 0.9),
+        inject: (url: string): boolean => {
+            // 1. 获取容器和实例
+            const container = document.querySelector('.ql-container') as any;
+            const win = container?.ownerDocument?.defaultView || window;
+            // 尝试所有可能的挂载路径
+            const quill = (win as any).myQuill
+                || container?.__quill
+                || container?._quill
+                || container?.quill;
+
+            try {
+                // 场景 A: 成功获取 Quill 实例
+                if (quill) {
+                    // 获取光标位置，如果没有光标则插入到末尾
+                    const range = quill.getSelection(true);
+                    const index = range ? range.index : quill.getLength();
+
+                    quill.insertEmbed(index, 'image', url, 'user');
+                    // 将光标移动到图片之后
+                    quill.setSelection(index + 1, 'user');
+                    return true;
+                }
+
+                // 场景 B: 没有实例，尝试原生 DOM 操作兜底
+                if (container) {
+                    container.focus();
+                    const imgHtml = `<img src="${url}" />`;
+                    // execCommand 已废弃但控制台环境下依然常用
+                    const success = document.execCommand('insertHTML', false, imgHtml);
+                    return success;
+                }
+
+                return false;
+            } catch (error) {
+                console.error('Quill 注入失败:', error);
+                return false;
+            }
+        }
+    },
+    // 19.tiptap
+    {
+        id: 'Tiptap',
+        detect: () => detectBySelector('.tiptap.ProseMirror', 'Tiptap', 0.9),
+        inject: (url) => {
+            // 1. 寻找编辑器实例
+            const container = document.querySelector('.tiptap.ProseMirror');
+            const editor = (window as any).editor || (container as any)?.__tiptapEditor || (container as any)?.editor;
+
+            if (!editor) {
+                console.error('未找到编辑器实例');
+                return false;
+            }
+
+            try {
+                // 2. 优先尝试标准 setImage (性能和格式最好)
+                // 检查 commands.setImage 是否存在，避免抛出 Uncaught TypeError
+                if (typeof editor.commands.setImage === 'function') {
+                    editor.chain().focus().setImage({ src: url }).run();
+                    return true;
+                }
+                editor.commands.insertContent(`<img src="${url}" />`);
+
+                // 4. 最后校验：如果还是没焦点或没内容，强制 focus 一下
+                editor.commands.focus();
+                return true;
+
+            } catch (err) {
+                console.error('插入图片失败:', err);
+                return false;
+            }
         }
     }
 ];

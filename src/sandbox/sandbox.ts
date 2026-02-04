@@ -42,7 +42,6 @@ window.addEventListener('message', async (event) => {
 
     if (!data || data.type !== 'EXECUTE') return;
     
-    console.log('[Sandbox] Received EXECUTE request', data.id);
 
   const { id, script, inputs, file } = data as ExecuteRequest;
 
@@ -50,7 +49,6 @@ window.addEventListener('message', async (event) => {
     // 注入给用户脚本的上下文对象
     // 包含代理的 fetch 方法，因为沙箱内无法直接跨域访问
     const proxyFetch = async (url: string, options: any = {}) => {
-       console.log('[Sandbox] Calling proxyFetch', url);
        return new Promise((resolve, reject) => {
            const requestId = Math.random().toString(36).substring(7);
            
@@ -89,7 +87,6 @@ window.addEventListener('message', async (event) => {
 
     // 解析并执行用户脚本
     // 假设脚本内容是一个返回异步函数的代码块
-    console.log('[Sandbox] Evaluating script');
     const factory = new Function(script);
     const handler = factory();
     
@@ -97,10 +94,8 @@ window.addEventListener('message', async (event) => {
         throw new Error('Plugin script must return a function');
     }
 
-    // 执行处理函数
-    console.log('[Sandbox] Executing handler');
     const result = await handler(inputs, file, ctx);
-    console.log('[Sandbox] Handler executed successfully', result);
+
 
     // 返回执行结果
     notify({ type: 'EXECUTE_RESULT', id, result });

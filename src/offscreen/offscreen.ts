@@ -36,12 +36,9 @@ browser.runtime.onMessage.addListener((msg: any, sender: browser.runtime.Message
 
     // 处理插件执行请求
     if (msg.type === 'EXECUTE_PLUGIN') {
-        console.log('[Offscreen] Received EXECUTE_PLUGIN', msg.id);
         const execute = async () => {
              // 等待 Sandbox 就绪
             if (!isSandboxReady) {
-                console.log('[Offscreen] Waiting for sandbox ready...');
-                
                 // 唤醒循环：尝试发送 PING 给 Sandbox 以触发其初始化
                 const pingInterval = setInterval(() => {
                     if (isSandboxReady) {
@@ -90,7 +87,6 @@ browser.runtime.onMessage.addListener((msg: any, sender: browser.runtime.Message
                 }
             }, 30000);
             
-            console.log('[Offscreen] Posting message to sandbox', executionId);
             iframe.contentWindow.postMessage({
                 type: 'EXECUTE',
                 id: executionId,
@@ -112,7 +108,6 @@ window.addEventListener('message', async (event) => {
 
     // 处理 Sandbox 就绪信号
     if (data.type === 'SANDBOX_READY') {
-        console.log('Sandbox is ready');
         isSandboxReady = true;
         // 唤醒所有等待的任务
         sandboxReadyResolvers.forEach(resolve => resolve());
@@ -123,8 +118,7 @@ window.addEventListener('message', async (event) => {
     // 处理插件执行结果
     if (data.type === 'EXECUTE_RESULT') {
         const taskId = data.id;
-        console.log('[Offscreen] Sending result back to background via sendMessage', taskId);
-        
+
         // 使用 runtime.sendMessage 主动推送结果给 Background
         // 而不是使用 sendResponse，以避免长连接超时问题
         // @ts-ignore

@@ -30,6 +30,7 @@ export async function getManifest() {
                     "content/content.js",
                 ],
                 run_at: "document_end",
+                all_frames: true,
             }
         ],
         web_accessible_resources: [

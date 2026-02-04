@@ -691,7 +691,6 @@ async function uploadImgdd(file: File, config: WebUploaderConfig, onProgress: Pr
   }
 
   const res = await fetchUpload(url, formData, {}, onProgress)
-  console.log(res);
   if (!res.url) throw new Error(res.msg || 'ImgDD upload failed')
   return {
     url: res.url,

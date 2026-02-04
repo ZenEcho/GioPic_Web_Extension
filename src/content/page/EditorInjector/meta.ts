@@ -17,6 +17,8 @@ export type EditorType =
     | 'UEditor'
     | 'ProseMirror'
     | 'milkdown'
+    | 'Quill'
+    | 'Tiptap'
     | 'unknown';
 
 export interface EditorMeta {
@@ -42,4 +44,7 @@ export const EDITOR_META: EditorMeta[] = [
     { id: 'UEditor', name: 'UEditor' },
     { id: 'ProseMirror', name: 'ProseMirror' },
     { id: 'milkdown', name: 'Milkdown' },
+    { id: 'Quill', name: 'Quill' },
+    { id: 'Tiptap', name: 'Tiptap' },
+    // { id: 'unknown', name: '未知编辑器' },
 ];

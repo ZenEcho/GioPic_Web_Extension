@@ -137,7 +137,6 @@ window.postMessage({
 ```javascript
 window.addEventListener('message', (event) => {
   if (event.data?.type === 'GIOPIC_PLUGINS_UPDATED') {
-    console.log('Plugin list updated, refreshing...');
     // 收到通知后，建议重新获取插件列表
     window.postMessage({ type: 'GIOPIC_GET_INSTALLED_PLUGINS' }, '*');
   }

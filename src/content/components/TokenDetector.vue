@@ -45,8 +45,7 @@ const checkSite = async () => {
   }
 
   const result = await detectSite()
-  // console.log(result);
-  
+
   if (result) {
     detectorType.value = result.type
     if (result.version) {
