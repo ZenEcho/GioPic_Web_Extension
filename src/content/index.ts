@@ -97,6 +97,33 @@ function injectPageBundle() {
     headOrRoot.appendChild(script)
 }
 
+async function injectImageToPage(url: string) {
+    const storage = await browser.storage.local.get('siteEditorConfig');
+    const config = (storage.siteEditorConfig || {}) as Record<string, string>;
+    let preferredType = config[window.location.hostname];
+
+    // Support URL-level config (Higher priority)
+    const currentUrl = window.location.href;
+    const normalize = (s: string) => s.trim().replace(/\/+$/, '').toLowerCase();
+    const currentNorm = normalize(currentUrl);
+    const currentNoProto = currentNorm.replace(/^https?:\/\//, '');
+
+    const urlMatch = Object.keys(config).find(key => {
+        if (!key.includes('://') && !key.includes('/')) return false;
+        const keyNorm = normalize(key);
+        if (key.includes('://')) return currentNorm.startsWith(keyNorm);
+        return currentNoProto.startsWith(keyNorm);
+    });
+    if (urlMatch) preferredType = config[urlMatch];
+
+    // 通过 postMessage 发送给页面脚本 (Main World)
+    window.postMessage({
+        type: 'GIOPIC_INJECT',
+        url: url,
+        preferredType
+    }, '*')
+}
+
 // 监听来自后台的消息
 browser.runtime.onMessage.addListener(async (message: any) => {
     if (message.type === 'UPLOAD_EVENT' && message.data?.event === 'success') {
@@ -105,58 +132,14 @@ browser.runtime.onMessage.addListener(async (message: any) => {
         if (!url) return
 
         // 检查是否开启自动注入，且当前是触发上传的源标签页
-        const storage = await browser.storage.local.get(['giopic-auto-inject', 'siteEditorConfig'])
+        const storage = await browser.storage.local.get(['giopic-auto-inject'])
         if (storage['giopic-auto-inject'] !== false && isOrigin) {
-            const config = (storage.siteEditorConfig || {}) as Record<string, string>;
-            let preferredType = config[window.location.hostname];
-
-            // Support URL-level config (Higher priority)
-            const currentUrl = window.location.href;
-            const normalize = (s: string) => s.trim().replace(/\/+$/, '').toLowerCase();
-            const currentNorm = normalize(currentUrl);
-            const currentNoProto = currentNorm.replace(/^https?:\/\//, '');
-
-            const urlMatch = Object.keys(config).find(key => {
-                if (!key.includes('://') && !key.includes('/')) return false;
-                const keyNorm = normalize(key);
-                if (key.includes('://')) return currentNorm.startsWith(keyNorm);
-                return currentNoProto.startsWith(keyNorm);
-            });
-            if (urlMatch) preferredType = config[urlMatch];
-
-            // 通过 postMessage 发送给页面脚本 (Main World)
-            window.postMessage({
-                type: 'GIOPIC_INJECT',
-                url: url,
-                preferredType
-            }, '*')
+            await injectImageToPage(url)
         }
     } else if (message.type === 'MANUAL_INJECT') {
         const { url } = message.payload
         if (url) {
-            const storage = await browser.storage.local.get('siteEditorConfig');
-            const config = (storage.siteEditorConfig || {}) as Record<string, string>;
-            let preferredType = config[window.location.hostname];
-
-            // Support URL-level config (Higher priority)
-            const currentUrl = window.location.href;
-            const normalize = (s: string) => s.trim().replace(/\/+$/, '').toLowerCase();
-            const currentNorm = normalize(currentUrl);
-            const currentNoProto = currentNorm.replace(/^https?:\/\//, '');
-
-            const urlMatch = Object.keys(config).find(key => {
-                if (!key.includes('://') && !key.includes('/')) return false;
-                const keyNorm = normalize(key);
-                if (key.includes('://')) return currentNorm.startsWith(keyNorm);
-                return currentNoProto.startsWith(keyNorm);
-            });
-            if (urlMatch) preferredType = config[urlMatch];
-
-             window.postMessage({
-                type: 'GIOPIC_INJECT',
-                url: url,
-                preferredType
-            }, '*')
+            await injectImageToPage(url)
         }
     } else if (message.type === 'REFRESH_PLUGINS') {
         // 通知网页插件列表已更新

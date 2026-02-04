@@ -6,11 +6,11 @@ import { updateContextMenuLocale } from './contextMenu'
 import i18n from '@/i18n'
 import type { DriveConfig, PluginMeta } from '@/types'
 import { getDesktopLinkStatus, setDesktopLinkEnabled } from './desktopLink'
-import { 
-    validatePlugin, 
-    installPluginToStorage, 
-    uninstallPluginFromStorage, 
-    togglePluginInStorage 
+import {
+    validatePlugin,
+    installPluginToStorage,
+    uninstallPluginFromStorage,
+    togglePluginInStorage
 } from '@/utils/pluginCore'
 
 const authTokenCache: Record<string, string> = {}
@@ -272,7 +272,7 @@ async function closeSidePanel(sender: Runtime.MessageSender) {
             return { success: false, error: e?.message }
         }
     }
-    
+
     if ((browser as any).sidebarAction?.close) {
         try {
             await (browser as any).sidebarAction.close()
@@ -280,7 +280,7 @@ async function closeSidePanel(sender: Runtime.MessageSender) {
             await setSidePanelOpenState(tabId, false)
             return { success: true }
         } catch (e: any) {
-             return { success: false, error: e?.message }
+            return { success: false, error: e?.message }
         }
     }
 
@@ -290,7 +290,7 @@ async function closeSidePanel(sender: Runtime.MessageSender) {
 async function toggleSidePanel(sender: Runtime.MessageSender) {
     const tabId = sender.tab?.id
     if (!tabId) return { success: false, error: 'No tab ID found' }
-    
+
     // Check if currently open
     const isOpen = sidePanelOpenByTab[tabId] || false
     if (isOpen) {
@@ -301,16 +301,54 @@ async function toggleSidePanel(sender: Runtime.MessageSender) {
 }
 
 async function relayUploadSuccess(message: any, sender: Runtime.MessageSender) {
-    // 转发给当前标签页 Content Script，用于通知网页上传成功
-    if (sender.tab?.id) {
-        browser.tabs.sendMessage(sender.tab.id, {
-            type: 'UPLOAD_EVENT',
-            data: {
-                event: 'success',
-                url: message.url,
-                ...message.data
-            }
-        }).catch(() => { })
+    const senderTabId = sender.tab?.id
+    if (senderTabId) {
+        try {
+            await browser.tabs.sendMessage(senderTabId, {
+                type: 'UPLOAD_EVENT',
+                data: {
+                    event: 'success',
+                    id: message.id || 'relay',
+                    payload: message.payload,
+                    isOrigin: true
+                }
+            })
+        } catch (e) {
+            console.warn('Failed to relay upload success to sender tab', e)
+        }
+        return
+    }
+    try {
+        const store = await browser.storage.local.get('giopic-last-content-tab')
+        const lastTabId = store['giopic-last-content-tab'] as number | undefined
+        if (lastTabId) {
+            await browser.tabs.sendMessage(lastTabId, {
+                type: 'UPLOAD_EVENT',
+                data: {
+                    event: 'success',
+                    id: message.id || 'relay',
+                    payload: message.payload,
+                    isOrigin: true
+                }
+            })
+            return
+        }
+    } catch { }
+    const tabs = await browser.tabs.query({ active: true, currentWindow: true })
+    if (tabs && tabs.length > 0 && tabs[0]?.id) {
+        try {
+            await browser.tabs.sendMessage(tabs[0].id!, {
+                type: 'UPLOAD_EVENT',
+                data: {
+                    event: 'success',
+                    id: message.id || 'relay',
+                    payload: message.payload,
+                    isOrigin: true
+                }
+            })
+        } catch (e) {
+            console.warn('Failed to relay upload success to active tab', e)
+        }
     }
 }
 
