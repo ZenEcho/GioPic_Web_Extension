@@ -463,7 +463,7 @@ export const adapters: EditorAdapter[] = [
             }
         }
     },
-    // 19.tiptap
+    // 19.Tiptap
     {
         id: 'Tiptap',
         detect: () => detectBySelector('.tiptap.ProseMirror', 'Tiptap', 0.9),
@@ -495,5 +495,125 @@ export const adapters: EditorAdapter[] = [
                 return false;
             }
         }
-    }
+    },
+    // 20. Editorjs
+    {
+        id: 'Editorjs',
+        detect: () => {
+            // id:id="editorjs"
+            // class:class="codex-editor__redactor"
+            const editorjs = document.querySelector('#editorjs');
+            if (!editorjs) {
+                return null;
+            }
+            // 检查是否有 codex-editor__redactor 类
+            if (!editorjs.querySelector('.codex-editor__redactor')) {
+                return null;
+            }
+            return { type: 'Editorjs', certainty: 0.95, source: 'id: editorjs' };
+        },
+        inject: async (url) => {
+            try {
+                // EditorJS 通常基于 Block 结构
+                // 优先使用直接插入 img 标签 (响应最快，用户体验好)
+
+                // 1. 获取当前获得焦点的可编辑块
+                let targetBlock = document.activeElement as HTMLElement;
+
+                // 如果当前焦点不在编辑器内，尝试查找第一个空段落
+                if (!targetBlock || !targetBlock.closest('.codex-editor')) {
+                    targetBlock = document.querySelector('.ce-paragraph[contenteditable="true"]') as HTMLElement;
+                }
+
+                if (!targetBlock) {
+                    console.warn('[EditorJS] No focusable block found');
+                    return false;
+                }
+
+                targetBlock.focus();
+                try {
+                    const response = await fetch(url);
+                    const blob = await response.blob();
+                    const file = new File([blob], "image.png", { type: blob.type });
+
+                    const dt = new DataTransfer();
+                    dt.items.add(file);
+
+                    const pasteEvent = new ClipboardEvent("paste", {
+                        clipboardData: dt,
+                        bubbles: true,
+                        cancelable: true
+                    });
+
+                    targetBlock.dispatchEvent(pasteEvent);
+                    console.log('[EditorJS] Injected via paste simulation');
+                    return true;
+                } catch (fetchError) {
+                    console.warn('[EditorJS] Paste simulation failed', fetchError);
+                }
+
+                try {
+                    const img = document.createElement("img");
+                    img.src = url;
+
+                    const sel = window.getSelection();
+                    if (sel && sel.rangeCount > 0) {
+                        const range = sel.getRangeAt(0);
+                        range.deleteContents();
+                        range.insertNode(img);
+
+                        // 移动光标到图片后
+                        range.collapse(false);
+                        console.log('[EditorJS] Injected via direct DOM insertion');
+                        return true;
+                    }
+                } catch (e) {
+                    console.warn('[EditorJS] Direct insertion failed, falling back to paste simulation', e);
+                }
+
+
+
+
+                return false;
+            } catch (e) {
+                console.error('[EditorJS] Injection failed', e);
+                return false;
+            }
+        }
+    },
+    // 21. summernote
+    {
+        id: 'Summernote',
+        detect: () => detectBySelector('.note-editable', 'Summernote', 0.8),
+        inject: (url) => {
+            try {
+                // 1. 获取 jQuery (Summernote 必须依赖它)
+                const $ = (window as any).jQuery || (window as any).$;
+                if (!$) return false;
+
+                // 2. 找到编辑区并反向定位到原始实例元素
+                const editable = document.querySelector('.note-editable');
+                if (!editable) return false;
+
+                // Summernote 实例通常挂在 .note-editor 之前的那个元素上
+                const $editorContainer = $(editable).closest('.note-editor');
+                const $target = $editorContainer.prev();
+
+                // 3. 执行插入
+                if (typeof ($target as any).summernote === 'function') {
+                    $target.summernote('insertImage', url);
+                    return true;
+                }
+
+                // 4. 兜底方案：如果 API 调用失败，直接操作 DOM
+                $(editable).focus();
+                document.execCommand('insertImage', false, url);
+                return true;
+
+            } catch (err) {
+                console.error('Summernote 注入失败:', err);
+                return false;
+            }
+        }
+    },
 ];

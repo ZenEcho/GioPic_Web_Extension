@@ -19,6 +19,8 @@ export type EditorType =
     | 'milkdown'
     | 'Quill'
     | 'Tiptap'
+    | 'Editorjs'
+    | 'Summernote'
     | 'unknown';
 
 export interface EditorMeta {
@@ -46,5 +48,7 @@ export const EDITOR_META: EditorMeta[] = [
     { id: 'milkdown', name: 'Milkdown' },
     { id: 'Quill', name: 'Quill' },
     { id: 'Tiptap', name: 'Tiptap' },
+    { id: 'Editorjs', name: 'Editorjs' },
+    { id: 'Summernote', name: 'Summernote' },
     // { id: 'unknown', name: '未知编辑器' },
 ];
