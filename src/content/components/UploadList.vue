@@ -2,9 +2,9 @@
     <Transition name="fade">
         <div v-if="isVisible" class="fixed inset-0 pointer-events-none z-[2147483646]">
             <div ref="containerRef"
-                class="absolute w-[380px] pointer-events-auto backdrop-blur-md bg-white/95 dark:bg-gray-800/95 shadow-2xl rounded-xl overflow-hidden flex flex-col font-sans text-sm border border-gray-200 dark:border-gray-700/50 transition-shadow duration-300"
+                class="absolute w-[400px] pointer-events-auto backdrop-blur-md bg-white/95 dark:bg-gray-800/95 shadow-2xl rounded-xl overflow-hidden flex flex-col font-sans text-sm border border-gray-200 dark:border-gray-700/50 transition-shadow duration-300"
                 :class="{ dark: isDark }"
-                :style="{ left: (position.x - 8) + 'px', top: position.y + 'px' }"
+                :style="{ left: position.x + 'px', top: position.y + 'px' }"
                 @click.stop
                 @mousedown.stop
                 @pointerdown.stop>
@@ -15,7 +15,6 @@
            dark:from-slate-800 dark:to-slate-900 border-b dark:border-slate-700/50">
     
     <div class="flex items-center gap-2 text-white/95 dark:text-slate-200">
-        <div class="i-ph-cloud-arrow-up-bold text-lg opacity-90"></div>
         <span class="font-bold tracking-wide text-sm">{{ t('uploadList.title') }}</span>
         <span class="bg-white/20 dark:bg-slate-700/50 px-1.5 py-0.5 rounded text-[10px] font-bold min-w-[20px] text-center border border-white/10" :title="t('uploadList.maxLimit', 'Max 10 items')">
             {{ uploads.length }}
@@ -52,7 +51,7 @@
         <button @click="closeList"
             class="bg-white/10 hover:bg-white/20 dark:bg-slate-700/40 dark:hover:bg-slate-700/60 text-white/90 hover:text-white transition-colors p-1.5 rounded-lg active:scale-95"
             :title="t('common.collapse')">
-            <div class="i-ph-x-bold text-sm"></div>
+            <div class="i-ph-x-bold text-sm text-red-500"></div>
         </button>
     </div>
 </div>
@@ -275,8 +274,8 @@ const mergeUploads = (newQueue: UploadItem[]) => {
 const containerRef = useTemplateRef<HTMLElement>('containerRef')
 const headerRef = useTemplateRef<HTMLElement>('headerRef')
 
-// Width is 380px, adding 20px margin from right = 400
-const initialX = (document.documentElement.clientWidth || window.innerWidth) - 400
+// Width is 400px, adding 20px margin from right = 420 
+const initialX = (document.documentElement.clientWidth || window.innerWidth) - 420
 const initialY = window.innerHeight - 400
 
 const { position, isDragging } = useDraggable(containerRef, headerRef, { x: initialX, y: initialY })

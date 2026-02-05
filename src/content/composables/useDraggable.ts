@@ -5,10 +5,20 @@ export interface Position {
     y: number
 }
 
+export interface DraggableOptions {
+    padding?: {
+        top?: number
+        right?: number
+        bottom?: number
+        left?: number
+    }
+}
+
 export function useDraggable(
     targetEl: Ref<HTMLElement | null>,
     handleEl: Ref<HTMLElement | null>,
-    initialPosition: Position = { x: 0, y: 0 }
+    initialPosition: Position = { x: 0, y: 0 },
+    options: DraggableOptions = {}
 ) {
     const isDragging = ref(false)
     const position = ref<Position>(initialPosition)
@@ -18,11 +28,11 @@ export function useDraggable(
     const isStuckToBottom = ref(false)
     
     // 边缘内边距，确保关闭按钮可见/可点击
-    // 8px 是为了让悬浮球不会紧贴着浏览器边缘，留出一点呼吸空间，同时也避免被滚动条遮挡（如果计算有误的话）
-    const paddingRight = 8
-    const paddingBottom = 8
-    const paddingTop = 8
-    const paddingLeft = 4 
+    // 默认为悬浮球的配置，也可以通过 options 覆盖
+    const paddingRight = options.padding?.right ?? 8
+    const paddingBottom = options.padding?.bottom ?? 8
+    const paddingTop = options.padding?.top ?? 8
+    const paddingLeft = options.padding?.left ?? 8
     
     let startX = 0
     let startY = 0

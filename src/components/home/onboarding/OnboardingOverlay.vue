@@ -28,7 +28,7 @@ const showPluginManager = ref(false)
 
 function handleLanguageSelect(lang: string) {
     locale.value = lang
-    browser.storage.local.set({ 'giopic-language': lang })
+    browser.storage.local.set({ 'giopic-locale': lang })
     onboardingStep.value = 'layout'
 }
 
