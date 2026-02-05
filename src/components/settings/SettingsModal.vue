@@ -88,6 +88,18 @@ const handleRuntimeMessage = (message: any) => {
     }
 }
 
+// 监听 Storage 变化
+const handleStorageChange = (changes: any, area: string) => {
+    if (area === 'local') {
+        if (changes['giopic-hover-preview']) {
+            hoverPreview.value = changes['giopic-hover-preview'].newValue !== false
+        }
+        if (changes['giopic-auto-inject']) {
+            autoInject.value = changes['giopic-auto-inject'].newValue !== false
+        }
+    }
+}
+
 async function refreshDesktopStatus() {
     try {
         const res = await browser.runtime.sendMessage({ type: 'DESKTOP_LINK_GET_STATUS' })
@@ -114,11 +126,13 @@ onMounted(async () => {
     hoverPreview.value = preview['giopic-hover-preview'] !== false // Default true
 
     browser.runtime.onMessage.addListener(handleRuntimeMessage)
+    browser.storage.onChanged.addListener(handleStorageChange)
     await refreshDesktopStatus()
 })
 
 onBeforeUnmount(() => {
     browser.runtime.onMessage.removeListener(handleRuntimeMessage)
+    browser.storage.onChanged.removeListener(handleStorageChange)
 })
 
 async function setAutoInject(val: boolean) {

@@ -1,3 +1,14 @@
+<!--
+ * @file LinkPreview.vue
+ * @description 链接悬浮预览组件
+ * 
+ * 职责：
+ * 1. 监听鼠标悬停事件，检测图片链接
+ * 2. 悬浮显示图片预览
+ * 3. 提供快捷键 (Shift+X) 打开设置弹窗
+ * 4. 管理站点级/会话级/临时的禁用状态
+-->
+
 <template>
   <div class="giopic-link-preview-container">
     <!-- 预览框 -->
@@ -97,12 +108,19 @@ const { t } = useI18n()
 const options = computed(() => [
   { id: 'close', label: t('preview.close') },
   { id: 'session', label: t('preview.session') },
-  { id: 'site', label: t('preview.site') }
+  { id: 'site', label: t('preview.site') },
+  { id: 'permanent', label: t('preview.permanent') },
 ])
 
 // --- 核心逻辑 ---
 
-// URL 解析与缓存
+/**
+ * 获取真实图片链接
+ * 处理 URL 编码、参数干扰，提取最可能的图片地址
+ * 
+ * @param url - 原始 URL
+ * @returns 解析后的图片 URL
+ */
 function getRealUrl(url: string): string {
   if (urlCache.has(url)) return urlCache.get(url)!
 
@@ -147,6 +165,12 @@ function getRealUrl(url: string): string {
   }
 }
 
+/**
+ * 检查是否为图片 URL
+ * 
+ * @param url - 待检查 URL
+ * @returns 是否为支持的图片格式
+ */
 function isImageUrl(url: string): boolean {
   if (!url) return false
   try {
@@ -159,7 +183,14 @@ function isImageUrl(url: string): boolean {
   }
 }
 
-// 文本 URL 检测
+/**
+ * 获取指定坐标处的文本 URL
+ * 用于识别非链接标签中的文本 URL
+ * 
+ * @param x - X 坐标
+ * @param y - Y 坐标
+ * @returns 提取到的 URL 或 null
+ */
 function getTextUrlAtPosition(x: number, y: number): string | null {
   const MAX_SCAN_LENGTH = 500
   let range: Range | null = null
@@ -202,7 +233,10 @@ function getTextUrlAtPosition(x: number, y: number): string | null {
   return candidate
 }
 
-// 状态检查
+/**
+ * 检查功能是否启用
+ * 综合考虑全局开关、临时禁用、会话禁用和站点禁用配置
+ */
 function checkEnabled() {
   const shouldEnable = globalEnabled.value
   if (isTempDisabled.value || isSessionDisabled.value) {
@@ -255,6 +289,13 @@ function checkEnabled() {
 let hideTimeout: any = null
 let loadTimeout: any = null
 
+/**
+ * 显示预览窗口
+ * 
+ * @param url - 图片 URL
+ * @param x - 鼠标 X 坐标
+ * @param y - 鼠标 Y 坐标
+ */
 function showPreview(url: string, x: number, y: number) {
   if (hideTimeout) clearTimeout(hideTimeout)
   
@@ -290,6 +331,13 @@ function hidePreview() {
 
 const previewRef = ref<HTMLElement | null>(null)
 
+/**
+ * 更新预览窗口位置
+ * 确保窗口不超出视口边界
+ * 
+ * @param x - 目标 X 坐标
+ * @param y - 目标 Y 坐标
+ */
 function updatePosition(x: number, y: number) {
   const el = previewRef.value
   // 如果没有 ref，使用默认尺寸估计
@@ -328,6 +376,10 @@ function onImgError() {
 let rafId: number | null = null
 let lastDetectTime = 0
 
+/**
+ * 鼠标移动事件处理
+ * 负责检测鼠标下方的 URL 并触发预览
+ */
 function onMouseMove(e: MouseEvent) {
   if (!enabled.value) return
 
@@ -385,6 +437,10 @@ function onMouseMove(e: MouseEvent) {
   }
 }
 
+/**
+ * 键盘事件处理
+ * 监听 Shift+X 呼出设置弹窗
+ */
 function onKeyDown(e: KeyboardEvent) {
   if (e.shiftKey && e.code === 'KeyX') {
     if (currentUrl.value && isVisible.value) {
@@ -403,6 +459,10 @@ function closeDialog() {
   showDialog.value = false
 }
 
+/**
+ * 确认关闭/禁用选项
+ * 根据用户选择执行临时禁用、会话禁用或站点禁用
+ */
 async function confirmClose() {
   const option = selectedOption.value
   if (option === 'close') {
@@ -419,7 +479,7 @@ async function confirmClose() {
     if (!newDisabledSites.includes(hostname)) {
       newDisabledSites.push(hostname)
       
-      // Ensure siteEditorConfig has an entry to prevent data loss when re-enabling
+      // 确保 siteEditorConfig 有一个空字符串项，防止数据丢失
       const configRes = await browser.storage.local.get('siteEditorConfig')
       const config = (configRes.siteEditorConfig || {}) as Record<string, string>
       let shouldUpdateConfig = false
@@ -435,6 +495,10 @@ async function confirmClose() {
       
       await browser.storage.local.set(updates)
     }
+  } else if (option === 'permanent') {
+    // 永久禁用
+    await browser.storage.local.set({ 'giopic-hover-preview': false })
+    globalEnabled.value = false
   }
   
   checkEnabled()

@@ -1,3 +1,27 @@
+<!--
+ * Component Name: HistoryHeader
+ * Author: GioPic Team
+ * Description: 历史记录页面头部组件
+ * 
+ * Functional Domain:
+ * History (历史记录) - 顶部操作栏
+ * 
+ * Key Features:
+ * - 页面标题：展示 "History" 标题及返回按钮 (Classic/Simple 模式下)
+ * - 复制格式切换：快速切换链接复制格式 (MD/URL/HTML/BB)
+ * - 批量操作开关：进入/退出批量选择模式
+ * - 全选控制：在批量模式下控制全选/取消全选
+ * 
+ * Props:
+ * - isBatchMode (boolean): 是否处于批量选择模式
+ * - isAllSelected (boolean): 是否已选中当前视图的所有项
+ * - copyFormat (string): 当前选中的复制格式
+ * 
+ * Events:
+ * - update:copyFormat: 更新复制格式
+ * - toggleBatchMode: 切换批量模式状态
+ * - toggleSelectAll: 触发全选/取消全选操作
+ -->
 <script setup lang="ts">
 
 import { useI18n } from 'vue-i18n'

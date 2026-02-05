@@ -1,3 +1,15 @@
+/**
+ * @file adapters.ts
+ * @description 编辑器适配器集合
+ * 
+ * 此文件包含了所有支持的编辑器的适配器实现。
+ * 每个适配器负责特定编辑器的检测 (detect) 和图片注入 (inject) 逻辑。
+ * 
+ * 适配器结构:
+ * - id: 编辑器唯一标识符 (EditorType)
+ * - detect: 检测当前页面是否包含该编辑器，返回置信度
+ * - inject: 向编辑器插入图片 Markdown 或 HTML
+ */
 
 import type {
     EditorAdapter,
@@ -10,18 +22,41 @@ import type {
 // =================================================================================
 // Helper Functions
 // =================================================================================
+
+/**
+ * 通过 CSS 选择器检测编辑器
+ * @param selector CSS 选择器
+ * @param id 编辑器 ID
+ * @param certainty 置信度 (默认为 0.8)
+ */
 function detectBySelector(selector: string, id: any, certainty: number = 0.8): DetectionResult | null {
     return document.querySelector(selector) ? { type: id, certainty, source: `selector: ${selector}` } : null;;
 }
 
+/**
+ * 通过元素 ID 检测编辑器
+ * @param elementId 元素 ID
+ * @param id 编辑器 ID
+ * @param certainty 置信度 (默认为 0.9)
+ */
 function detectById(elementId: string, id: any, certainty: number = 0.9): DetectionResult | null {
     return document.getElementById(elementId) ? { type: id, certainty, source: `id: ${elementId}` } : null;
 }
 
+/**
+ * 通过域名检测编辑器 (针对特定网站的适配)
+ * @param domain 域名片段
+ * @param id 编辑器 ID
+ * @param certainty 置信度 (默认为 1.0)
+ */
 function detectByDomain(domain: string, id: any, certainty: number = 1.0): DetectionResult | null {
     return window.location.hostname.includes(domain) ? { type: id, certainty, source: `domain: ${domain}` } : null;
 }
 
+/**
+ * CodeMirror 5 的通用注入实现
+ * @param url 图片 URL
+ */
 function handleCodeMirror5Impl(url: string): boolean {
     let editorElement = document.querySelector(".CodeMirror") as CodeMirrorElementType | null;
     if (editorElement && editorElement.CodeMirror) {
@@ -39,6 +74,11 @@ function handleCodeMirror5Impl(url: string): boolean {
 
 export const adapters: EditorAdapter[] = [
     // 1. Discuz
+    /**
+     * Discuz! 论坛
+     * 检测: Meta Generator, Body ID, 核心元素, 页脚版权
+     * 注入: textarea 或 iframe body
+     */
     {
         id: 'Discuz',
         detect: () => {
@@ -100,6 +140,11 @@ export const adapters: EditorAdapter[] = [
     },
 
     // 2. Halo
+    /**
+     * Halo 博客
+     * 检测: class="halo-rich-text-editor"
+     * 注入: ProseMirror 核心 (execCommand)
+     */
     {
         id: 'Halo',
         detect: () => {
@@ -118,6 +163,11 @@ export const adapters: EditorAdapter[] = [
     },
 
     // 3. Typecho
+    /**
+     * Typecho 博客
+     * 检测: body 文本包含 "typecho" 且有 btn-submit
+     * 注入: textarea#text, 触发 input 事件
+     */
     {
         id: 'Typecho',
         detect: () => {
@@ -139,6 +189,11 @@ export const adapters: EditorAdapter[] = [
     },
 
     // 4. phpBB
+    /**
+     * phpBB 论坛
+     * 检测: 全局变量 phpbb 和 id="phpbb"
+     * 注入: postMessage 通信
+     */
     {
         id: 'phpBB',
         detect: () => {
@@ -157,6 +212,11 @@ export const adapters: EditorAdapter[] = [
     },
 
     // 5. V2EX
+    /**
+     * V2EX 社区
+     * 检测: 域名 v2ex.com
+     * 注入: CodeMirror 或 回复框 textarea
+     */
     {
         id: 'V2EX',
         detect: () => detectByDomain('v2ex.com', 'V2EX'),
@@ -180,6 +240,11 @@ export const adapters: EditorAdapter[] = [
     },
 
     // 6. NodeSeek
+    /**
+     * NodeSeek 论坛
+     * 检测: 域名 nodeseek.com
+     * 注入: 复用 CodeMirror 5 逻辑
+     */
     {
         id: 'nodeseek',
         detect: () => detectByDomain('nodeseek.com', 'nodeseek'),
@@ -187,6 +252,11 @@ export const adapters: EditorAdapter[] = [
     },
 
     // 7. LowEndTalk
+    /**
+     * LowEndTalk 论坛
+     * 检测: 域名 lowendtalk.com
+     * 注入: 直接操作 #Form_Body 输入框
+     */
     {
         id: 'lowendtalk',
         detect: () => detectByDomain('lowendtalk.com', 'lowendtalk'),
@@ -201,6 +271,11 @@ export const adapters: EditorAdapter[] = [
     },
 
     // 8. CodeMirror 5
+    /**
+     * CodeMirror 5
+     * 检测: .CodeMirror 选择器
+     * 注入: 使用 CodeMirror API setValue
+     */
     {
         id: 'CodeMirror5',
         detect: () => detectBySelector('.CodeMirror', 'CodeMirror5'),
@@ -208,6 +283,11 @@ export const adapters: EditorAdapter[] = [
     },
 
     // 9. CodeMirror 6
+    /**
+     * CodeMirror 6
+     * 检测: .cm-editor 选择器
+     * 注入: 操作 DOM 插入 .cm-line
+     */
     {
         id: 'CodeMirror6',
         detect: () => detectBySelector('.cm-editor', 'CodeMirror6'),
@@ -226,6 +306,11 @@ export const adapters: EditorAdapter[] = [
     },
 
     // 10. Gutenberg (WordPress)
+    /**
+     * WordPress Gutenberg
+     * 检测: #wpbody-content 和页脚
+     * 注入: 使用 wp.data.dispatch 插入 core/image 区块
+     */
     {
         id: 'GutenbergEditor',
         detect: () => {
@@ -247,6 +332,11 @@ export const adapters: EditorAdapter[] = [
     },
 
     // 11. TinyMCE
+    /**
+     * TinyMCE
+     * 检测: window.tinymce.activeEditor
+     * 注入: execCommand('mceInsertContent')
+     */
     {
         id: 'TinyMCE',
         detect: () => {
@@ -268,6 +358,11 @@ export const adapters: EditorAdapter[] = [
     },
 
     // 12. wangEditor
+    /**
+     * wangEditor
+     * 检测: window.editor (wangEditor 实例)
+     * 注入: editor.insertNode
+     */
     {
         id: 'wangEditor',
         detect: () => {
@@ -295,6 +390,11 @@ export const adapters: EditorAdapter[] = [
     },
 
     // 13. CKEditor 4
+    /**
+     * CKEditor 4
+     * 检测: window.CKEDITOR.instances
+     * 注入: insertHtml
+     */
     {
         id: 'CKEditor4',
         detect: () => {
@@ -325,6 +425,11 @@ export const adapters: EditorAdapter[] = [
     },
 
     // 14. CKEditor 5
+    /**
+     * CKEditor 5
+     * 检测: window.editor (CKEditor5 实例，具备 getData/setData)
+     * 注入: setData 追加内容
+     */
     {
         id: 'CKEditor5',
         detect: () => {
@@ -348,6 +453,11 @@ export const adapters: EditorAdapter[] = [
     },
 
     // 15. UEditor
+    /**
+     * UEditor (百度编辑器)
+     * 检测: window.UE
+     * 注入: execCommand('insertimage')
+     */
     {
         id: 'UEditor',
         detect: () => {
@@ -372,6 +482,11 @@ export const adapters: EditorAdapter[] = [
     },
 
     // 16. ProseMirror
+    /**
+     * ProseMirror
+     * 检测: .ProseMirror 选择器
+     * 注入: 模拟 Clipboard 粘贴事件
+     */
     {
         id: 'ProseMirror',
         detect: () => detectBySelector('.ProseMirror', 'ProseMirror'),
@@ -399,6 +514,11 @@ export const adapters: EditorAdapter[] = [
     },
 
     // 17. Milkdown
+    /**
+     * Milkdown
+     * 检测: .milkdown 选择器
+     * 注入: 模拟粘贴事件 (Markdown 格式)
+     */
     {
         id: 'milkdown',
         detect: () => detectBySelector('.milkdown', 'milkdown', 0.9),
@@ -423,6 +543,11 @@ export const adapters: EditorAdapter[] = [
         }
     },
     // 18. Quill
+    /**
+     * Quill
+     * 检测: .ql-editor 选择器
+     * 注入: 优先使用 insertEmbed，失败则 fallback 到 execCommand
+     */
     {
         id: 'Quill',
         detect: () => detectBySelector('.ql-editor', 'Quill', 0.9),
@@ -466,6 +591,11 @@ export const adapters: EditorAdapter[] = [
         }
     },
     // 19.Tiptap
+    /**
+     * Tiptap
+     * 检测: .tiptap.ProseMirror 选择器
+     * 注入: editor.commands.setImage 或 insertContent
+     */
     {
         id: 'Tiptap',
         detect: () => detectBySelector('.tiptap.ProseMirror', 'Tiptap', 0.9),
@@ -499,6 +629,11 @@ export const adapters: EditorAdapter[] = [
         }
     },
     // 20. Editorjs
+    /**
+     * Editor.js
+     * 检测: #editorjs 或 .codex-editor__redactor
+     * 注入: 模拟粘贴 (File API) 或 DOM 直接插入
+     */
     {
         id: 'Editorjs',
         detect: () => {
@@ -584,6 +719,11 @@ export const adapters: EditorAdapter[] = [
         }
     },
     // 21. summernote
+    /**
+     * Summernote
+     * 检测: .note-editable 选择器
+     * 注入: jQuery API summernote('insertImage')
+     */
     {
         id: 'Summernote',
         detect: () => detectBySelector('.note-editable', 'Summernote', 0.8),
@@ -619,6 +759,11 @@ export const adapters: EditorAdapter[] = [
         }
     },
     // 22.lexical
+    /**
+     * Lexical (Facebook)
+     * 检测: .ContentEditable__root 和 __lexicalEditor 属性
+     * 注入: editor.update (ImageNode) 或 模拟粘贴
+     */
     {
         id: 'Lexical',
         detect: () => {
@@ -698,6 +843,11 @@ export const adapters: EditorAdapter[] = [
         }
     },
     // 23.trix
+    /**
+     * Trix
+     * 检测: .trix-content 选择器
+     * 注入: editor.insertAttachment
+     */
     {
         id: 'Trix',
         detect: () => {
@@ -735,6 +885,11 @@ export const adapters: EditorAdapter[] = [
 
     },
     // 24 .MediumEditor
+    /**
+     * MediumEditor
+     * 检测: 全局 _mediumEditors
+     * 注入: pasteHTML 或 execCommand
+     */
     {
         id: 'MediumEditor',
         detect: () => {
@@ -780,6 +935,11 @@ export const adapters: EditorAdapter[] = [
         }
     },
     // 25 .platejs
+    /**
+     * Plate.js
+     * 检测: React Fiber 遍历
+     * 注入: insertNodes
+     */
     {
         id: 'Platejs',
         detect: () => {
@@ -810,6 +970,11 @@ export const adapters: EditorAdapter[] = [
         }
     },
     // 26 .slatejs
+    /**
+     * Slate.js
+     * 检测: React Fiber 遍历
+     * 注入: insert_node 操作
+     */
     {
         id: 'Slatejs',
         detect: () => {
@@ -843,6 +1008,11 @@ export const adapters: EditorAdapter[] = [
         }
     },
     // 27 .Blocknotejs
+    /**
+     * BlockNote.js
+     * 检测: React Fiber 遍历
+     * 注入: insertBlocks
+     */
     {
         id: 'Blocknotejs',
         detect: () => {
@@ -881,6 +1051,10 @@ export const adapters: EditorAdapter[] = [
 
 ];
 
+/**
+ * 查找 Plate.js 编辑器实例
+ * 通过 React Fiber 树遍历查找
+ */
 const findPlateEditor = () => {
     const root = document.querySelector('[contenteditable="true"]');
     const key = root ? Object.keys(root).find(k => k.startsWith('__reactFiber')) : undefined;
@@ -899,7 +1073,11 @@ const findPlateEditor = () => {
     }
 
 };
-//查找Slate编辑器实例
+
+/**
+ * 查找 Slate.js 编辑器实例
+ * 通过 React Fiber 树遍历查找
+ */
 const findSlateEditor = () => {
     const slateRoot = document.querySelector('[data-slate-editor="true"]');
 
@@ -916,6 +1094,11 @@ const findSlateEditor = () => {
     };
     return slateRoot ? getSlateEditor(slateRoot as HTMLElement) : undefined;
 };
+
+/**
+ * 查找 BlockNote.js 编辑器实例
+ * 通过 React Fiber 树遍历查找
+ */
 const findBlocknoteEditor = () => {
     const bnRoot = document.querySelector(".bn-editor");
     // 2. 抓取实例

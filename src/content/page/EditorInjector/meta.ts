@@ -1,3 +1,12 @@
+/**
+ * @file meta.ts
+ * @description 编辑器元数据定义
+ * 
+ * 职责：
+ * 1. 定义所有支持的编辑器类型枚举
+ * 2. 提供编辑器显示名称映射 (EDITOR_META)
+ * 3. 维护编辑器列表的顺序
+ */
 
 export type EditorType =
     | 'nodeseek'
@@ -34,6 +43,10 @@ export interface EditorMeta {
     name: string;
 }
 
+/**
+ * 编辑器元数据列表
+ * 用于 UI 显示和配置
+ */
 export const EDITOR_META: EditorMeta[] = [
     { id: 'Discuz', name: 'Discuz!' },
     { id: 'Halo', name: 'Halo' },

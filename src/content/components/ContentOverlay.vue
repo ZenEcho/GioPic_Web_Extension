@@ -1,3 +1,13 @@
+<!--
+ * @file ContentOverlay.vue
+ * @description 内容脚本的根组件容器
+ * 
+ * 职责：
+ * 1. 作为所有注入到页面的 UI 组件的顶层容器
+ * 2. 包含悬浮球侧边栏、上传列表、Token 检测器、链接预览和通知视图
+ * 3. 统一管理样式隔离和层级 (z-index)
+-->
+
 <template>
   <div class="giopic-overlay-container">
     <!-- 侧边栏 (包含悬浮球) -->

@@ -1,3 +1,16 @@
+/**
+ * @file desktopLink.ts
+ * @description 桌面端连接服务
+ * 
+ * 职责：
+ * 1. 管理与 GioPic 桌面端/PWA 的 WebSocket 连接
+ * 2. 接收桌面端的上传成功消息，并自动注入到网页
+ * 3. 维护连接状态并同步给前端 UI
+ * 
+ * 依赖：
+ * - webextension-polyfill: 浏览器扩展 API
+ */
+
 import browser from 'webextension-polyfill'
 
 // 桌面端连接状态类型定义
@@ -21,7 +34,11 @@ let desktopEnabled = false
 let desktopStatus: DesktopLinkStatusType = 'disabled'
 let desktopLastError: string | undefined
 
-// 向最近一次注册的内容脚本页面注入 URL
+/**
+ * 向最近一次注册的内容脚本页面注入 URL
+ * 
+ * @param url - 图片 URL
+ */
 async function injectUrlToContent(url: string) {
     try {
         const store = await browser.storage.local.get('giopic-last-content-tab')
@@ -48,7 +65,11 @@ async function injectUrlToContent(url: string) {
     }
 }
 
-// 对外暴露的桌面链接状态获取函数
+/**
+ * 获取当前桌面链接状态
+ * 
+ * @returns 状态对象
+ */
 function getDesktopLinkStatus(): DesktopLinkStatusPayload {
     return {
         enabled: desktopEnabled,
@@ -57,7 +78,10 @@ function getDesktopLinkStatus(): DesktopLinkStatusPayload {
     }
 }
 
-// 向前端广播当前桌面链接状态（popup / content 均可监听）
+/**
+ * 向前端广播当前桌面链接状态
+ * 任何监听 `DESKTOP_LINK_STATUS` 消息的页面（popup/content）都会收到
+ */
 function broadcastDesktopLinkStatus() {
     const payload = getDesktopLinkStatus()
     try {
@@ -68,7 +92,10 @@ function broadcastDesktopLinkStatus() {
     } catch {}
 }
 
-// 建立或恢复与桌面端的 WebSocket 连接
+/**
+ * 建立或恢复与桌面端的 WebSocket 连接
+ * 处理连接生命周期事件（open, close, error, message）
+ */
 function connectDesktopWebSocket() {
     if (!desktopEnabled) {
         desktopStatus = 'disabled'
@@ -143,7 +170,12 @@ function connectDesktopWebSocket() {
     }
 }
 
-// 切换桌面链接开关，同时持久化到 storage
+/**
+ * 切换桌面链接开关
+ * 同时持久化状态到 local storage
+ * 
+ * @param enabled - 开启或关闭
+ */
 async function setDesktopLinkEnabled(enabled: boolean) {
     desktopEnabled = enabled
     if (!enabled) {
@@ -169,7 +201,10 @@ async function setDesktopLinkEnabled(enabled: boolean) {
     broadcastDesktopLinkStatus()
 }
 
-// 浏览器启动或扩展初始化时调用，恢复桌面链接状态
+/**
+ * 初始化桌面链接服务
+ * 浏览器启动或扩展初始化时调用，恢复上次的开关状态
+ */
 async function initDesktopLinkOnStartup() {
     try {
         const store = await browser.storage.local.get(DESKTOP_LINK_ENABLED_KEY)

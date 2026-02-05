@@ -1,7 +1,7 @@
-# Background Script Architecture
+# Background Script Architecture (v2.3.1)
 
 ## 1. 简介 (Introduction)
-Background Service Worker 是浏览器扩展的“后端”，负责处理长期运行的任务、跨页面通信、系统级 API 调用（如右键菜单、通知、Web 请求拦截）。
+Background Service Worker 是浏览器扩展的“后端”，负责处理长期运行的任务、跨页面通信、系统级 API 调用（如右键菜单、通知、Web 请求拦截）。在 v2.3.1 版本中，进一步增强了 Side Panel 的状态同步与兼容性处理。
 
 ## 2. 目录结构 (Directory Structure)
 
@@ -37,7 +37,8 @@ Background 采用**服务化 (Service-based)** 架构，每个 `service` 模块�
 *   **职责**:
     *   注册生命周期事件 (`onInstalled`, `onStartup`)。
     *   初始化各个服务 (`setupContextMenus`, `startAuthTokenMonitor`)。
-    *   **Side Panel 兼容**: 针对 Chrome 处理 Side Panel API 的初始化和状态同步 (将面板状态同步到 `storage.local` 以便其他组件感知)。
+    *   **Side Panel 兼容**: 针对 Chrome 处理 Side Panel API 的初始化，禁用点击 Action 自动打开 Panel，改为手动管理 (`setOptions`)。
+    *   **状态同步**: 维护 Side Panel 的开启状态并同步到 `storage.local` (`giopic-sidepanel-open-tabs`)，以便 Content Script 感知。
     *   **点击行为**: 监听 `action.onClicked`，根据配置决定打开 Popup、新标签页还是新窗口。
 
 ### 4.2 消息服务 (`services/messageService.ts`)

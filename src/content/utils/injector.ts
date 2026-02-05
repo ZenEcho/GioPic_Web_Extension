@@ -1,13 +1,27 @@
+/**
+ * @file injector.ts
+ * @description 注入消息广播工具
+ * 
+ * 职责：
+ * 1. 提供跨窗口/跨 Frame 的图片注入消息广播功能
+ * 2. 处理跨域 iframe 通信问题
+ * 3. 智能推断当前页面的编辑器类型偏好
+ * 
+ * 依赖：
+ * - webextension-polyfill: 读取存储配置
+ */
+
 import browser from 'webextension-polyfill';
 
 /**
  * 广播图片注入消息
  * 支持：
  * 1. 当前窗口注入
- * 2. 如果是顶层窗口，向所有 iframe 广播
+ * 2. 如果是顶层窗口，向所有 iframe 广播（解决 iframe 编辑器跨域问题）
+ * 3. 自动根据 Hostname 或 URL 匹配用户配置的首选编辑器类型
  * 
- * @param url 图片地址
- * @param preferredType 首选编辑器类型（可选）
+ * @param url - 图片地址
+ * @param preferredType - 首选编辑器类型（可选），若不传则自动从配置中查找
  */
 export async function broadcastInjectMessage(url: string, preferredType?: string) {
     if (!url) return;

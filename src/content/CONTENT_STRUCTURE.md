@@ -1,4 +1,4 @@
-# Content Script Architecture
+# Content Script Architecture (v2.3.1)
 
 ## 1. 简介 (Introduction)
 Content Script 是注入到宿主页面中运行的脚本，负责与页面进行交互（如上传图片、编辑器注入）以及渲染覆盖在页面上的 UI（如悬浮球）。GioPic 采用了 **双重注入策略 (Dual Injection Strategy)**，以同时满足 UI 隔离和页面 JS 交互的需求。
@@ -16,7 +16,14 @@ src/content/
 │   ├── LinkPreview.vue       # 链接预览组件 (UI)
 │   ├── TokenDetector.vue     # Token 自动获取弹窗 (UI)
 │   ├── NotificationView.vue  # 全局通知组件
-│   └── detectors/            # [新增] 站点专属 Token 探测器组件 (Chevereto, Lsky 等)
+│   └── detectors/            # [核心] 站点专属 Token 探测器组件
+│       ├── Detector16best.vue        # 16best 图床探测
+│       ├── DetectorChevereto.vue     # Chevereto 图床探测
+│       ├── DetectorCloudFlareImg.vue # CloudFlare Images 探测
+│       ├── DetectorEasyImages.vue    # EasyImages 图床探测
+│       ├── DetectorLsky.vue          # Lsky Pro 探测
+│       ├── DetectorLskyOpen.vue      # Lsky Pro (Open) 探测
+│       └── DetectorTelegraphImg.vue  # Telegraph Image 探测
 ├── composables/              # Vue 组合式函数 (如 useDraggable)
 ├── page/                     # 运行在 Main World 的脚本 (Page Script)
 │   ├── index.ts              # Page Script 入口
@@ -27,7 +34,9 @@ src/content/
 │       ├── meta.ts           # 编辑器元数据定义
 │       └── types.ts          # 类型定义
 ├── services/                 # 业务逻辑服务 (如 driveDetector)
-└── utils/                    # 工具函数 (如 mount.ts)
+└── utils/                    # 工具函数
+    ├── injector.ts           # [核心] 跨 Frame 注入消息广播
+    └── mount.ts              # Vue 挂载辅助函数
 ```
 
 ## 3. 架构概览 (Architecture Overview)
@@ -54,16 +63,16 @@ GioPic 将注入逻辑分为两个独立的层级，分别运行在不同的上�
     *   `inject()`: 执行图片 URL 注入。支持 **Preferred Editor Type** 机制，即优先使用用户绑定或上次成功使用的编辑器类型。
     *   **自动绑定**: 注入成功后，会触发成功事件，Content Script 捕获后记录域名与编辑器的绑定关系。
 
-### 4.3 Token 探测系统 (`components/detectors/` & `services/driveDetector.ts`)
-*   **探测器组件**: 针对特定图床系统（如 Chevereto, Lsky Pro）的 Vue 组件。
+### 4.3 Token 探测系统 (`components/detectors/`)
+*   **探测器组件**: 针对特定图床系统（如 Chevereto, Lsky Pro, EasyImages 等）的 Vue 组件。
 *   **工作流**: 当用户访问支持的图床网站时，对应的探测器组件激活，尝试自动获取认证 Token 并提示用户保存。
+*   **扩展性**: 新增图床支持只需在 `detectors` 目录添加对应组件并在 Registry 注册。
 
-### 4.4 链接预览系统 (`components/LinkPreview.vue`)
-*   **功能**: 在鼠标悬停在图片链接上时展示图片预览。
-*   **特性**:
-    *   **智能识别**: 自动识别页面中的图片链接（a标签或文本）。
-    *   **条件触发**: 支持黑名单机制（禁用特定站点预览）、Session 级别禁用。
-    *   **UI 渲染**: 集成在 `ContentOverlay` 中，利用 Shadow DOM 实现样式隔离。
+### 4.4 消息广播系统 (`utils/injector.ts`)
+*   **功能**: 解决 iframe 内编辑器无法接收注入消息的问题。
+*   **机制**:
+    *   `broadcastInjectMessage`: 负责发送注入指令。
+    *   **智能路由**: 不仅向当前窗口发送 `postMessage`，如果是顶层窗口，还会遍历页面所有 `iframe` 并广播消息，确保嵌套在 iframe 中的编辑器也能接收到图片数据。
 
 ## 5. 关键流程与数据流 (Key Processes & Data Flow)
 
@@ -75,8 +84,9 @@ GioPic 将注入逻辑分为两个独立的层级，分别运行在不同的上�
 
 ### 5.2 图片上传与智能注入流程
 1.  **上传**: 用户通过悬浮球上传图片 -> Background 完成上传 -> 发送 `UPLOAD_EVENT` 消息。
-2.  **中转**: `content/index.ts` 收到消息 -> 读取 `storage.local` 中的 `siteEditorConfig` (获取该网站绑定的编辑器类型) -> 通过 `window.postMessage` 将配置和图片数据转发给 Main World。
-3.  **注入**: `page/index.ts` (Main World) 监听到消息 -> 调用 `Detector.inject(url, preferredType)`。
+2.  **中转**: `content/index.ts` 收到消息 -> 读取 `storage.local` 中的 `siteEditorConfig` (获取该网站绑定的编辑器类型) -> 调用 `broadcastInjectMessage`。
+3.  **广播**: 消息被发送到当前 Window 以及所有子 iframe。
+4.  **注入**: `page/index.ts` (Main World) 监听到消息 -> 调用 `Detector.inject(url, preferredType)`。
     *   如果存在 `preferredType`，直接使用对应适配器注入。
     *   如果不存在，尝试自动探测并注入。
-4.  **反馈**: 注入成功后，Page Script 发送成功消息 -> Content Script 更新 `siteEditorConfig` 绑定关系。
+5.  **反馈**: 注入成功后，Page Script 发送成功消息 -> Content Script 更新 `siteEditorConfig` 绑定关系。

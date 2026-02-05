@@ -1,3 +1,17 @@
+/**
+ * @file useDraggable.ts
+ * @description 元素拖拽逻辑封装
+ * 
+ * 职责：
+ * 1. 提供通用的元素拖拽功能
+ * 2. 处理边界限制，防止元素被拖出可视区域
+ * 3. 实现边缘自动吸附和贴边功能
+ * 4. 响应窗口大小变化，自动调整元素位置
+ * 
+ * 依赖：
+ * - vue: 响应式状态管理
+ */
+
 import { ref, type Ref, onMounted, onUnmounted, watch, nextTick } from 'vue'
 
 export interface Position {
@@ -14,6 +28,15 @@ export interface DraggableOptions {
     }
 }
 
+/**
+ * 创建拖拽逻辑
+ * 
+ * @param targetEl - 目标元素引用（被移动的元素）
+ * @param handleEl - 拖拽手柄元素引用（触发拖拽的区域）
+ * @param initialPosition - 初始位置
+ * @param options - 配置选项（如 padding）
+ * @returns 拖拽状态和位置信息
+ */
 export function useDraggable(
     targetEl: Ref<HTMLElement | null>,
     handleEl: Ref<HTMLElement | null>,

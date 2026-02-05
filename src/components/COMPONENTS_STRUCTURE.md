@@ -1,4 +1,4 @@
-# Components Architecture
+# Components Architecture (v2.3.1)
 
 ## 1. 简介 (Introduction)
 `src/components` 目录包含了 GioPic 主界面（Console/Dashboard）的核心 UI 组件。这些组件主要运行在 Extension 的 Popup、Side Panel 或 Options 页面中，基于 Vue 3 + UnoCSS 构建，负责处理核心的图床管理、文件上传、历史记录和全局设置。
@@ -11,7 +11,7 @@ src/components/
 │   ├── AclConfig.vue     # 访问控制列表 (ACL) 配置
 │   ├── ConfigModal.vue   # 配置弹窗容器
 │   ├── CorsConfig.vue    # CORS 代理设置
-│   ├── DriveSelector.vue # [核心] 图床驱动选择器 (分类展示)
+│   ├── DriveSelector.vue # [核心] 图床驱动选择器 (动态加载)
 │   ├── DynamicConfigForm.vue # [核心] 动态配置表单 (支持魔术变量预览)
 │   └── KvInput.vue       # 键值对输入组件 (Header/Body配置)
 ├── history/              # 上传历史记录模块
@@ -52,7 +52,9 @@ src/components/
 ## 4. 核心模块详解 (Core Modules)
 
 ### 4.1 动态配置系统 (`config/`)
-*   **DriveSelector.vue**: 提供分类（自托管、云存储、公共图床）的驱动选择界面，优化用户体验。
+*   **DriveSelector.vue**: 提供分类（自托管、云存储、公共图床、自定义、插件）的驱动选择界面。
+    *   **动态加载**: 基于 `useDriveRegistry` 动态加载可用驱动。
+    *   **插件支持**: 支持展示通过插件系统注册的图床驱动。
 *   **DynamicConfigForm.vue**:
     *   根据 Drive Schema 动态生成表单项。
     *   **魔术变量预览**: 实时演示 `{uuid}`, `{year}` 等变量的替换结果。
@@ -65,7 +67,7 @@ src/components/
 
 ### 4.3 全局设置 (`settings/`)
 *   **SettingsModal**: 统一的设置入口，集成通用设置、外观设置等。
-*   **FloatingBallSettings**: 管理悬浮球的显示策略（如禁用站点、禁用预览）及黑名单管理。
+*   **PluginManagerModal**: 插件管理界面，允许用户管理扩展图床插件。
 *   **SiteEditorSettings**:
     *   管理“域名-编辑器”的绑定关系。
     *   支持手动添加/删除绑定规则。
@@ -75,7 +77,7 @@ src/components/
 
 ### 5.1 配置新增/编辑流程
 1.  用户点击侧边栏 "Add Config" -> 打开 `ConfigModal`。
-2.  `DriveSelector` 展示可用驱动 -> 用户选择驱动类型。
+2.  `DriveSelector` 展示可用驱动 (包括内置和插件) -> 用户选择驱动类型。
 3.  `DynamicConfigForm` 渲染对应 Schema 的表单 -> 用户输入 -> 实时预览变量。
 4.  保存 -> 数据写入 `storage.local` -> 触发 `REFRESH_CONFIG` 事件。
 

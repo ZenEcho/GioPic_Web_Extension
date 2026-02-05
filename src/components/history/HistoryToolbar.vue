@@ -1,3 +1,29 @@
+<!--
+ * Component Name: HistoryToolbar
+ * Author: GioPic Team
+ * Description: 历史记录筛选和搜索工具栏
+ * 
+ * Functional Domain:
+ * History (历史记录) - 搜索与过滤
+ * 
+ * Key Features:
+ * - 搜索功能：基于文件名的实时搜索
+ * - 配置过滤：按上传配置筛选记录
+ * - 排序控制：支持按时间正序/倒序排列
+ * - 响应式布局：自适应不同屏幕宽度的控件排列
+ * 
+ * Props:
+ * - searchQuery (string): 当前搜索关键词
+ * - filterConfig (string | null): 当前选中的过滤配置 ID
+ * - sortBy (string): 当前排序方式 ('date-desc' | 'date-asc')
+ * - configOptions (SelectOption[]): 可用的配置过滤选项
+ * - sortOptions (SelectOption[]): 可用的排序选项
+ * 
+ * Events:
+ * - update:searchQuery: 更新搜索关键词
+ * - update:filterConfig: 更新过滤配置
+ * - update:sortBy: 更新排序方式
+ -->
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
 import type { SelectOption } from 'naive-ui'

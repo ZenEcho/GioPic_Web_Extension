@@ -1,4 +1,19 @@
-// Helper: Download image from URL as File
+/**
+ * @file imageService.ts
+ * @description 图片处理服务
+ * 
+ * 职责：
+ * 1. 提供图片下载功能，支持从 URL 获取 Blob
+ * 2. 智能解析文件名和 MIME 类型
+ * 3. 处理 URL 编码和默认文件名生成
+ */
+
+/**
+ * 下载图片并封装为 File 对象
+ * 
+ * @param url - 图片的 URL 地址
+ * @returns Promise<File> - 封装好的 File 对象
+ */
 export async function downloadImage(url: string): Promise<File> {
     const res = await fetch(url)
     const blob = await res.blob()

@@ -1,4 +1,17 @@
 
+/**
+ * @file driveDetector.ts
+ * @description 图床网站自动识别服务
+ * 
+ * 职责：
+ * 1. 分析当前页面特征，自动识别是否为支持的图床网站
+ * 2. 识别图床版本（如 Lsky v1/v2）
+ * 3. 辅助配置页面自动填充图床设置
+ * 
+ * 依赖：
+ * - DOM 查询 API
+ */
+
 export type DetectorType = 'lsky' | 'lskyOpen' | 'easyimages' | 'chevereto' | '16best' | 'Zpic' | 'cloudflareImg' | 'telegraphImg'
 
 export interface DetectionResult {
@@ -8,6 +21,14 @@ export interface DetectionResult {
 
 const getCurrentDomain = () => window.location.hostname
 
+/**
+ * 等待 DOM 元素出现
+ * 用于处理单页应用 (SPA) 元素动态加载的情况
+ * 
+ * @param selector - CSS 选择器
+ * @param timeout - 超时时间 (ms)
+ * @returns 找到的元素或 null
+ */
 async function waitForSelector(selector: string, timeout = 2000): Promise<Element | null> {
   const found = document.querySelector(selector)
   if (found) return found
@@ -30,7 +51,15 @@ async function waitForSelector(selector: string, timeout = 2000): Promise<Elemen
 
 const isIgnored = () => localStorage.getItem(getCurrentDomain()) === 'true'
 
+/**
+ * 图床检测器集合
+ * 每个检测器负责识别一种特定的图床系统
+ */
 export const detectors = {
+  /**
+   * 兰空图床 (Lsky Pro) 检测
+   * 识别特征：特定路径 /user/tokens 或页面特定 ID 元素
+   */
   lsky: async (): Promise<DetectionResult | null> => {
     const isTokensPage = window.location.pathname === '/user/tokens'
     if (!isTokensPage) return null
@@ -49,6 +78,10 @@ export const detectors = {
     return null
   },
 
+  /**
+   * 兰空图床开源版 (Lsky Open) 检测
+   * 识别特征：/dashboard 路径且包含特定仪表盘元素
+   */
   lskyOpen: (): DetectionResult | null => {
     const isDashboard = window.location.pathname === '/dashboard'
     const hasCapacity = document.querySelector('#capacity-progress') !== null
@@ -73,6 +106,10 @@ export const detectors = {
     return null
   },
 
+  /**
+   * EasyImages 检测
+   * 识别特征：/admin/admin.inc.php 路径及特定版权链接
+   */
   easyimages: (): DetectionResult | null => {
     const isAdmin = window.location.pathname === '/admin/admin.inc.php'
     const hasGrid = document.querySelector('#myDataGrid') !== null
@@ -87,6 +124,10 @@ export const detectors = {
     return null
   },
 
+  /**
+   * Chevereto 检测
+   * 识别特征：Meta generator 标签
+   */
   chevereto: (): DetectionResult | null => {
     const hasGenerator = document.querySelector('meta[name="generator"][content^="Chevereto"]') !== null
     if (hasGenerator) {
@@ -97,6 +138,10 @@ export const detectors = {
     return null
   },
 
+  /**
+   * 16best 图床检测
+   * 识别特征：域名匹配
+   */
   best16: (): DetectionResult | null => {
     const isDashboard = getCurrentDomain() === '111666.best'
     if (isDashboard) {
@@ -115,6 +160,10 @@ export const detectors = {
   //   }
   //   return null
   // },
+  /**
+   * CloudFlare Images (开源项目) 检测
+   * 识别特征：GitHub 链接
+   */
   cloudflareImg: (): DetectionResult | null => {
     //  查找结构
     //      <div class="header">
@@ -132,6 +181,10 @@ export const detectors = {
     }
     return null
   },
+  /**
+   * Telegraph Image 检测
+   * 识别特征：Footer 中的 GitHub 链接
+   */
   telegraphImg: (): DetectionResult | null => {
     // <div class="footer" >
     //  基于 <a href="https://github.com/cf-pages/Telegraph-Image" target="_blank">Telegraph</a> 的图片上传工具
@@ -147,6 +200,14 @@ export const detectors = {
   },
 }
 
+/**
+ * 执行站点检测
+ * 按优先级顺序尝试匹配当前页面是否为已知图床
+ * 
+ * 优先级：Lsky -> LskyOpen -> EasyImages -> Chevereto -> 16best -> CloudFlare -> Telegraph
+ * 
+ * @returns 检测结果或 null
+ */
 export async function detectSite(): Promise<DetectionResult | null> {
   // Priority: Lsky -> LskyOpen -> EasyImages -> Chevereto -> 16best
   const lsky = await detectors.lsky()

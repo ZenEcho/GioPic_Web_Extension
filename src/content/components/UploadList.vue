@@ -1,3 +1,15 @@
+<!--
+ * @file UploadList.vue
+ * @description 页面右下角的上传任务列表组件
+ * 
+ * 职责：
+ * 1. 显示当前上传任务队列及其状态（进度、成功、失败）
+ * 2. 提供对上传记录的操作（复制链接、注入图片、删除记录）
+ * 3. 支持拖拽移动列表位置
+ * 4. 支持深色/浅色模式切换
+ * 5. 监听 Background 的上传事件并实时更新
+-->
+
 <template>
     <Transition name="fade">
         <div v-if="isVisible" class="fixed inset-0 pointer-events-none z-[2147483646]">
@@ -241,6 +253,12 @@ interface UploadItem {
 const uploads = ref<UploadItem[]>([])
 const copyFormat = ref('url')
 
+/**
+ * 合并上传队列
+ * 确保状态更新平滑，保留动画效果
+ * 
+ * @param newQueue - 新的上传队列
+ */
 const mergeUploads = (newQueue: UploadItem[]) => {
     if (!newQueue) return
     
@@ -287,6 +305,12 @@ watch(isDragging, (val) => {
     }
 })
 
+/**
+ * 处理后台消息
+ * 响应 UPLOAD_EVENT 以更新上传状态
+ * 
+ * @param message - 消息对象
+ */
 const handleMessage = (message: any) => {
     if (message.type === 'UPLOAD_EVENT') {
         const { event, id, payload } = message.data

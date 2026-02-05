@@ -1,3 +1,21 @@
+/**
+ * @file contextMenu.ts
+ * @description 右键菜单服务
+ * 
+ * 职责：
+ * 1. 创建和管理“上传图片”右键菜单
+ * 2. 处理右键菜单点击事件，执行图片下载和上传流程
+ * 3. 广播上传进度和结果给 Content Script
+ * 4. 管理后台上传队列状态
+ * 
+ * 依赖：
+ * - webextension-polyfill: 浏览器扩展 API
+ * - @/utils/storage: IndexedDB 工具
+ * - @/services/uploader: 上传核心服务
+ * - ./imageService: 图片下载服务
+ * - ./notificationService: 通知服务
+ */
+
 import browser from 'webextension-polyfill'
 import { db } from '@/utils/storage'
 import { uploadImage } from '@/services/uploader'
@@ -6,6 +24,10 @@ import { downloadImage } from './imageService'
 import { notify } from './notificationService'
 import i18n from '@/i18n'
 
+/**
+ * 初始化右键菜单
+ * 仅当菜单不存在时创建，避免重复创建错误
+ */
 export function setupContextMenus() {
     browser.contextMenus.removeAll().then(() => {
         browser.contextMenus.create({
@@ -20,12 +42,24 @@ export function setupContextMenus() {
     }
 }
 
+/**
+ * 更新右键菜单的语言
+ * 当用户切换语言设置时调用
+ */
 export function updateContextMenuLocale() {
     browser.contextMenus.update('upload-image', {
         title: i18n.global.t('background.contextMenuTitle')
     })
 }
 
+/**
+ * 发送上传事件广播
+ * 
+ * @param originTabId - 触发上传的原始标签页 ID
+ * @param event - 事件类型 ('start' | 'progress' | 'success' | 'fail')
+ * @param id - 上传任务 ID
+ * @param payload - 事件负载数据
+ */
 async function sendUploadEvent(
     originTabId: number | undefined,
     event: 'start' | 'progress' | 'success' | 'fail',
@@ -53,6 +87,13 @@ async function sendUploadEvent(
     }
 }
 
+/**
+ * 更新后台上传队列状态
+ * 同步到 browser.storage.local 以便 popup/content 监听变化
+ * 
+ * @param action - 操作类型 ('add' | 'update')
+ * @param item - 队列项数据
+ */
 async function updateUploadQueue(action: 'add' | 'update', item: any) {
     try {
         const key = 'giopic-upload-queue'
@@ -79,6 +120,13 @@ async function updateUploadQueue(action: 'add' | 'update', item: any) {
     }
 }
 
+/**
+ * 处理右键菜单点击事件
+ * 执行完整的下载 -> 上传 -> 通知流程
+ * 
+ * @param info - 点击信息
+ * @param tab - 当前标签页信息
+ */
 async function handleContextMenuClick(info: any, tab: any) {
     if (info.menuItemId === 'upload-image' && info.srcUrl) {
         // await notify('GioPic', i18n.global.t('background.downloading'), 'info')
@@ -192,6 +240,11 @@ async function handleContextMenuClick(info: any, tab: any) {
     }
 }
 
+/**
+ * 保存上传记录到历史记录数据库
+ * 
+ * @param record - 上传记录
+ */
 async function saveToHistory(record: UploadRecord) {
     const history = (await db.get<UploadRecord[]>('giopic-history')) || []
     history.unshift(record)

@@ -1,3 +1,21 @@
+/**
+ * @file uploader.ts
+ * @description 核心图片上传服务
+ * 
+ * 职责：
+ * 1. 提供统一的图片上传接口 (uploadImage)，屏蔽底层图床差异
+ * 2. 实现各个图床 (Web API 类、OSS 类、S3 类) 的具体上传逻辑
+ * 3. 支持自定义图床配置 (CustomConfig)
+ * 4. 支持插件化图床 (PluginDriveConfig)
+ * 5. 处理上传进度回调
+ * 
+ * 依赖：
+ * - axios: 处理 HTTP 请求
+ * - ali-oss: 阿里云 OSS 上传
+ * - @aws-sdk/client-s3: S3 协议上传 (AWS, Tencent COS, MinIO 等)
+ * - ./pluginRunner: 插件运行器
+ */
+
 import type { DriveConfig, WebUploaderConfig, AliyunConfig, S3Config, TencentConfig, GithubConfig, CustomConfig, TestConfig, PluginDriveConfig } from '@/types'
 import OSS from 'ali-oss'
 import { S3Client } from '@aws-sdk/client-s3'
@@ -25,6 +43,15 @@ interface LskyAlbum {
   name: string
 }
 
+/**
+ * 统一上传入口函数
+ * 根据配置类型分发到具体的上传实现
+ * 
+ * @param file - 要上传的文件对象
+ * @param config - 图床配置
+ * @param onProgress - 进度回调函数
+ * @returns 上传结果 (包含 URL)
+ */
 export async function uploadImage(
   file: File,
   config: DriveConfig,
@@ -64,7 +91,7 @@ export async function uploadImage(
     case 'test':
       return uploadTest(file, config as TestConfig, onProgress)
     default:
-        // Try plugin
+        // 尝试作为插件运行
         try {
             const url = await runPlugin(config as PluginDriveConfig, file, onProgress);
             return { url };
@@ -77,6 +104,12 @@ export async function uploadImage(
   }
 }
 
+/**
+ * 获取兰空图床 (Lsky Pro) 的存储策略列表
+ * @param apiUrl - API 地址
+ * @param token - 用户 Token
+ * @param version - Lsky 版本 (v1/v2)
+ */
 export async function fetchLskyStrategies(apiUrl: string, token: string, version: 'v1' | 'v2' = 'v1'): Promise<LskyStorage[]> {
   let url = apiUrl.replace(/\/$/, '')
 
@@ -138,6 +171,9 @@ export async function fetchLskyStrategies(apiUrl: string, token: string, version
   }
 }
 
+/**
+ * 获取兰空图床 (Lsky Pro) 的相册列表
+ */
 export async function fetchLskyAlbums(apiUrl: string, token: string, version: 'v1' | 'v2' = 'v1'): Promise<LskyAlbum[]> {
   let url = apiUrl.replace(/\/$/, '')
 
@@ -199,7 +235,10 @@ export async function fetchLskyAlbums(apiUrl: string, token: string, version: 'v
   }
 }
 
-// Common Fetch Upload
+/**
+ * 通用 HTTP 上传辅助函数
+ * 封装了 axios 请求和进度处理
+ */
 async function fetchUpload(
   url: string,
   formData: FormData,
@@ -236,8 +275,12 @@ async function fetchUpload(
   }
 }
 
+/**
+ * 自定义图床上传实现
+ * 支持复杂的变量替换、自定义 Headers/Body、Response 解析
+ */
 async function uploadCustom(file: File, config: CustomConfig, onProgress: ProgressCallback): Promise<UploadResult> {
-  // 1. Parse and Replace Variables in Config
+  // 1. 解析配置并进行变量替换
   const rawHeaders = parseJsonConfig(config.headers)
   const rawQueryParams = parseJsonConfig(config.queryParams)
   const rawBodyParams = parseJsonConfig(config.bodyParams)
@@ -246,7 +289,7 @@ async function uploadCustom(file: File, config: CustomConfig, onProgress: Progre
   const queryParams: Record<string, string> = {}
   const bodyParams: Record<string, string> = {}
 
-  // Helper to replace variables in an object
+  // 辅助函数：替换对象值中的变量
   const replaceInObj = (source: Record<string, any>, target: Record<string, string>) => {
     Object.keys(source).forEach(key => {
       target[replaceMagicVariables(key, file)] = replaceMagicVariables(String(source[key]), file)
@@ -262,18 +305,18 @@ async function uploadCustom(file: File, config: CustomConfig, onProgress: Progre
   const urlPrefix = config.urlPrefix ? replaceMagicVariables(config.urlPrefix, file) : undefined
   const urlSuffix = config.urlSuffix ? replaceMagicVariables(config.urlSuffix, file) : undefined
 
-  // 2. Prepare Data
+  // 2. 准备请求数据
   let data: any
 
   if (config.uploadFormat === 'binary') {
-    // Binary Mode: Direct File Body
+    // Binary 模式: 直接发送文件内容
     data = file
     if (!headers['Content-Type'] && !headers['content-type']) {
-      // Default to file type, but let user override
+      // 默认为文件类型，但也允许用户覆盖
       headers['Content-Type'] = file.type || 'application/octet-stream'
     }
   } else if (config.uploadFormat === 'json') {
-    // JSON Mode (Base64)
+    // JSON 模式: 文件转 Base64 后作为字段发送
     const reader = new FileReader()
     const contentBase64 = await new Promise<string>((resolve, reject) => {
       reader.onload = (e) => {
@@ -294,7 +337,7 @@ async function uploadCustom(file: File, config: CustomConfig, onProgress: Progre
       headers['Content-Type'] = 'application/json'
     }
   } else {
-    // FormData Mode (Default)
+    // FormData 模式 (默认)
     data = new FormData()
     data.append(fileParamName, file)
     Object.keys(bodyParams).forEach(key => {
@@ -302,7 +345,7 @@ async function uploadCustom(file: File, config: CustomConfig, onProgress: Progre
     })
   }
 
-  // 3. Send Request
+  // 3. 发送请求
   try {
     const response = await axios({
       method: config.method || 'POST',
@@ -316,11 +359,11 @@ async function uploadCustom(file: File, config: CustomConfig, onProgress: Progre
           onProgress(percent)
         }
       },
-      // If responseType is regex, we might need text response
+      // 如果 responseType 是 regex，我们需要 text 响应
       responseType: config.responseType === 'regex' ? 'text' : 'json'
     })
 
-    // 4. Parse Response
+    // 4. 解析响应
     let url: string | undefined
 
     let responseBody = response.data
@@ -336,16 +379,15 @@ async function uploadCustom(file: File, config: CustomConfig, onProgress: Progre
     }
 
     if (config.responseType === 'regex') {
-      // Regex Mode
+      // Regex 模式
       const contentStr = typeof responseBody === 'string' ? responseBody : JSON.stringify(responseBody)
 
-      // Extract URL
+      // 提取 URL
       const urlRegex = new RegExp(config.responseUrlPath)
       const urlMatch = contentStr.match(urlRegex)
-      url = urlMatch ? (urlMatch[1] || urlMatch[0]) : undefined // Group 1 or Full Match
-
+      url = urlMatch ? (urlMatch[1] || urlMatch[0]) : undefined // 优先取 Group 1，否则取全匹配
     } else {
-      // JSON Mode (Default)
+      // JSON 模式 (默认)
       url = getValueByPath(responseBody, config.responseUrlPath)
     }
 
@@ -353,32 +395,26 @@ async function uploadCustom(file: File, config: CustomConfig, onProgress: Progre
       throw new Error(`Cannot find URL at path/regex "${config.responseUrlPath}" in response`)
     }
 
-    // 5. Post-process URL (Prefix/Suffix)
+    // 5. URL 后处理 (前缀/后缀/拼接)
     const processUrl = (rawUrl: string | undefined) => {
       if (!rawUrl) return undefined
       try {
         const baseUrl = urlPrefix || apiUrl
         let finalUrl = String(rawUrl)
 
-        // Try to resolve relative URL
-        // If baseUrl is not a valid URL (e.g. just a path prefix), this might fail, so we fallback
+        // 尝试解析相对 URL
         try {
           const urlObj = new URL(finalUrl, baseUrl.startsWith('http') ? baseUrl : undefined)
           finalUrl = urlObj.href
         } catch (e) {
-          // Ignore URL parse error, use simple concatenation
+          // 忽略 URL 解析错误，使用简单拼接
         }
 
-        // If manual prefix logic needed (when baseUrl is just a string prefix, not full URL)
+        // 处理手动前缀拼接
         if (urlPrefix) {
           const prefix = urlPrefix.endsWith('/') ? urlPrefix : urlPrefix + '/'
-          // If original URL is absolute (http...), we usually don't touch it unless forced?
-          // But user configured a prefix, they likely want to use it.
-          // Scenario A: Response is relative path "/img.png" -> Prepend prefix -> "https://cdn.com/img.png"
-          // Scenario B: Response is absolute URL "http://api.com/img.png" -> Prepend prefix? -> "https://cdn.com/http://api.com/img.png" (WRONG)
-          //                                                               -> Replace domain? -> "https://cdn.com/img.png" (Maybe)
-
-          // Current logic: Only prepend if it doesn't look like an absolute URL OR if it doesn't already start with the prefix.
+          
+          // 逻辑: 只有当 URL 不包含前缀时才拼接
           if (!finalUrl.startsWith(urlPrefix)) {
             const path = finalUrl.startsWith('/') ? finalUrl.slice(1) : finalUrl
             finalUrl = prefix + path
@@ -407,6 +443,18 @@ async function uploadCustom(file: File, config: CustomConfig, onProgress: Progre
   }
 }
 
+/**
+ * 核心上传函数实现
+ * 包含各个图床的具体 API 调用逻辑
+ */
+
+/**
+ * 兰空图床上传实现
+ * 
+ * @param file - 文件对象
+ * @param config - 配置对象
+ * @param onProgress - 进度回调
+ */
 async function uploadLsky(file: File, config: WebUploaderConfig, onProgress: ProgressCallback): Promise<UploadResult> {
   const version = config.version || 'v1'
   const formData = new FormData()
@@ -470,6 +518,9 @@ async function uploadLsky(file: File, config: WebUploaderConfig, onProgress: Pro
   }
 }
 
+/**
+ * EasyImages (简单图床) 上传实现
+ */
 async function uploadEasyImages(file: File, config: WebUploaderConfig, onProgress: ProgressCallback): Promise<UploadResult> {
   const formData = new FormData()
   formData.append('image', file)
@@ -490,6 +541,9 @@ async function uploadEasyImages(file: File, config: WebUploaderConfig, onProgres
   }
 }
 
+/**
+ * Chevereto 上传实现
+ */
 async function uploadChevereto(file: File, config: WebUploaderConfig, onProgress: ProgressCallback): Promise<UploadResult> {
   const formData = new FormData()
   formData.append('source', file)
@@ -537,6 +591,9 @@ async function uploadChevereto(file: File, config: WebUploaderConfig, onProgress
   }
 }
 
+/**
+ * ImgURL 上传实现
+ */
 async function uploadImgURL(file: File, config: WebUploaderConfig, onProgress: ProgressCallback): Promise<UploadResult> {
   const formData = new FormData()
   formData.append('file', file)
@@ -558,6 +615,9 @@ async function uploadImgURL(file: File, config: WebUploaderConfig, onProgress: P
   }
 }
 
+/**
+ * 模拟上传 (测试用)
+ */
 async function uploadTest(file: File, config: TestConfig, onProgress: ProgressCallback): Promise<UploadResult> {
   // Mock upload for testing
   const steps = 10
@@ -571,7 +631,10 @@ async function uploadTest(file: File, config: TestConfig, onProgress: ProgressCa
     thumbUrl: 'https://example.com/test/thumb/' + file.name
   }
 }
-// uploadZpic
+
+/**
+ * Zpic 上传实现
+ */
 async function uploadZpic(file: File, config: WebUploaderConfig, onProgress: ProgressCallback): Promise<UploadResult> {
   const formData = new FormData()
   const headers = {
@@ -601,6 +664,9 @@ async function uploadZpic(file: File, config: WebUploaderConfig, onProgress: Pro
   }
 }
 
+/**
+ * SM.MS 上传实现
+ */
 async function uploadSMMS(file: File, config: WebUploaderConfig, onProgress: ProgressCallback): Promise<UploadResult> {
   const formData = new FormData()
   formData.append('smfile', file)
@@ -632,6 +698,9 @@ async function uploadSMMS(file: File, config: WebUploaderConfig, onProgress: Pro
   }
 }
 
+/**
+ * HelloHao 上传实现
+ */
 async function uploadHellohao(file: File, config: WebUploaderConfig, onProgress: ProgressCallback): Promise<UploadResult> {
   const formData = new FormData()
   formData.append('file', file)
@@ -656,6 +725,9 @@ async function uploadHellohao(file: File, config: WebUploaderConfig, onProgress:
   }
 }
 
+/**
+ * Imgur 上传实现
+ */
 async function uploadImgur(file: File, config: WebUploaderConfig, onProgress: ProgressCallback): Promise<UploadResult> {
   const formData = new FormData()
   formData.append('image', file)
@@ -678,7 +750,10 @@ async function uploadImgur(file: File, config: WebUploaderConfig, onProgress: Pr
     thumbUrl: res.data.link
   }
 }
-// uploadImgdd
+
+/**
+ * ImgDD 上传实现
+ */
 async function uploadImgdd(file: File, config: WebUploaderConfig, onProgress: ProgressCallback): Promise<UploadResult> {
   const formData = new FormData()
   // 上传来源
@@ -697,7 +772,10 @@ async function uploadImgdd(file: File, config: WebUploaderConfig, onProgress: Pr
     thumbUrl: res.url
   }
 }
-// oneimg
+
+/**
+ * OneImg 上传实现
+ */
 async function uploadOneImg(file: File, config: WebUploaderConfig, onProgress: ProgressCallback): Promise<UploadResult> {
   const formData = new FormData()
   formData.append('images[]', file)
@@ -738,7 +816,9 @@ async function uploadOneImg(file: File, config: WebUploaderConfig, onProgress: P
   }
 }
 
-
+/**
+ * 阿里云 OSS 上传实现
+ */
 async function uploadAliyun(file: File, config: AliyunConfig, onProgress: ProgressCallback): Promise<UploadResult> {
 
   const client = new OSS({
@@ -781,6 +861,9 @@ async function uploadAliyun(file: File, config: AliyunConfig, onProgress: Progre
   return { url }
 }
 
+/**
+ * GitHub 上传实现
+ */
 async function uploadGithub(file: File, config: any, onProgress: ProgressCallback): Promise<UploadResult> {
   const reader = new FileReader()
   const contentBase64 = await new Promise<string>((resolve, reject) => {
@@ -893,6 +976,9 @@ async function uploadGithub(file: File, config: any, onProgress: ProgressCallbac
   }
 }
 
+/**
+ * 腾讯云 COS 上传实现
+ */
 async function uploadTencent(file: File, config: TencentConfig, onProgress: ProgressCallback): Promise<UploadResult> {
   // Use AWS S3 SDK for Tencent COS (S3 Compatible) to support Service Worker (Manifest V3)
   const endpoint = `https://cos.${config.region}.myqcloud.com`
@@ -940,6 +1026,9 @@ async function uploadTencent(file: File, config: TencentConfig, onProgress: Prog
   return { url }
 }
 
+/**
+ * AWS S3 (及兼容协议) 上传实现
+ */
 async function uploadS3(file: File, config: S3Config, onProgress: ProgressCallback): Promise<UploadResult> {
   // Determine if using AWS S3 or compatible service
   const isAws = !config.endpoint || config.endpoint.includes('amazonaws.com')

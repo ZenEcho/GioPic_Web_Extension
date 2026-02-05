@@ -1,3 +1,19 @@
+/**
+ * @file index.ts
+ * @description Content Script 入口文件
+ * 
+ * 职责：
+ * 1. 初始化 Content Script 环境，注入页面级脚本和样式
+ * 2. 监听 Background 消息，处理图片上传成功通知、手动注入请求等
+ * 3. 监听页面消息，处理编辑器状态更新、插件安装/管理请求
+ * 4. 挂载 Content Overlay 组件
+ * 
+ * 依赖：
+ * - webextension-polyfill: 浏览器扩展 API
+ * - ./utils/mount: Vue 组件挂载工具
+ * - ./components/ContentOverlay.vue: 注入页面的主要 UI 组件
+ */
+
 import { mountComponent } from './utils/mount'
 import ContentOverlay from './components/ContentOverlay.vue'
 import browser from 'webextension-polyfill'
@@ -6,6 +22,12 @@ import { broadcastInjectMessage } from './utils/injector'
 import 'virtual:uno.css'
 import './style.css'
 
+/**
+ * 注入页面级资源包（JS/CSS）
+ * 将扩展内的 page.js 和 page.css 注入到当前页面 DOM 中，
+ * 以便在页面上下文中执行代码（如访问页面全局变量）。
+ * 同时处理 hover preview 的全局开关和站点黑名单逻辑。
+ */
 function injectPageBundle() {
     const doc = document
     const root = doc.documentElement
@@ -98,6 +120,12 @@ function injectPageBundle() {
     headOrRoot.appendChild(script)
 }
 
+/**
+ * 向页面注入图片
+ * 将图片 URL 广播给页面脚本，由页面脚本根据当前编辑器类型进行插入。
+ * 
+ * @param url - 图片 URL
+ */
 async function injectImageToPage(url: string) {
     // 使用统一的注入广播工具
     await broadcastInjectMessage(url);

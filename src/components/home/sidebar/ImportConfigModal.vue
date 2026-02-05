@@ -1,3 +1,25 @@
+<!--
+ * Component Name: ImportConfigModal
+ * Author: GioPic Team
+ * Description: 配置导入模态框组件
+ * 
+ * Functional Domain:
+ * Settings (设置) - 配置导入
+ * 
+ * Key Features:
+ * - 文本导入：直接粘贴 JSON 配置文本
+ * - 文件导入：上传 JSON/TXT 文件自动读取内容
+ * - 格式验证：(在父组件或 confirm 事件中处理)
+ * 
+ * Props:
+ * - show (boolean): 是否显示模态框
+ * - value (string): 当前导入的配置文本内容
+ * 
+ * Events:
+ * - update:show: 更新显示状态
+ * - update:value: 更新文本内容
+ * - confirm: 确认导入
+ -->
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
 import type { UploadFileInfo } from 'naive-ui'

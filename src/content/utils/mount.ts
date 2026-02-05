@@ -1,8 +1,34 @@
+/**
+ * @file mount.ts
+ * @description Vue 组件挂载工具
+ * 
+ * 职责：
+ * 1. 提供将 Vue 组件挂载到页面的通用方法
+ * 2. 支持 Shadow DOM 隔离，防止页面样式干扰
+ * 3. 自动同步 Naive UI 和 UnoCSS 的样式到 Shadow Root
+ * 4. 支持集成 Naive UI 的 Provider (Notification, Message, Dialog)
+ * 
+ * 依赖：
+ * - vue: Vue 核心
+ * - naive-ui: UI 组件库
+ * - webextension-polyfill: 获取扩展资源 URL
+ */
+
 import { createApp, h, type Component } from 'vue'
 import { NNotificationProvider, NMessageProvider, NDialogProvider } from 'naive-ui'
 import browser from 'webextension-polyfill'
 import i18n from '@/i18n'
 
+/**
+ * 挂载 Vue 组件到页面
+ * 
+ * @param component - Vue 组件对象
+ * @param wrapperId - 容器元素 ID (用于防止重复挂载)
+ * @param useShadowDOM - 是否使用 Shadow DOM (默认 true)
+ * @param props - 传递给组件的 Props
+ * @param useProvider - 是否包裹 Naive UI Provider (默认 false)
+ * @returns Vue 应用实例
+ */
 export function mountComponent(
     component: Component, 
     wrapperId: string, 
@@ -72,6 +98,12 @@ export function mountComponent(
     return app
 }
 
+/**
+ * 同步页面样式到 Shadow Root
+ * 主要是 Naive UI 的动态样式 (cssr-id)
+ * 
+ * @param shadowRoot - 目标 Shadow Root
+ */
 function syncStyles(shadowRoot: ShadowRoot) {
     document.querySelectorAll('style[cssr-id], style[data-vite-dev-id]').forEach(style => {
         // Naive UI uses cssr-id
@@ -82,6 +114,11 @@ function syncStyles(shadowRoot: ShadowRoot) {
     })
 }
 
+/**
+ * 监听 Head 变化并自动同步样式
+ * 
+ * @param shadowRoot - 目标 Shadow Root
+ */
 function setupStyleObserver(shadowRoot: ShadowRoot) {
     const observer = new MutationObserver((mutations) => {
         let shouldSync = false

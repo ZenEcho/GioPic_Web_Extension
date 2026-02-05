@@ -1,3 +1,23 @@
+<!--
+ * Component Name: UploadZone
+ * Author: GioPic Team
+ * Description: 文件上传区域组件
+ * 
+ * Functional Domain:
+ * Home (主页) - 上传区域
+ * 
+ * Key Features:
+ * - 拖拽上传：支持拖拽文件到区域内上传
+ * - 点击上传：点击区域触发文件选择
+ * - 视觉反馈：拖拽进入时的动画效果
+ * - 剪贴板上传：(通常由父组件处理粘贴事件，但此组件处理文件选择)
+ * 
+ * Props:
+ * - None
+ * 
+ * Events:
+ * - filesDropped: 文件选择或拖拽完成时触发 (参数: FileList)
+ -->
 <script setup lang="ts">
 import { ref } from 'vue'
 

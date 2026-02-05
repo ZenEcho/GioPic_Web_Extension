@@ -1,3 +1,12 @@
+<!--
+ * @file Detector16best.vue
+ * @description 16best 图床自动配置组件
+ * 
+ * 职责：
+ * 1. 引导用户添加 16best 图床配置
+ * 2. 从本地存储读取 Token 并自动填充配置
+-->
+
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
 import { NButton, NSpace, useMessage } from 'naive-ui'
@@ -17,6 +26,11 @@ const emit = defineEmits<{
 const { t } = useI18n()
 const message = useMessage()
 
+/**
+ * 添加配置
+ * 从本地存储中读取 'image-hosting' 相关的 token，
+ * 如果存在则创建自定义图床配置。
+ */
 const handleAdd = async () => {
   try {
     const data = await db.getFromExternal('image-hosting', 'config')

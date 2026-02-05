@@ -1,3 +1,19 @@
+/**
+ * @file messageService.ts
+ * @description 消息路由与处理服务
+ * 
+ * 职责：
+ * 1. 处理来自 Popup, Content Script 的所有 Runtime 消息
+ * 2. 分发请求到具体的业务处理函数（插件管理、Side Panel 控制、配置管理等）
+ * 3. 实现 Token 自动抓取（WebRequest 监听）
+ * 4. 维护 Side Panel 的状态同步
+ * 
+ * 依赖：
+ * - webextension-polyfill
+ * - @/utils/storage
+ * - @/utils/pluginCore
+ */
+
 import browser from 'webextension-polyfill'
 import type { Runtime } from 'webextension-polyfill'
 import { db } from '@/utils/storage'
@@ -17,6 +33,12 @@ const authTokenCache: Record<string, string> = {}
 const sidePanelOpenByTab: Record<number, boolean> = {}
 const SIDE_PANEL_STATE_KEY = 'giopic-sidepanel-open-tabs'
 
+/**
+ * 同步 Side Panel 状态到本地存储
+ * 
+ * @param tabId - 标签页 ID
+ * @param open - 开启状态
+ */
 async function setSidePanelOpenState(tabId: number, open: boolean) {
     try {
         const prev = await browser.storage.local.get(SIDE_PANEL_STATE_KEY)
@@ -27,6 +49,7 @@ async function setSidePanelOpenState(tabId: number, open: boolean) {
     } catch { }
 }
 
+// 初始化加载 Side Panel 状态
 browser.storage.local.get(SIDE_PANEL_STATE_KEY).then((res) => {
     const raw = res[SIDE_PANEL_STATE_KEY] as Record<string, boolean> | undefined
     if (raw && typeof raw === 'object') {
@@ -37,6 +60,7 @@ browser.storage.local.get(SIDE_PANEL_STATE_KEY).then((res) => {
     }
 }).catch(() => { })
 
+// 监听 Side Panel 状态变化（多窗口/进程同步）
 browser.storage.onChanged.addListener((changes, area) => {
     if (area !== 'local') return
     const change = changes[SIDE_PANEL_STATE_KEY]
@@ -65,6 +89,10 @@ const CAPTURE_RULES: TokenCaptureRule[] = [
     // { match: '/api/v1/auth', header: 'x-auth-token' },
 ]
 
+/**
+ * 启动 Token 自动抓取监控
+ * 监听 webRequest.onBeforeSendHeaders，捕获特定 Header
+ */
 export function startAuthTokenMonitor() {
     // 监听请求头，捕获 Authorization
     // 注意：需要 'webRequest' 权限和 host 权限
@@ -131,6 +159,13 @@ export function startAuthTokenMonitor() {
     }
 }
 
+/**
+ * 统一消息处理入口
+ * 
+ * @param message - 消息对象
+ * @param sender - 发送者信息
+ * @returns 处理结果（Promise）
+ */
 export async function handleMessage(message: any, sender: Runtime.MessageSender) {
     if (message.type === 'UPDATE_OPEN_MODE') {
         await updateActionBehavior()
@@ -170,6 +205,9 @@ export async function handleMessage(message: any, sender: Runtime.MessageSender)
     }
 }
 
+/**
+ * 获取已安装插件列表
+ */
 async function handleGetInstalledPlugins() {
     try {
         const stored = await db.get<PluginMeta[]>('plugins')
@@ -179,6 +217,11 @@ async function handleGetInstalledPlugins() {
     }
 }
 
+/**
+ * 切换插件启用/禁用状态
+ * @param pluginId - 插件 ID
+ * @param enabled - 目标状态
+ */
 async function handleTogglePlugin(pluginId: string, enabled: boolean) {
     if (!pluginId) return { success: false, error: 'Invalid plugin ID' }
     try {
@@ -190,6 +233,10 @@ async function handleTogglePlugin(pluginId: string, enabled: boolean) {
     }
 }
 
+/**
+ * 卸载插件
+ * @param pluginId - 插件 ID
+ */
 async function handleUninstallPlugin(pluginId: string) {
     if (!pluginId) return { success: false, error: 'Invalid plugin ID' }
     try {
@@ -201,6 +248,10 @@ async function handleUninstallPlugin(pluginId: string) {
     }
 }
 
+/**
+ * 安装插件
+ * @param plugin - 插件元数据对象
+ */
 async function handleInstallPlugin(plugin: PluginMeta) {
     const validation = validatePlugin(plugin)
     if (!validation.valid) {
@@ -215,6 +266,10 @@ async function handleInstallPlugin(plugin: PluginMeta) {
     }
 }
 
+/**
+ * 打开 Side Panel
+ * 优先使用 chrome.sidePanel API，回退使用 sidebarAction
+ */
 async function openSidePanel(sender: Runtime.MessageSender) {
     const tabId = sender.tab?.id
     if (!tabId) return { success: false, error: 'No tab ID found' }
@@ -254,6 +309,9 @@ async function openSidePanel(sender: Runtime.MessageSender) {
     return { success: false, error: 'API not supported' }
 }
 
+/**
+ * 关闭 Side Panel
+ */
 async function closeSidePanel(sender: Runtime.MessageSender) {
     const tabId = sender.tab?.id
     if (!tabId) return { success: false, error: 'No tab ID found' }
@@ -287,6 +345,9 @@ async function closeSidePanel(sender: Runtime.MessageSender) {
     return { success: false, error: 'API not supported' }
 }
 
+/**
+ * 切换 Side Panel 状态
+ */
 async function toggleSidePanel(sender: Runtime.MessageSender) {
     const tabId = sender.tab?.id
     if (!tabId) return { success: false, error: 'No tab ID found' }
@@ -300,6 +361,10 @@ async function toggleSidePanel(sender: Runtime.MessageSender) {
     }
 }
 
+/**
+ * 中转上传成功消息到 Content Script
+ * 确保消息能被页面中的脚本接收到
+ */
 async function relayUploadSuccess(message: any, sender: Runtime.MessageSender) {
     const senderTabId = sender.tab?.id
     if (senderTabId) {
@@ -352,6 +417,10 @@ async function relayUploadSuccess(message: any, sender: Runtime.MessageSender) {
     }
 }
 
+/**
+ * 获取 Cookie 中的 XSRF-TOKEN
+ * @returns Token 字符串或 undefined
+ */
 async function handleGetXsrfToken(message: any, sender: Runtime.MessageSender) {
     // 简单实现：尝试从 Cookie 中获取 XSRF-TOKEN
     // 注意：需要 'cookies' 权限和 host 权限
@@ -366,6 +435,10 @@ async function handleGetXsrfToken(message: any, sender: Runtime.MessageSender) {
     } catch { return null }
 }
 
+/**
+ * 添加图床配置
+ * 用于一键配置功能
+ */
 async function handleAddConfig(message: any, sender: Runtime.MessageSender) {
     // 处理一键配置
     const { config } = message
@@ -390,6 +463,10 @@ async function handleAddConfig(message: any, sender: Runtime.MessageSender) {
     }
 }
 
+/**
+ * 获取图片 Blob 数据
+ * 解决 Content Script 中的跨域限制
+ */
 async function handleFetchImageBlob(message: any) {
     // 代理获取图片 Blob (解决跨域和 Cookie 问题)
     const { url } = message
@@ -409,6 +486,10 @@ async function handleFetchImageBlob(message: any) {
     }
 }
 
+/**
+ * 注册 Content Script
+ * (当前为空实现，可用于记录活跃 Tab)
+ */
 async function handleRegisterContent(sender: Runtime.MessageSender) {
     // Content Script 注册（暂无特殊操作）
     // console.log('Content script registered:', sender.tab?.id)

@@ -1,3 +1,19 @@
+/**
+ * @file theme.ts
+ * @description 主题与 UI 外观状态管理 Store
+ * 
+ * 职责：
+ * 1. 管理应用的主题色（Theme Color）和暗黑模式（Dark Mode）
+ * 2. 管理 UI 布局模式（UiMode）
+ * 3. 生成 Naive UI 的主题覆盖配置（ThemeOverrides）
+ * 4. 同步主题设置到 DOM CSS 变量和 extension storage
+ * 
+ * 依赖：
+ * - pinia: 状态管理
+ * - naive-ui: UI 组件库主题类型
+ * - @/utils/storage: 本地存储
+ */
+
 import { defineStore } from 'pinia'
 import { ref, computed, watch } from 'vue'
 import { type GlobalThemeOverrides, darkTheme } from 'naive-ui'
@@ -7,6 +23,10 @@ import browser from 'webextension-polyfill'
 export type ThemeColor = 'blue' | 'green' | 'purple' | 'orange' | 'red' 
 export type UiMode = 'classic' | 'console' | 'center' | 'simple'
 
+/**
+ * 预定义的主题色配置
+ * 包含主要颜色及其 hover、pressed 和 suppl 变体
+ */
 export const themeColors: Record<ThemeColor, { primary: string, hover: string, pressed: string, suppl: string }> = {
   blue: {
     primary: '#3B82F6',
@@ -38,26 +58,31 @@ export const themeColors: Record<ThemeColor, { primary: string, hover: string, p
     pressed: '#DC2626',
     suppl: '#FEE2E2',
   },
-
-
 }
 
+/**
+ * Theme Store
+ * 管理全局外观设置
+ */
 export const useThemeStore = defineStore('theme', () => {
   const currentColor = ref<ThemeColor>('blue')
   const isDark = ref(false)
   const uiMode = ref<UiMode>('classic')
 
   // Load initial state
+  // 从 IndexedDB 加载主题色
   db.get<ThemeColor>('giopic-theme-color').then(color => {
       if (color) currentColor.value = color
   })
   
   // Use storage.local for dark mode to share with content scripts
+  // 从 extension storage 加载暗黑模式设置（以便 Content Scripts 也能读取）
   browser.storage.local.get('giopic-dark-mode').then(res => {
       const mode = res['giopic-dark-mode']
       if (mode === 'true') isDark.value = true
   })
 
+  // 加载 UI 模式设置
   browser.storage.local.get('giopic-ui-mode').then(res => {
       const mode = res['giopic-ui-mode']
       if (mode === 'classic' || mode === 'console' || mode === 'center' || mode === 'simple') {
@@ -65,6 +90,7 @@ export const useThemeStore = defineStore('theme', () => {
       }
   })
 
+  // 监听暗黑模式变化，同步到 storage 和 DOM class
   watch(isDark, (val) => {
     browser.storage.local.set({ 'giopic-dark-mode': String(val) })
     if (val) {
@@ -74,8 +100,10 @@ export const useThemeStore = defineStore('theme', () => {
     }
   }, { immediate: true })
 
+  // Naive UI 暗黑主题对象
   const naiveTheme = computed(() => isDark.value ? darkTheme : null)
 
+  // 计算 Naive UI 的全局主题覆盖配置
   const themeOverrides = computed<GlobalThemeOverrides>(() => {
     const colors = themeColors[currentColor.value]
     return {
@@ -99,6 +127,10 @@ export const useThemeStore = defineStore('theme', () => {
     }
   })
 
+  /**
+   * 应用主题 CSS 变量到文档根元素
+   * 用于 UnoCSS 或其他 CSS 使用
+   */
   function applyThemeCssVars() {
     if (typeof document === 'undefined') return
     const colors = themeColors[currentColor.value]
@@ -109,18 +141,29 @@ export const useThemeStore = defineStore('theme', () => {
     root.style.setProperty('--giopic-primary-suppl', isDark.value ? colors.pressed : colors.suppl)
   }
 
+  // 当主题色或暗黑模式变化时，重新应用 CSS 变量
   watch([currentColor, isDark], applyThemeCssVars, { immediate: true })
 
-
+  /**
+   * 设置主题色
+   * @param color - 目标颜色名
+   */
   function setThemeColor(color: ThemeColor) {
     currentColor.value = color
     db.set('giopic-theme-color', color)
   }
 
+  /**
+   * 切换暗黑模式
+   */
   function toggleDark() {
     isDark.value = !isDark.value
   }
 
+  /**
+   * 设置 UI 布局模式
+   * @param mode - 布局模式名
+   */
   function setUiMode(mode: UiMode) {
     uiMode.value = mode
     browser.storage.local.set({ 'giopic-ui-mode': mode })

@@ -1,3 +1,27 @@
+<!--
+ * Component Name: ClassicSidebar
+ * Author: GioPic Team
+ * Description: 经典模式侧边栏组件
+ * 
+ * Functional Domain:
+ * Home (主页) - 侧边栏 (经典模式)
+ * 
+ * Key Features:
+ * - 节点列表：展示和管理存储节点
+ * - 主题控制：切换亮色/暗色模式，切换主题色
+ * - 布局切换：在经典模式和控制台模式间切换
+ * - 快捷操作：刷新、分享全部、设置入口
+ * - 移动端适配：支持移动端抽屉式展开/折叠
+ * 
+ * Props:
+ * - selectedIds (string[]): 当前选中的节点 ID 列表
+ * 
+ * Events:
+ * - update:selectedIds: 更新选中节点
+ * - add: 触发添加节点
+ * - edit: 触发编辑节点
+ * - openSettings: 打开设置面板
+ -->
 <script setup lang="ts">
 import { useConfigStore } from '@/stores/config'
 import { useThemeStore, themeColors } from '@/stores/theme'

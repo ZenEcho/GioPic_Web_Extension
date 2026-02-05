@@ -1,3 +1,25 @@
+<!--
+ * Component Name: NodeList
+ * Author: GioPic Team
+ * Description: 存储节点列表展示与管理组件
+ * 
+ * Functional Domain:
+ * Home (主页) - 侧边栏/节点管理
+ * 
+ * Key Features:
+ * - 节点展示：网格化展示已配置的存储节点
+ * - 节点操作：支持添加、编辑、删除、分享节点配置
+ * - 导入导出：支持节点配置的 JSON 导入与导出
+ * - 状态管理：集成 ConfigStore 管理节点选中状态
+ * - 响应式布局：适配不同屏幕尺寸的网格显示
+ * 
+ * Props:
+ * - None (依赖 ConfigStore 和 SidebarStore)
+ * 
+ * Events:
+ * - add: 触发添加新节点操作
+ * - edit: 触发编辑节点操作 (参数: config对象)
+ -->
 <script setup lang="ts">
 
 import { useConfigStore } from '@/stores/config'

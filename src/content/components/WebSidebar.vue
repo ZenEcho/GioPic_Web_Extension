@@ -1,3 +1,15 @@
+<!--
+ * @file WebSidebar.vue
+ * @description 网页注入侧边栏（悬浮球）组件
+ * 
+ * 职责：
+ * 1. 在页面中显示悬浮球，作为扩展功能的入口
+ * 2. 点击悬浮球时，通过 iframe 注入完整的扩展 UI
+ * 3. 管理 iframe 的显示/隐藏、拖拽位置、不透明度等
+ * 4. 处理站点级/会话级/永久关闭侧边栏的逻辑
+ * 5. 监听 Background 的配置变化并实时响应
+-->
+
 <template>
     <div v-if="isVisible" ref="ballRef" class="giopic-floating-ball" :style="ballStyle"
         @click.stop="onClick"
@@ -212,6 +224,11 @@ const iframeStyle = computed<CSSProperties>(() => ({
 }))
 
 // Methods
+
+/**
+ * 点击悬浮球处理
+ * 打开扩展 UI 界面（Iframe 或 Native Panel）
+ */
 const onClick = async () => {
     if (isDragging.value) return
 
@@ -247,6 +264,10 @@ const toggleUploadList = async () => {
     await browser.storage.local.set({ 'giopic-show-upload-list': !current })
 }
 
+/**
+ * 确认关闭侧边栏
+ * 根据选择执行相应的关闭策略（本次、会话、站点、永久）
+ */
 const handleConfirmClose = async () => {
     try {
         if (closeOption.value === 'close') {
@@ -291,6 +312,10 @@ const handleConfirmClose = async () => {
     }
 }
 
+/**
+ * 更新关闭对话框位置
+ * 确保对话框显示在悬浮球附近且不超出视口
+ */
 const updateDialogPosition = async () => {
     if (!ballRef.value) return
 

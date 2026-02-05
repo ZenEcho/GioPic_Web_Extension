@@ -15,8 +15,12 @@ import { db } from '@/utils/storage'
 import type { PluginDriveConfig, PluginMeta } from '@/types'
 import browser from 'webextension-polyfill'
 
-// 辅助函数：将 File 对象转换为 Base64 字符串
-// 用于跨进程传递文件数据（Chrome 消息传递不支持直接传输 File 对象）
+/**
+ * 辅助函数：将 File 对象转换为 Base64 字符串
+ * 用于跨进程传递文件数据（Chrome 消息传递不支持直接传输 File 对象）
+ * 
+ * @param file - 待转换的文件对象
+ */
 const fileToBase64 = (file: File): Promise<string> => {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
@@ -31,8 +35,10 @@ const fileToBase64 = (file: File): Promise<string> => {
 // Value: Promise 的 resolve/reject 函数以及进度回调
 const pendingTasks = new Map<string, { resolve: (val: any) => void, reject: (err: any) => void, onProgress?: (p: number) => void }>();
 
-// 监听来自 Offscreen 的消息结果
-// Offscreen 完成任务后会通过 runtime.sendMessage 发回结果
+/**
+ * 监听来自 Offscreen 的消息结果
+ * Offscreen 完成任务后会通过 runtime.sendMessage 发回结果
+ */
 // @ts-ignore
 if (typeof chrome !== 'undefined' && chrome.runtime) {
     // @ts-ignore
@@ -63,10 +69,11 @@ if (typeof chrome !== 'undefined' && chrome.runtime) {
 
 /**
  * 执行插件上传逻辑
- * @param config 插件图床配置
- * @param file 要上传的文件
- * @param onProgress 上传进度回调
- * @returns 上传成功后的图片 URL
+ * 
+ * @param config - 插件图床配置
+ * @param file - 要上传的文件
+ * @param onProgress - 上传进度回调
+ * @returns Promise<string> - 上传成功后的图片 URL
  */
 export async function runPlugin(config: PluginDriveConfig, file: File, onProgress?: (progress: number) => void): Promise<string> {
   // 直接从 Storage 读取插件列表，以支持 Background Service Worker 环境 (无 Pinia 实例)

@@ -1,3 +1,29 @@
+<!--
+ * Component Name: ConsoleSidebar
+ * Author: GioPic Team
+ * Description: 控制台模式侧边栏组件
+ * 
+ * Functional Domain:
+ * Home (主页) - 侧边栏 (控制台模式)
+ * 
+ * Key Features:
+ * - 视图导航：切换上传/历史记录视图
+ * - 节点管理：折叠/展开节点列表，展示节点状态
+ * - 布局控制：支持侧边栏折叠/展开，节省空间
+ * - 全局控制：主题切换、设置入口、布局切换
+ * - 状态持久化：记住侧边栏折叠状态
+ * 
+ * Props:
+ * - selectedIds (string[]): 当前选中的节点 ID 列表
+ * - currentView (string): 当前视图 ('upload' | 'history')
+ * 
+ * Events:
+ * - update:selectedIds: 更新选中节点
+ * - navigate: 切换视图
+ * - add: 触发添加节点
+ * - edit: 触发编辑节点
+ * - openSettings: 打开设置面板
+ -->
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 

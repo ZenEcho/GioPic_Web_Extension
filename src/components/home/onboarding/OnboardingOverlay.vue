@@ -1,3 +1,26 @@
+<!--
+ * Component Name: OnboardingOverlay
+ * Author: GioPic Team
+ * Description: 新用户引导流程组件
+ * 
+ * Functional Domain:
+ * Onboarding (新手引导) - 全局覆盖层
+ * 
+ * Key Features:
+ * - 分步引导：语言选择 -> 布局选择 -> 初始配置
+ * - 状态管理：支持最小化/恢复引导窗口
+ * - 礼花特效：完成引导时的庆祝动画
+ * - 插件集成：引导过程中可直接打开插件管理器
+ * - 国际化：实时切换应用语言
+ * 
+ * Props:
+ * - show (boolean): 是否显示引导层
+ * 
+ * Events:
+ * - complete: 引导流程完成
+ * - create-node: 触发创建新节点
+ * - import-node: 触发导入节点
+ -->
 <script setup lang="ts">
 import { ref } from 'vue'
 

@@ -1,3 +1,18 @@
+/**
+ * @file bucket.ts
+ * @description 存储桶管理服务
+ * 
+ * 职责：
+ * 1. 提供针对不同云存储厂商 (Aliyun OSS, Tencent COS, AWS S3) 的存储桶管理功能
+ * 2. 统一管理 CORS (跨域资源共享) 规则的获取和设置
+ * 3. 统一管理 ACL (访问控制列表) 的获取和设置
+ * 
+ * 依赖：
+ * - ali-oss: 阿里云 OSS SDK
+ * - cos-js-sdk-v5: 腾讯云 COS SDK
+ * - @aws-sdk/client-s3: AWS S3 SDK (模块化)
+ */
+
 import OSS from 'ali-oss'
 import COS from 'cos-js-sdk-v5'
 import {
@@ -22,7 +37,9 @@ export interface CorsRule {
 
 export type AclType = 'default' | 'private' | 'public-read' | 'public-read-write' | 'authenticated-read'
 
-// --- Helpers ---
+// =================================================================================
+// Helpers
+// =================================================================================
 
 const toArray = (v: any): string[] => Array.isArray(v) ? v : (v ? [v] : [])
 
@@ -33,6 +50,9 @@ const getProp = (obj: any, keys: string[]) => {
     return undefined
 }
 
+/**
+ * 解析不同 SDK 返回的 CORS 规则为统一格式
+ */
 export function parseCorsRule(rule: any): CorsRule {
     return {
         allowedOrigins: toArray(getProp(rule, ['allowedOrigins', 'AllowedOrigins', 'allowedOrigin'])),
@@ -82,13 +102,19 @@ const isPublicGroup = (uri?: string) => {
     return uri === S3_GROUP_ALL_USERS || uri.endsWith('/groups/global/AllUsers')
 }
 
-// --- Aliyun ---
+// =================================================================================
+// Aliyun OSS Implementations
+// =================================================================================
 
 interface OssAclResult {
     acl?: string
     [key: string]: any
 }
 
+/**
+ * 获取阿里云 OSS 存储桶 ACL
+ * @param config 阿里云配置
+ */
 export async function getAliyunAcl(config: AliyunConfig): Promise<string> {
     const client = createOssClient(config)
     try {
@@ -99,12 +125,21 @@ export async function getAliyunAcl(config: AliyunConfig): Promise<string> {
     }
 }
 
+/**
+ * 设置阿里云 OSS 存储桶 ACL
+ * @param config 阿里云配置
+ * @param acl ACL 类型
+ */
 export async function setAliyunAcl(config: AliyunConfig, acl: string) {
     if (acl === 'default') return
     const client = createOssClient(config)
     await client.putBucketACL(config.bucket, acl as OSS.ACLType)
 }
 
+/**
+ * 获取阿里云 OSS 存储桶 CORS 规则
+ * @param config 阿里云配置
+ */
 export async function getAliyunCors(config: AliyunConfig): Promise<CorsRule[]> {
     const client = createOssClient(config)
     try {
@@ -117,6 +152,11 @@ export async function getAliyunCors(config: AliyunConfig): Promise<CorsRule[]> {
     }
 }
 
+/**
+ * 设置阿里云 OSS 存储桶 CORS 规则
+ * @param config 阿里云配置
+ * @param rules CORS 规则列表
+ */
 export async function setAliyunCors(config: AliyunConfig, rules: CorsRule[]) {
     const client = createOssClient(config)
     // 手动构造符合 OSS.CORSRule 类型的数组
@@ -130,8 +170,14 @@ export async function setAliyunCors(config: AliyunConfig, rules: CorsRule[]) {
     await client.putBucketCORS(config.bucket, ossRulesTyped)
 }
 
-// --- Tencent ---
+// =================================================================================
+// Tencent COS Implementations
+// =================================================================================
 
+/**
+ * 获取腾讯云 COS 存储桶 ACL
+ * @param config 腾讯云配置
+ */
 export async function getTencentAcl(config: TencentConfig): Promise<string> {
     const cos = createCosClient(config)
     return new Promise((resolve, reject) => {
@@ -145,6 +191,11 @@ export async function getTencentAcl(config: TencentConfig): Promise<string> {
     })
 }
 
+/**
+ * 设置腾讯云 COS 存储桶 ACL
+ * @param config 腾讯云配置
+ * @param acl ACL 类型
+ */
 export async function setTencentAcl(config: TencentConfig, acl: string) {
     const cos = createCosClient(config)
     return new Promise<void>((resolve, reject) => {
@@ -159,6 +210,10 @@ export async function setTencentAcl(config: TencentConfig, acl: string) {
     })
 }
 
+/**
+ * 获取腾讯云 COS 存储桶 CORS 规则
+ * @param config 腾讯云配置
+ */
 export async function getTencentCors(config: TencentConfig): Promise<CorsRule[]> {
     const cos = createCosClient(config)
     return new Promise((resolve, reject) => {
@@ -179,6 +234,11 @@ export async function getTencentCors(config: TencentConfig): Promise<CorsRule[]>
     })
 }
 
+/**
+ * 设置腾讯云 COS 存储桶 CORS 规则
+ * @param config 腾讯云配置
+ * @param rules CORS 规则列表
+ */
 export async function setTencentCors(config: TencentConfig, rules: CorsRule[]) {
     const cos = createCosClient(config)
     const cosRules = rules.map(r => ({
@@ -207,8 +267,14 @@ export async function setTencentCors(config: TencentConfig, rules: CorsRule[]) {
     })
 }
 
-// --- AWS S3 ---
+// =================================================================================
+// AWS S3 Implementations
+// =================================================================================
 
+/**
+ * 获取 AWS S3 存储桶 ACL
+ * @param config S3 配置
+ */
 export async function getS3Acl(config: S3Config): Promise<string> {
     const client = createS3Client(config)
     try {
@@ -233,6 +299,11 @@ export async function getS3Acl(config: S3Config): Promise<string> {
     }
 }
 
+/**
+ * 设置 AWS S3 存储桶 ACL
+ * @param config S3 配置
+ * @param acl ACL 类型
+ */
 export async function setS3Acl(config: S3Config, acl: string) {
     if (acl === 'default') return
 
@@ -255,6 +326,10 @@ export async function setS3Acl(config: S3Config, acl: string) {
     }))
 }
 
+/**
+ * 获取 AWS S3 存储桶 CORS 规则
+ * @param config S3 配置
+ */
 export async function getS3Cors(config: S3Config): Promise<CorsRule[]> {
     const client = createS3Client(config)
     try {
@@ -267,6 +342,11 @@ export async function getS3Cors(config: S3Config): Promise<CorsRule[]> {
     }
 }
 
+/**
+ * 设置 AWS S3 存储桶 CORS 规则
+ * @param config S3 配置
+ * @param rules CORS 规则列表
+ */
 export async function setS3Cors(config: S3Config, rules: CorsRule[]) {
     const client = createS3Client(config)
     const corsRules = rules.map(r => ({

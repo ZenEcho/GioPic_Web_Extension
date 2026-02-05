@@ -1,3 +1,23 @@
+<!--
+ * Component Name: SiteEditorSettings
+ * Author: GioPic Team
+ * Description: 网站-编辑器绑定管理组件，用于配置 Content Script 在特定域名下的行为。
+ * 
+ * Functional Domain:
+ * Settings (全局设置) - 网站编辑器绑定
+ * 
+ * Key Features:
+ * - 绑定管理：手动关联域名与编辑器类型（如 Discuz, Markdown, RichText）
+ * - 行为控制：针对特定域名启用/禁用悬浮球或预览功能
+ * - 批量操作：支持搜索、筛选和批量删除配置
+ * - 数据同步：实时监听 storage.local 变化，实现多页面数据一致性
+ * 
+ * Props:
+ * - show (boolean): 模态框显示状态
+ * 
+ * Events:
+ * - update:show: 更新显示状态
+ -->
 <template>
     <n-modal :show="show" @update:show="(val: boolean) => emit('update:show', val)" class="w-full max-w-[800px]" preset="card"
         :title="t('settings.siteEditor.title')" :bordered="false">
@@ -140,26 +160,6 @@
     </n-modal>
 </template>
 
-<!--
- * Component Name: SiteEditorSettings
- * Author: GioPic Team
- * Description: 网站-编辑器绑定管理组件，用于配置 Content Script 在特定域名下的行为。
- * 
- * Functional Domain:
- * Settings (全局设置) - 网站编辑器绑定
- * 
- * Key Features:
- * - 绑定管理：手动关联域名与编辑器类型（如 Discuz, Markdown, RichText）
- * - 行为控制：针对特定域名启用/禁用悬浮球或预览功能
- * - 批量操作：支持搜索、筛选和批量删除配置
- * - 数据同步：实时监听 storage.local 变化，实现多页面数据一致性
- * 
- * Props:
- * - show (boolean): 模态框显示状态
- * 
- * Events:
- * - update:show: 更新显示状态
- -->
 <script setup lang="ts">
 import { ref, onMounted, computed } from "vue";
 import browser from "webextension-polyfill";

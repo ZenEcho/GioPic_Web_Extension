@@ -1,3 +1,31 @@
+<!--
+ * Component Name: HistoryGrid
+ * Author: GioPic Team
+ * Description: 历史记录网格展示组件
+ * 
+ * Functional Domain:
+ * History (历史记录) - 核心展示区
+ * 
+ * Key Features:
+ * - 网格布局：响应式图片网格展示
+ * - 无限滚动：基于 IntersectionObserver 实现自动加载更多
+ * - 批量操作：支持多选模式 (Batch Mode)
+ * - 快捷操作：悬浮显示复制、注入、打开、删除按钮
+ * - 图片预览：集成 Naive UI 图片预览，支持 Blob URL 处理
+ * 
+ * Props:
+ * - displayList (UploadRecord[]): 要展示的记录列表
+ * - isBatchMode (boolean): 是否处于批量选择模式
+ * - selectedIds (Set<string>): 已选中的记录 ID 集合
+ * - copyFormat (string): 复制链接的格式 (markdown/url/html/bbcode)
+ * - hasMore (boolean): 是否还有更多数据可加载
+ * 
+ * Events:
+ * - toggleSelection: 切换单条记录的选中状态
+ * - deleteRecord: 删除单条记录
+ * - loadMore: 触发加载更多数据
+ -->
+
 <script setup lang="ts">
 import { ref, watch, onMounted, onUnmounted } from 'vue'
 
@@ -203,75 +231,22 @@ async function handleInject(url: string) {
                                     </button>
                                 </div>
                             </div>
-
-                            <!-- Bottom Info Bar (Always visible but minimal) -->
-                            <div class="absolute bottom-0 left-0 right-0 p-2 bg-gradient-to-t from-black/80 via-black/40 to-transparent pointer-events-none">
-                                <div class="text-white text-xs font-bold truncate px-1 text-shadow-sm">
-                                    {{ record.filename }}
-                                </div>
-                                <div class="flex items-center justify-between px-1 mt-0.5 opacity-80">
-                                    <div class="flex items-center gap-1 text-[10px] text-white/90">
-                                        <div class="w-1.5 h-1.5 rounded-full shadow-sm"
-                                            :class="record.status === 'success' ? 'bg-green-400' : 'bg-red-400'"></div>
-                                        <span class="truncate max-w-[60px]">{{ record.configName }}</span>
-                                    </div>
-                                    <span class="text-[10px] text-white/70 font-mono">
-                                         {{ new Date(record.createdAt).toLocaleString() }}
-                                    </span>
-                                </div>
-                            </div>
                         </div>
                     </div>
                 </div>
             </n-image-group>
-
-            <!-- Load more trigger -->
-            <div v-if="hasMore" ref="loadTrigger" class="py-6 flex justify-center">
-                <n-spin size="small" />
-            </div>
-            <div v-else-if="displayList.length > 0" class="py-6 text-center text-xs text-gray-400 dark:text-gray-500  border-gray-100 dark:border-gray-700 mt-4">
-                {{ t('home.history.noMore') }}
+            
+            <!-- Load Trigger -->
+            <div ref="loadTrigger" class="h-8 w-full mt-4 flex items-center justify-center text-gray-400 text-xs">
+                <span v-if="hasMore">{{ t('common.loading') }}</span>
+                <span v-else class="opacity-50">{{ t('common.noMore') }}</span>
             </div>
         </div>
 
         <!-- Empty State -->
-        <div v-else class="flex-1 flex flex-col items-center justify-center text-gray-300 dark:text-gray-600">
-            <div class="w-24 h-24 bg-gray-50 dark:bg-gray-800 rounded-full flex items-center justify-center mb-4">
-                <div class="i-ph-image-square text-4xl opacity-50" />
-            </div>
-            <div class="text-sm font-medium">{{ t('home.history.empty') }}</div>
+        <div v-else class="flex-1 flex flex-col items-center justify-center text-gray-400">
+            <div class="i-ph-image-square text-6xl mb-4 opacity-20" />
+            <p>{{ t('home.history.empty') }}</p>
         </div>
-        
-        <!-- Slot for footer/actions -->
-        <slot name="footer"></slot>
     </div>
 </template>
-
-<style scoped>
-.custom-scrollbar::-webkit-scrollbar {
-    width: 6px;
-}
-
-.custom-scrollbar::-webkit-scrollbar-thumb {
-    background-color: #e5e7eb;
-    border-radius: 6px;
-}
-
-.custom-scrollbar:hover::-webkit-scrollbar-thumb {
-    background-color: #d1d5db;
-}
-
-:global(.dark) .custom-scrollbar::-webkit-scrollbar-thumb {
-    background-color: #374151;
-}
-
-:global(.dark) .custom-scrollbar:hover::-webkit-scrollbar-thumb {
-    background-color: #4b5563;
-}
-
-
-
-.text-shadow-sm {
-    text-shadow: 0 1px 2px rgba(0,0,0,0.5);
-}
-</style>

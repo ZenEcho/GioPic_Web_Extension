@@ -1,18 +1,36 @@
+/**
+ * @file types.ts
+ * @description 编辑器注入模块的类型定义
+ * 
+ * 职责：
+ * 1. 定义检测结果、注入结果、适配器接口
+ * 2. 定义各种全局编辑器对象的类型签名 (TypeScript 补全)
+ */
 
 import type { EditorType } from './meta';
 
 export type { EditorType };
 
+/**
+ * 编辑器检测结果
+ */
 export interface DetectionResult {
-    type: EditorType;
-    certainty: number;
-    source: string;
+    type: EditorType;   // 编辑器类型
+    certainty: number;  // 置信度 (0-1)
+    source: string;     // 检测来源 (例如 'global: tinymce', 'selector: .CodeMirror')
 }
 
+/**
+ * 可执行注入的检测结果
+ */
 export interface InjectableDetectionResult extends DetectionResult {
     inject: (url: string) => Promise<boolean> | boolean;
 }
 
+/**
+ * 编辑器适配器接口
+ * 每个适配器负责一种编辑器的检测和注入逻辑
+ */
 export interface EditorAdapter {
     id: EditorType;
     detect: () => DetectionResult | null;

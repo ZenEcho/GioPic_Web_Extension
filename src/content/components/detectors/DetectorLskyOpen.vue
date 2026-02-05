@@ -1,3 +1,12 @@
+<!--
+ * @file DetectorLskyOpen.vue
+ * @description Lsky Pro (兰空图床开源版) 自动配置组件
+ * 
+ * 职责：
+ * 1. 引导用户添加 Lsky Pro 开源版图床配置
+ * 2. 提供邮箱和密码输入框，调用登录接口获取 Token
+-->
+
 <script setup lang="ts">
 import { ref } from 'vue'
 import { useI18n } from 'vue-i18n'
@@ -20,6 +29,10 @@ const email = ref('')
 const password = ref('')
 const isProcessing = ref(false)
 
+/**
+ * 提交登录并保存配置
+ * 使用用户输入的账号密码调用 /api/v1/tokens 获取 Token
+ */
 const handleSubmit = async () => {
   if (!email.value || !password.value) {
     message.warning(t('detector.failed'))

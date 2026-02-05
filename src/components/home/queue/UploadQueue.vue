@@ -1,3 +1,29 @@
+<!--
+ * Component Name: UploadQueue
+ * Author: GioPic Team
+ * Description: 上传队列与进度展示组件
+ * 
+ * Functional Domain:
+ * Upload (上传) - 任务队列
+ * 
+ * Key Features:
+ * - 队列管理：展示正在上传、等待中、已完成、失败的任务
+ * - 任务操作：支持单个任务的重试、删除、开始
+ * - 批量操作：支持全部开始、清空队列
+ * - 结果处理：上传成功后展示链接，支持多种格式复制
+ * - 进度展示：可视化上传进度条
+ * 
+ * Props:
+ * - uploadQueue (QueueItem[]): 上传任务队列列表
+ * 
+ * Events:
+ * - upload-all: 开始所有任务
+ * - clear-all: 清空任务队列
+ * - upload-item: 开始单个任务
+ * - retry-item: 重试单个任务
+ * - remove-item: 移除单个任务
+ * - open-history: 跳转到历史记录页面
+ -->
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import { useConfigStore } from '@/stores/config'

@@ -1,3 +1,14 @@
+<!--
+ * @file TokenDetector.vue
+ * @description 图床 Token/配置 自动检测组件
+ * 
+ * 职责：
+ * 1. 自动检测当前页面是否为支持的图床网站（如 Lsky, EasyImages, Chevereto 等）
+ * 2. 如果检测到，弹出配置引导卡片
+ * 3. 协调具体的检测器子组件进行配置提取和保存
+ * 4. 管理检测状态（防抖、手动关闭、忽略站点）
+-->
+
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted } from 'vue'
 import { useI18n } from 'vue-i18n'
@@ -37,6 +48,10 @@ const closeDetector = () => {
   stopObserver()
 }
 
+/**
+ * 检查当前站点
+ * 调用 detectSite 服务进行识别，如果匹配则显示对应的检测器 UI
+ */
 const checkSite = async () => {
   // 如果已经显示探测器，不再重复检测
   if (showDetector.value) {
@@ -70,7 +85,7 @@ const stopObserver = () => {
 const startObserver = () => {
   // 先清理旧的
   stopObserver()
-  
+
   // 立即执行一次检查
   void checkSite()
 
@@ -90,6 +105,12 @@ const startObserver = () => {
   })
 }
 
+/**
+ * 保存图床配置
+ * 
+ * @param type - 图床类型
+ * @param extra - 额外的配置信息
+ */
 async function saveConfig(type: DriveType = 'lsky', extra: Partial<DriveConfig> = {}) {
   let cfg: Partial<DriveConfig> = {}
 

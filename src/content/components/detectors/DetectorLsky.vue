@@ -1,3 +1,13 @@
+<!--
+ * @file DetectorLsky.vue
+ * @description Lsky Pro (兰空图床) 自动配置组件
+ * 
+ * 职责：
+ * 1. 引导用户添加 Lsky Pro 图床配置 (v1 或 v2 版本)
+ * 2. 尝试从页面获取现有 Token
+ * 3. 如果获取失败，引导用户授权并拦截 XSRF Token 以自动请求新 Token
+-->
+
 <script setup lang="ts">
 import { h } from 'vue'
 import { useI18n } from 'vue-i18n'
@@ -20,6 +30,11 @@ const { t } = useI18n()
 const dialog = useDialog()
 const message = useMessage()
 
+/**
+ * 监听 XSRF Token 并自动请求图床 Token
+ * 通过监听 Background 转发的请求头来获取 CSRF 防护 Token，
+ * 然后使用该 Token 发起创建图床 API Token 的请求。
+ */
 const listenForXsrfToken = () => {
   const listener = async (request: any) => {
     if (request.XSRF_TOKEN || request.Authorization) {
@@ -85,6 +100,11 @@ const listenForXsrfToken = () => {
   browser.runtime.onMessage.addListener(listener)
 }
 
+/**
+ * 处理添加配置逻辑
+ * 1. 对于 v1 版本，尝试直接从页面 DOM 获取 Token
+ * 2. 如果获取失败或为 v2 版本，弹出权限请求对话框，引导用户刷新页面以捕获 XSRF Token
+ */
 const handleAdd = async () => {
   try {
     if (props.version === 'v1') {

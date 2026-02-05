@@ -1,3 +1,12 @@
+<!--
+ * @file DetectorCloudFlareImg.vue
+ * @description CloudFlare Images (开源项目) 自动配置组件
+ * 
+ * 职责：
+ * 1. 引导用户添加 CloudFlare Images 图床配置
+ * 2. 自动生成适配该项目的自定义图床配置参数
+-->
+
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
 import { NButton, NSpace, useMessage } from 'naive-ui'
@@ -16,6 +25,10 @@ const emit = defineEmits<{
 const { t } = useI18n()
 const message = useMessage()
 
+/**
+ * 添加配置
+ * 预设适用于 CloudFlare-ImgBed 开源项目的 API 参数
+ */
 const handleAdd = async () => {
   try {
     

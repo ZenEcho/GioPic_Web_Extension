@@ -1,3 +1,12 @@
+<!--
+ * @file DetectorEasyImages.vue
+ * @description EasyImages 图床自动配置组件
+ * 
+ * 职责：
+ * 1. 引导用户添加 EasyImages 图床配置
+ * 2. 通过 API 自动获取 Token 并保存配置
+-->
+
 <script setup lang="ts">
 import { ref } from 'vue'
 import { useI18n } from 'vue-i18n'
@@ -18,6 +27,10 @@ const { t } = useI18n()
 const message = useMessage()
 const isProcessing = ref(false)
 
+/**
+ * 添加配置
+ * 构造请求以获取临时 Token，并将其保存为图床配置
+ */
 const handleAdd = async () => {
   isProcessing.value = true
   try {
