@@ -90,6 +90,12 @@ function injectPageBundle() {
     link.setAttribute('data-giopic-page-style', 'true')
     headOrRoot.appendChild(link)
 
+    const scriptSrc = browser.runtime.getURL('content/page.js')
+    const script = doc.createElement('script')
+    script.type = 'text/javascript'
+    script.src = scriptSrc
+    script.setAttribute('data-giopic-page-script', 'true')
+    headOrRoot.appendChild(script)
 }
 
 async function injectImageToPage(url: string) {
