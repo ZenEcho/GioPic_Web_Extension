@@ -24,17 +24,58 @@ import { downloadImage } from './imageService'
 import { notify } from './notificationService'
 import i18n from '@/i18n'
 
+const MENU_ID = 'upload-image'
+
+/**
+ * 创建菜单
+ */
+function createMenu() {
+    // 先移除以防重复，虽然 removeAll 会清除所有
+    browser.contextMenus.removeAll().then(() => {
+        browser.contextMenus.create({
+            id: MENU_ID,
+            title: i18n.global.t('background.contextMenuTitle'),
+            contexts: ['image']
+        }, () => {
+            if (browser.runtime.lastError) {
+                console.log('Context menu creation check:', browser.runtime.lastError.message)
+            }
+        })
+    }).catch(err => {
+         console.warn('Failed to remove context menus:', err)
+    })
+}
+
+/**
+ * 移除菜单
+ */
+function removeMenu() {
+    browser.contextMenus.removeAll()
+}
+
 /**
  * 初始化右键菜单
  * 仅当菜单不存在时创建，避免重复创建错误
  */
-export function setupContextMenus() {
-    browser.contextMenus.removeAll().then(() => {
-        browser.contextMenus.create({
-            id: 'upload-image',
-            title: i18n.global.t('background.contextMenuTitle'),
-            contexts: ['image']
-        })
+export async function setupContextMenus() {
+    // 检查设置
+    const res = await browser.storage.local.get('giopic-context-menu')
+    const enabled = res['giopic-context-menu'] !== false // Default true
+
+    if (enabled) {
+        createMenu()
+    }
+
+    // 监听设置变化
+    browser.storage.onChanged.addListener((changes, area) => {
+        if (area === 'local' && changes['giopic-context-menu']) {
+            const newVal = changes['giopic-context-menu'].newValue !== false
+            if (newVal) {
+                createMenu()
+            } else {
+                removeMenu()
+            }
+        }
     })
 
     if (!browser.contextMenus.onClicked.hasListener(handleContextMenuClick)) {
@@ -47,8 +88,10 @@ export function setupContextMenus() {
  * 当用户切换语言设置时调用
  */
 export function updateContextMenuLocale() {
-    browser.contextMenus.update('upload-image', {
+    browser.contextMenus.update(MENU_ID, {
         title: i18n.global.t('background.contextMenuTitle')
+    }).catch(() => {
+        // Ignore error if menu doesn't exist (e.g. disabled)
     })
 }
 
@@ -128,7 +171,7 @@ async function updateUploadQueue(action: 'add' | 'update', item: any) {
  * @param tab - 当前标签页信息
  */
 async function handleContextMenuClick(info: any, tab: any) {
-    if (info.menuItemId === 'upload-image' && info.srcUrl) {
+    if (info.menuItemId === MENU_ID && info.srcUrl) {
         // await notify('GioPic', i18n.global.t('background.downloading'), 'info')
 
         try {

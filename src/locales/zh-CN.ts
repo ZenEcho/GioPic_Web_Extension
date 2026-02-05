@@ -372,6 +372,7 @@ export default {
     uiMode: '界面布局',
     automation: '自动化',
     autoInject: '上传成功后自动注入',
+    contextMenu: '右键菜单上传',
     hoverPreview: '鼠标悬停预览图片链接',
     openModes: {
       tab: '新标签页',

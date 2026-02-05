@@ -49,6 +49,7 @@ const dialog = useDialog()
 const openMode = ref('tab')
 
 const autoInject = ref(false)
+const contextMenu = ref(true)
 const hoverPreview = ref(true)
 const showFloatingBallSettings = ref(false)
 const showSiteEditorSettings = ref(false)
@@ -91,6 +92,9 @@ const handleRuntimeMessage = (message: any) => {
 // 监听 Storage 变化
 const handleStorageChange = (changes: any, area: string) => {
     if (area === 'local') {
+        if (changes['giopic-context-menu']) {
+            contextMenu.value = changes['giopic-context-menu'].newValue !== false
+        }
         if (changes['giopic-hover-preview']) {
             hoverPreview.value = changes['giopic-hover-preview'].newValue !== false
         }
@@ -122,6 +126,9 @@ onMounted(async () => {
     const inject = await browser.storage.local.get('giopic-auto-inject')
     autoInject.value = !!inject['giopic-auto-inject']
 
+    const cm = await browser.storage.local.get('giopic-context-menu')
+    contextMenu.value = cm['giopic-context-menu'] !== false // Default true
+
     const preview = await browser.storage.local.get('giopic-hover-preview')
     hoverPreview.value = preview['giopic-hover-preview'] !== false // Default true
 
@@ -138,6 +145,11 @@ onBeforeUnmount(() => {
 async function setAutoInject(val: boolean) {
     autoInject.value = val
     await browser.storage.local.set({ 'giopic-auto-inject': val })
+}
+
+async function setContextMenu(val: boolean) {
+    contextMenu.value = val
+    await browser.storage.local.set({ 'giopic-context-menu': val })
 }
 
 async function setHoverPreview(val: boolean) {
@@ -449,9 +461,16 @@ async function handleResetExtension() {
                                 <div
                                     class="flex items-center justify-between p-3 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-700/30">
                                     <span class="text-sm font-medium text-gray-700 dark:text-gray-200">{{
+                                        t('settings.contextMenu') }}</span>
+                                    <n-switch v-model:value="contextMenu" @update:value="setContextMenu" />
+                                </div>
+                                <div
+                                    class="flex items-center justify-between p-3 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-700/30">
+                                    <span class="text-sm font-medium text-gray-700 dark:text-gray-200">{{
                                         t('settings.autoInject') }}</span>
                                     <n-switch v-model:value="autoInject" @update:value="setAutoInject" />
                                 </div>
+
                                 <div
                                     class="flex items-center justify-between p-3 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-700/30">
                                     <span class="text-sm font-medium text-gray-700 dark:text-gray-200">{{
@@ -555,11 +574,13 @@ async function handleResetExtension() {
                                 <!-- Main Project -->
                                 <a href="https://github.com/isYangs/GioPic" target="_blank"
                                     class="col-span-2 flex items-center gap-3 p-2 rounded-lg bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 hover:border-blue-500 dark:hover:border-blue-500 transition-colors group">
-                                    <div class="w-10 h-10 rounded-full bg-blue-50 dark:bg-blue-900/30 flex items-center justify-center text-xl text-blue-500">
+                                    <div
+                                        class="w-10 h-10 rounded-full bg-blue-50 dark:bg-blue-900/30 flex items-center justify-center text-xl text-blue-500">
                                         <div class="i-ph-desktop" />
                                     </div>
                                     <div class="flex-1 min-w-0">
-                                        <div class="text-sm font-medium text-gray-900 dark:text-gray-100 truncate group-hover:text-blue-500">
+                                        <div
+                                            class="text-sm font-medium text-gray-900 dark:text-gray-100 truncate group-hover:text-blue-500">
                                             GioPic Desktop
                                         </div>
                                         <div class="text-xs text-gray-500 truncate">
@@ -572,11 +593,13 @@ async function handleResetExtension() {
                                 <!-- Extension Repo -->
                                 <a href="https://github.com/ZenEcho/GioPic_Web_Extension/" target="_blank"
                                     class="flex items-center gap-3 p-2 rounded-lg bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 hover:border-blue-500 dark:hover:border-blue-500 transition-colors group">
-                                    <div class="w-10 h-10 rounded-full bg-gray-100 dark:bg-gray-700 flex items-center justify-center text-xl">
+                                    <div
+                                        class="w-10 h-10 rounded-full bg-gray-100 dark:bg-gray-700 flex items-center justify-center text-xl">
                                         <div class="i-ph-github-logo" />
                                     </div>
                                     <div class="flex-1 min-w-0">
-                                        <div class="text-sm font-medium text-gray-900 dark:text-gray-100 truncate group-hover:text-blue-500">
+                                        <div
+                                            class="text-sm font-medium text-gray-900 dark:text-gray-100 truncate group-hover:text-blue-500">
                                             GioPic Extension
                                         </div>
                                         <div class="text-xs text-gray-500 truncate">
@@ -588,11 +611,13 @@ async function handleResetExtension() {
                                 <!-- ZenEcho Card -->
                                 <a href="https://github.com/ZenEcho" target="_blank"
                                     class="flex items-center gap-3 p-2 rounded-lg bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 hover:border-blue-500 dark:hover:border-blue-500 transition-colors group">
-                                    <div class="w-10 h-10 rounded-full bg-gray-100 dark:bg-gray-700 flex items-center justify-center text-xl">
+                                    <div
+                                        class="w-10 h-10 rounded-full bg-gray-100 dark:bg-gray-700 flex items-center justify-center text-xl">
                                         🐼
                                     </div>
                                     <div class="flex-1 min-w-0">
-                                        <div class="text-sm font-medium text-gray-900 dark:text-gray-100 truncate group-hover:text-blue-500">
+                                        <div
+                                            class="text-sm font-medium text-gray-900 dark:text-gray-100 truncate group-hover:text-blue-500">
                                             ZenEcho
                                         </div>
                                         <div class="text-xs text-gray-500 truncate">
@@ -615,11 +640,13 @@ async function handleResetExtension() {
                                 <!-- HostFBI -->
                                 <a href="https://hostfbi.com/" target="_blank"
                                     class="flex items-center gap-3 p-2 rounded-lg bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 hover:border-blue-500 dark:hover:border-blue-500 transition-colors group">
-                                    <div class="w-10 h-10 rounded-full bg-indigo-50 dark:bg-indigo-900/30 flex items-center justify-center text-xl text-indigo-500">
+                                    <div
+                                        class="w-10 h-10 rounded-full bg-indigo-50 dark:bg-indigo-900/30 flex items-center justify-center text-xl text-indigo-500">
                                         <div class="i-ph-globe" />
                                     </div>
                                     <div class="flex-1 min-w-0">
-                                        <div class="text-sm font-medium text-gray-900 dark:text-gray-100 truncate group-hover:text-blue-500">
+                                        <div
+                                            class="text-sm font-medium text-gray-900 dark:text-gray-100 truncate group-hover:text-blue-500">
                                             全球主机论坛
                                         </div>
                                         <div class="text-xs text-gray-500 truncate">

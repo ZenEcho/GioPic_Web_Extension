@@ -1,8 +1,13 @@
 export function getDefaultSettings() {
     return {
         'giopic-auto-inject': true, // 是否自动注入脚本
+        'giopic-context-menu': true, // 是否开启右键菜单
         'giopic-dark-mode': true, // 是否开启暗黑模式
+        'giopic-theme-color': 'blue', // 主题色
+        'giopic-hover-preview': true, // 是否开启悬停预览
         'giopic-locale': 'zh-CN', // 语言
+        'giopic-onboarding-completed': false, // 是否完成欢迎引导
+        'giopic-ui-mode': 'classic', // UI 模式
         'open-mode': 'tab', // 打开模式
         sidebarSettings: { // 侧边栏设置
             enabled: true, // 是否开启侧边栏

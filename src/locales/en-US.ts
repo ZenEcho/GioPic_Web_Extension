@@ -358,6 +358,7 @@ export default {
     uiMode: 'UI Mode',
     automation: 'Automation',
     autoInject: 'Auto Inject URL after Upload',
+    contextMenu: 'Context Menu Upload',
     hoverPreview: 'Preview Image on Hover Link',
     openModes: {
       tab: 'New Tab',

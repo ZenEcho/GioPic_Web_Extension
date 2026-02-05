@@ -69,13 +69,16 @@ export const useThemeStore = defineStore('theme', () => {
   const isDark = ref(false)
   const uiMode = ref<UiMode>('classic')
 
-  // Load initial state
-  // 从 IndexedDB 加载主题色
-  db.get<ThemeColor>('giopic-theme-color').then(color => {
-      if (color) currentColor.value = color
+
+  // 从 storage.local 加载主题色
+  browser.storage.local.get('giopic-theme-color').then(res => {
+      const color = res['giopic-theme-color'] as ThemeColor
+      if (color && themeColors[color]) {
+          currentColor.value = color
+      }
   })
   
-  // Use storage.local for dark mode to share with content scripts
+
   // 从 extension storage 加载暗黑模式设置（以便 Content Scripts 也能读取）
   browser.storage.local.get('giopic-dark-mode').then(res => {
       const mode = res['giopic-dark-mode']
@@ -150,7 +153,7 @@ export const useThemeStore = defineStore('theme', () => {
    */
   function setThemeColor(color: ThemeColor) {
     currentColor.value = color
-    db.set('giopic-theme-color', color)
+    browser.storage.local.set({ 'giopic-theme-color': color })
   }
 
   /**
