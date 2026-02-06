@@ -150,6 +150,9 @@ export default defineConfig(({ mode }) => {
 
   return {
     ...config,
-    resolve: commonResolve
+    resolve: commonResolve,
+    define: {
+      global: 'globalThis'
+    }
   }
 })

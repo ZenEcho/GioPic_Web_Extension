@@ -134,10 +134,18 @@ const iframeSrc = ref('')
 const dialogStyle = ref<any>({})
 
 // Settings & State
+const defaultPosition = () => ({
+    x: (document.documentElement.clientWidth || window.innerWidth) - 60,
+    y: window.innerHeight * 0.4
+})
+const normalizePosition = (pos: any) => {
+    if (!pos || typeof pos.x !== 'number' || typeof pos.y !== 'number') return defaultPosition()
+    return { x: pos.x, y: pos.y }
+}
 const settings = ref<SidebarSettings>({
     enabled: true,
     mode: 'inject',
-    position: { x: (document.documentElement.clientWidth || window.innerWidth) - 60, y: window.innerHeight * 0.4 },
+    position: defaultPosition(),
     opacity: 80
 })
 const disabledSites = ref<string[]>([])
@@ -394,8 +402,8 @@ watch(isVisible, (val) => {
 // Watchers
 watch(isDragging, async (dragging) => {
     if (!dragging) {
-        settings.value.position = position.value
-        await browser.storage.local.set({ sidebarSettings: settings.value })
+        settings.value.position = { x: position.value.x, y: position.value.y }
+        await browser.storage.local.set({ sidebarSettings: JSON.parse(JSON.stringify(settings.value)) })
     }
 })
 
@@ -425,7 +433,8 @@ onMounted(async () => {
     } else if (oldStorage.sidebarSettings) {
         settings.value = {
             ...oldStorage.sidebarSettings,
-            mode: oldStorage.sidebarSettings.mode || 'inject'
+            mode: oldStorage.sidebarSettings.mode || 'inject',
+            position: normalizePosition(oldStorage.sidebarSettings.position)
         }
         // Sync position ref immediately
         position.value = settings.value.position
@@ -469,7 +478,11 @@ onMounted(async () => {
             if (changes.sidebarSettings) {
                 const next = changes.sidebarSettings.newValue as SidebarSettings | undefined
                 if (next && typeof next === 'object') {
-                    settings.value = next
+                    settings.value = {
+                        ...next,
+                        mode: next.mode || 'inject',
+                        position: normalizePosition(next.position)
+                    }
                 }
                 // Only update position if difference is large (to avoid loop with drag)
                 const newPos = settings.value.position

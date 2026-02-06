@@ -60,6 +60,7 @@ export async function getManifest() {
         },
         permissions: [
             "storage",
+            "tabs",
             "contextMenus",
             "notifications",
             "cookies",

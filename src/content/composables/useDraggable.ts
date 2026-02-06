@@ -44,7 +44,12 @@ export function useDraggable(
     options: DraggableOptions = {}
 ) {
     const isDragging = ref(false)
-    const position = ref<Position>(initialPosition)
+    const safePosition = (pos: Position | undefined) => {
+        if (!pos) return { x: 0, y: 0 }
+        if (typeof pos.x !== 'number' || typeof pos.y !== 'number') return { x: 0, y: 0 }
+        return { x: pos.x, y: pos.y }
+    }
+    const position = ref<Position>(safePosition(initialPosition))
     
     // 贴边状态
     const isStuckToRight = ref(false)

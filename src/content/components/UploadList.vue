@@ -301,7 +301,7 @@ const { position, isDragging } = useDraggable(containerRef, headerRef, { x: init
 // Persist position only on drag end
 watch(isDragging, (val) => {
     if (!val) {
-        browser.storage.local.set({ 'giopic-upload-list-position': position.value })
+        browser.storage.local.set({ 'giopic-upload-list-position': { x: position.value.x, y: position.value.y } })
     }
 })
 

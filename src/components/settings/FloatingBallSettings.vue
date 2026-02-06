@@ -79,12 +79,15 @@ interface LegacyUploadArea {
 }
 
 const { t } = useI18n();
+const serializeSettings = (value: SidebarSettings) => JSON.stringify(value);
+let isApplyingStorage = false;
 const settings = ref<SidebarSettings>({
     enabled: true,
     mode: 'inject',
     position: { x: window.innerWidth - 60, y: window.innerHeight * 0.4 },
     opacity: 80
 });
+let lastSerialized = serializeSettings(settings.value);
 
 const props = defineProps<{
     show: boolean
@@ -98,8 +101,12 @@ const emit = defineEmits<{
 // 自动保存监听器：当设置发生变化时，实时写入 storage.local
 // Auto-save watcher
 watch(settings, async () => {
+    if (isApplyingStorage) return;
+    const serialized = serializeSettings(settings.value);
+    if (serialized === lastSerialized) return;
+    lastSerialized = serialized;
     await browser.storage.local.set({
-        sidebarSettings: JSON.parse(JSON.stringify(settings.value))
+        sidebarSettings: JSON.parse(serialized)
     });
 }, { deep: true });
 
@@ -118,10 +125,18 @@ const handleStorageChange = (changes: Record<string, any>, area: string) => {
     if (changes.sidebarSettings) {
         const next = changes.sidebarSettings.newValue as SidebarSettings | undefined
         if (next && typeof next === 'object') {
-            settings.value = {
+            const normalized = {
                 ...next,
                 mode: next.mode || 'inject'
-            }
+            };
+            const serialized = serializeSettings(normalized);
+            if (serialized === lastSerialized) return;
+            isApplyingStorage = true;
+            settings.value = normalized;
+            lastSerialized = serialized;
+            Promise.resolve().then(() => {
+                isApplyingStorage = false;
+            });
         }
     }
 }
