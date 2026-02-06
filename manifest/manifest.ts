@@ -64,7 +64,7 @@ export async function getManifest() {
             "notifications",
             "cookies",
             "webRequest",
-            ...(isFirefox ? [] : ["offscreen", "declarativeNetRequestWithHostAccess", "declarativeNetRequestFeedback", "sidePanel"]),
+            ...(isFirefox ? [] : ["offscreen","sidePanel"]),
         ],
         // @ts-ignore
         ...(isFirefox ? {} : {

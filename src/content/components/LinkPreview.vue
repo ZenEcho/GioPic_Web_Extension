@@ -413,7 +413,8 @@ function onMouseMove(e: MouseEvent) {
   // 检查 <a>
   const anchor = target.closest('a')
   if (anchor instanceof HTMLAnchorElement) {
-    if (isImageUrl(anchor.href)) {
+    // 排除包含图片的链接（避免在缩略图上重复显示预览）
+    if (!anchor.querySelector('img') && isImageUrl(anchor.href)) {
       newUrl = anchor.href
     }
   }
