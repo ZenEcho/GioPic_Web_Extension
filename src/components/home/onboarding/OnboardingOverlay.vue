@@ -22,7 +22,7 @@
  * - import-node: 触发导入节点
  -->
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
 
 import { useThemeStore } from '@/stores/theme'
 import { useI18n } from 'vue-i18n'
@@ -47,6 +47,15 @@ const { t, locale } = useI18n()
 const isOnboardingMinimized = ref(false)
 const onboardingStep = ref<'language' | 'layout' | 'config'>('language')
 const showPluginManager = ref(false)
+
+const steps = [
+    { key: 'language', icon: 'i-ph-translate' },
+    { key: 'layout', icon: 'i-ph-layout' },
+    { key: 'config', icon: 'i-ph-plugs-connected' }
+] as const
+
+const currentStepIndex = computed(() => steps.findIndex(s => s.key === onboardingStep.value))
+
 // 方法
 
 function handleLanguageSelect(lang: string) {
@@ -321,6 +330,24 @@ defineExpose({
                             </button>
                         </div>
                     </div>
+
+                    <!-- Bottom Dots Indicator -->
+                    <div class="flex justify-center items-center gap-3 mt-8">
+                        <div v-for="(step, index) in steps" :key="step.key" 
+                            class="h-8 rounded-full transition-all duration-500 flex items-center justify-center gap-2"
+                            :class="[
+                                index === currentStepIndex 
+                                    ? 'bg-primary text-white shadow-lg shadow-primary/30 px-4' 
+                                    : 'w-2 h-2 !p-0 bg-gray-200 dark:bg-gray-700'
+                            ]">
+                            
+                            <!-- Icon & Text (Only for active step) -->
+                            <template v-if="index === currentStepIndex">
+                                <div :class="step.icon" class="text-lg" />
+                                <span class="text-sm font-bold whitespace-nowrap">{{ t(`home.onboarding.steps.${step.key}`) }}</span>
+                            </template>
+                        </div>
+                    </div>
                 </div>
             </div>
 
@@ -346,8 +373,9 @@ defineExpose({
                 </button>
                 <button
                     class="px-6 py-2  bg-primary hover:bg-primary-hover text-white rounded-full text-sm font-bold shadow-lg shadow-primary/20 transition-all"
-                    @click="handleComplete">
-                    {{ t('home.onboarding.start') }}
+                    @click="onboardingStep = 'config'; isOnboardingMinimized = false">
+                    {{ t('common.next', 'Next') }}
+                    <div class="i-ph-arrow-right inline-block ml-1 align-middle" />
                 </button>
             </div>
         </div>

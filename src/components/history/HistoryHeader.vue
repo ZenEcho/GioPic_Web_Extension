@@ -63,7 +63,7 @@ const themeStore = useThemeStore()
             </div>
         </div>
 
-        <div class="flex items-center gap-3 p-1.5 bg-gray-100 dark:bg-gray-800/50 rounded-xl border border-gray-200 dark:border-gray-700/50">
+        <div class="flex md:flex-row flex-col gap-3 p-1.5 bg-gray-100 dark:bg-gray-800/50 rounded-xl border border-gray-200 dark:border-gray-700/50">
 
             <div class="flex flex-row bg-white dark:bg-gray-800 rounded-lg  shadow-sm border border-gray-100 dark:border-gray-700">
                 <button v-for="fmt in COPY_FORMATS" :key="fmt"
@@ -74,10 +74,8 @@ const themeStore = useThemeStore()
                 </button>
             </div>
 
-            <div class="w-px h-6 bg-gray-300 dark:bg-gray-600 mx-1"></div>
-
             <!-- Batch Actions -->
-            <div class="flex items-center gap-2">
+            <div class="flex items-center justify-end gap-2">
                 <transition name="fade-slide" mode="out-in">
                     <button v-if="isBatchMode"
                         class="px-4 h-[32px] rounded-lg border font-bold text-xs transition-all duration-200 flex items-center gap-2"

@@ -18,7 +18,7 @@ import browser from 'webextension-polyfill'
 import { setupContextMenus } from './services/contextMenu'
 import { getOpenMode, updateActionBehavior } from './services/actionManager'
 import { handleMessage, startAuthTokenMonitor } from './services/messageService'
-import { initDesktopLinkOnStartup } from './services/desktopLink'
+import { initDesktopLinkOnStartup } from './services/desktopLink' // 桌面连接服务
 import { getDefaultSettings } from '../constants/defaultSettings'
 
 const POPUP_URL = 'index.html'
@@ -29,7 +29,7 @@ const SIDE_PANEL_PATH = 'index.html'
 // 初始化
 updateActionBehavior()
 setupContextMenus()
-initDesktopLinkOnStartup()
+// initDesktopLinkOnStartup()
 startAuthTokenMonitor()
 
 // 注册消息处理中心

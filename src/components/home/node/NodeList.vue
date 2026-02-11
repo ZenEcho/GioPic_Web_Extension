@@ -147,7 +147,7 @@ const toggleSelection = (id: string) => {
                     :class="[
                         configStore.selectedIds.includes(config.id)
                             ? 'border  border-solid border-primary'
-                            : 'border-gray-100 dark:border-gray-700 hover:border-primary/50 hover:shadow-md  '
+                            : 'border-gray-100 dark:border-gray-700 hover:border-primary/50  '
                     ]" @click="toggleSelection(config.id)">
 
                     <div class="py-4 px-4 flex items-center justify-between relative z-10">

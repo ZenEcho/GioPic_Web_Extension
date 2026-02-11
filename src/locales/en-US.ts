@@ -52,6 +52,14 @@ export default {
     clearConfirm: 'Are you sure you want to clear all data? This action cannot be undone.',
     deleteSearchResults: 'Delete Search Results',
     deleteSearchResultsConfirm: 'Are you sure you want to delete all search results? This action cannot be undone.',
+    details: 'Details',
+    filename: 'Filename',
+    uploadTime: 'Upload Time',
+    dimensions: 'Dimensions',
+    imageSize: 'Image Size',
+    source: 'Source',
+    link: 'Link',
+    preview: 'Preview',
   },
   preview: {
     title: 'Close Link Preview',
@@ -104,7 +112,8 @@ export default {
       title: 'HISTORY',
       uploadQueue: 'Upload Queue',
       clear: 'Clear History',
-      empty: 'No history',
+      empty: 'No history records',
+      loading: 'Loading...',
       searchPlaceholder: 'Search filename...',
       filterConfig: 'Filter by Config',
       sortTimeDesc: 'Newest First',
@@ -148,8 +157,13 @@ export default {
     importFailed: 'Import failed, format error',
     importNoData: 'No valid config recognized',
     onboarding: {
-      title: 'Welcome to GioPic',
-      subtitle: 'Choose your preferred layout',
+      title: 'Choose Layout',
+      subtitle: 'Select the interface layout that suits you best',
+      steps: {
+        language: 'Language',
+        layout: 'Appearance',
+        config: 'Setup',
+      },
       classic: {
         title: 'Classic',
         desc: 'Left nav, right content, comprehensive view'
@@ -166,7 +180,6 @@ export default {
         title: 'Simple',
         desc: 'Minimalist style, core upload only'
       },
-      start: 'Get Started',
       preview: 'Preview',
       restore: 'Return to Selection',
       config: {

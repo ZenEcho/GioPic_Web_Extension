@@ -52,6 +52,14 @@ export default {
     clearConfirm: '确定要清空所有数据吗？此操作无法撤销。',
     deleteSearchResults: '删除搜索结果',
     deleteSearchResultsConfirm: '确定要删除所有搜索到的数据吗？此操作无法撤销。',
+    details: '详情',
+    filename: '文件名',
+    uploadTime: '上传时间',
+    dimensions: '尺寸',
+    imageSize: '图片大小',
+    source: '来源',
+    link: '链接',
+    preview: '预览',
   },
   preview: {
     title: '关闭链接预览',
@@ -105,6 +113,7 @@ export default {
       uploadQueue: '上传队列',
       clear: '清空历史记录',
       empty: '暂无历史记录',
+      loading: '加载中...',
       searchPlaceholder: '搜索文件名...',
       filterConfig: '按图床筛选',
       sortTimeDesc: '最新上传',
@@ -148,8 +157,13 @@ export default {
     importFailed: '导入失败，格式错误',
     importNoData: '未识别到有效配置',
     onboarding: {
-      title: '欢迎使用 GioPic',
-      subtitle: '请选择您喜欢的界面布局',
+      title: '选择布局',
+      subtitle: '选择最适合您的界面布局',
+      steps: {
+        language: '语言',
+        layout: '外观',
+        config: '配置',
+      },
       classic: {
         title: '经典布局',
         desc: '左侧导航，右侧内容，功能全面展示'
@@ -166,7 +180,6 @@ export default {
         title: '极简布局',
         desc: '极简风格，仅保留最核心的上传功能'
       },
-      start: '开始使用',
       preview: '预览效果',
       restore: '恢复面板',
       config: {

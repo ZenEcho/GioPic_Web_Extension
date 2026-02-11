@@ -165,7 +165,7 @@ onMounted(() => {
 
                         <!-- 操作按钮 (悬停显示，覆盖部分内容) -->
                         <div
-                            class="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm p-1 rounded-lg shadow-sm border border-gray-100 dark:border-gray-700">
+                            class="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity bg-white/60 dark:bg-gray-800/90 backdrop-blur-sm p-1 rounded-lg shadow-sm border border-gray-100 dark:border-gray-700">
                             <button
                                 class="w-7 h-7 flex items-center justify-center rounded-md text-gray-400 hover:text-primary hover:bg-primary/20 transition-colors"
                                 @click.stop="handleShare(config)" :title="t('home.share')">
