@@ -54,6 +54,8 @@ export function useDraggable(
     // 贴边状态
     const isStuckToRight = ref(false)
     const isStuckToBottom = ref(false)
+    const isStuckToLeft = ref(false)
+    const isStuckToTop = ref(false)
     
     // 边缘内边距，确保关闭按钮可见/可点击
     // 默认为悬浮球的配置，也可以通过 options 覆盖
@@ -89,11 +91,25 @@ export function useDraggable(
             isStuckToRight.value = false
         }
 
+        // 检查是否贴左边
+        if (Math.abs(position.value.x - paddingLeft) < threshold) {
+            isStuckToLeft.value = true
+        } else {
+            isStuckToLeft.value = false
+        }
+
         // 检查是否贴底边 (考虑 padding)
         if (Math.abs((position.value.y + elHeight) - (windowHeight - paddingBottom)) < threshold) {
             isStuckToBottom.value = true
         } else {
             isStuckToBottom.value = false
+        }
+
+        // 检查是否贴顶边
+        if (Math.abs(position.value.y - paddingTop) < threshold) {
+            isStuckToTop.value = true
+        } else {
+            isStuckToTop.value = false
         }
     }
 
@@ -332,6 +348,10 @@ export function useDraggable(
     return {
         isDragging,
         position,
+        isStuckToRight,
+        isStuckToBottom,
+        isStuckToLeft,
+        isStuckToTop,
         ensureInViewport // 如果需要可以导出，但内部使用大多足够
     }
 }

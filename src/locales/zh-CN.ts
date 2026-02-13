@@ -382,6 +382,7 @@ export default {
     appearance: '外观',
     darkMode: '深色模式',
     lightMode: '浅色模式',
+    followSystem: '跟随系统',
     openMode: '打开方式',
     uiMode: '界面布局',
     automation: '自动化',
@@ -421,24 +422,29 @@ export default {
     },
     floatingBall: {
       title: '设置悬浮球',
+      basic: '基础设置',
       switch: '悬浮球',
       mode: '模式',
       inject: '浏览器注入',
       native: '浏览器侧边栏',
-      width: '宽',
-      height: '高',
-      location: '位置',
       opacity: '透明度',
-      closeTime: '关闭时间',
-      position: '侧边栏在',
-      positionLeft: '左',
-      positionRight: '右',
       reset: '重置',
-      save: '保存',
-      saveSuccess: '保存成功',
-      disabledSites: '禁用站点',
-      noDisabledSites: '没有禁用站点',
-      remove: '移除'
+      autoSaveHint: '设置将自动保存',
+      description: '在当前页面显示悬浮球',
+      modeDescription: {
+        inject: 'Shadow DOM 隔离',
+        native: '原生侧边栏'
+      },
+      autoHide: {
+        title: '贴边自动缩进',
+        enable: '启用',
+        enableDescription: '鼠标移出后自动缩进到边缘',
+        disableDescription: '悬浮球将始终保持完整显示',
+        delay: '触发时间',
+        opacity: '缩进透明度',
+        scale: '缩进比例',
+        translateX: '缩进距离'
+      }
     },
     siteEditor: {
       title: '网站配置管理',

@@ -349,17 +349,24 @@ async function handleResetExtension() {
                             <div class="flex gap-2">
                                 <button
                                     class="giopic-link-btn giopic-link-btn-primary flex-1 py-2 border font-medium text-sm flex items-center justify-center gap-2"
-                                    :class="!themeStore.isDark ? 'text-white' : 'border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'"
-                                    :style="!themeStore.isDark ? { backgroundColor: 'var(--giopic-primary)' } : {}"
-                                    @click="themeStore.isDark = false">
+                                    :class="themeStore.themeMode === 'light' ? 'text-white' : 'border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'"
+                                    :style="themeStore.themeMode === 'light' ? { backgroundColor: 'var(--giopic-primary)' } : {}"
+                                    @click="themeStore.setThemeMode('light')">
                                     <div class="i-ph-sun" /> {{ t('settings.lightMode') }}
                                 </button>
                                 <button
                                     class="giopic-link-btn giopic-link-btn-primary flex-1 py-2 border font-medium text-sm flex items-center justify-center gap-2"
-                                    :class="themeStore.isDark ? 'text-white' : 'border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'"
-                                    :style="themeStore.isDark ? { backgroundColor: 'var(--giopic-primary)' } : {}"
-                                    @click="themeStore.isDark = true">
+                                    :class="themeStore.themeMode === 'dark' ? 'text-white' : 'border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'"
+                                    :style="themeStore.themeMode === 'dark' ? { backgroundColor: 'var(--giopic-primary)' } : {}"
+                                    @click="themeStore.setThemeMode('dark')">
                                     <div class="i-ph-moon" /> {{ t('settings.darkMode') }}
+                                </button>
+                                <button
+                                    class="giopic-link-btn giopic-link-btn-primary flex-1 py-2 border font-medium text-sm flex items-center justify-center gap-2"
+                                    :class="themeStore.themeMode === 'auto' ? 'text-white' : 'border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'"
+                                    :style="themeStore.themeMode === 'auto' ? { backgroundColor: 'var(--giopic-primary)' } : {}"
+                                    @click="themeStore.setThemeMode('auto')">
+                                    <div class="i-ph-desktop" /> {{ t('settings.followSystem') }}
                                 </button>
                             </div>
                         </div>

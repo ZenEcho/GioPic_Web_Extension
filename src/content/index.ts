@@ -17,8 +17,8 @@
 import { mountComponent } from './utils/mount'
 import ContentOverlay from './components/ContentOverlay.vue'
 import browser from 'webextension-polyfill'
-import { Detector } from './page/EditorInjector'
 import { broadcastInjectMessage } from './utils/injector'
+import pkg from '../../package.json'
 import 'virtual:uno.css'
 import './style.css'
 
@@ -277,15 +277,41 @@ window.addEventListener('message', async (event) => {
     }
 });
 
-console.log('GioPic content script loaded')
+function printStyledLogs() {
+    const styles = {
+        title: 'color: #fff; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); font-size: 24px; font-weight: bold; padding: 8px 16px; border-radius: 8px;',
+        version: 'background: #41b883; color: #fff; padding: 2px 8px; border-radius: 4px; font-weight: bold;',
+        label: 'background: #35495e; color: #fff; padding: 2px 8px; border-radius: 4px 0 0 4px;',
+        value: 'background: #f8f9fa; color: #333; padding: 2px 8px; border-radius: 0 4px 4px 0;',
+        info: 'color: #17a2b8; font-size: 12px;',
+        success: 'color: #28a745; font-size: 12px;',
+    }
+
+    console.log('\n')
+    console.log('%c🚀 ' + (pkg.displayName || pkg.name), styles.title)
+    console.log('%c v' + pkg.version + ' ', styles.version)
+    console.log('\n')
+
+    console.log('%c 功能 %c ' + pkg.description, styles.label, styles.value)
+    console.log('%c 支持 %c Lsky / 对象存储 / S3接口 / GitHub 等 ', styles.label, styles.value)
+    console.log('%c 插件 %c 支持 JavaScript 插件扩展 ', styles.label, styles.value)
+    console.log('%c 官网 %c https://fileup.dev ', styles.label, styles.value)
+    console.log('%c 开源 %c https://github.com/ZenEcho/GioPic_Web_Extension ', styles.label, styles.value)
+
+    console.log('\n')
+    console.log('%c✓ Content Script 已加载', styles.success)
+    console.log('%c💡 提示: 右键图片可快速上传', styles.info)
+    console.log('\n')
+}
 
 injectPageBundle()
+
 
 try {
     browser.runtime.sendMessage({ type: 'REGISTER_CONTENT' })
 } catch { }
-
 // 挂载单一容器
 if (window.self === window.top) {
     mountComponent(ContentOverlay, 'giopic-content-overlay', true, {}, true)
+    printStyledLogs()
 }

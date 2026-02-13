@@ -15,8 +15,8 @@
         @click.stop="onClick"
         @mousedown.stop
         @pointerdown.stop
-        @mouseenter="isHovering = true"
-        @mouseleave="isHovering = false">
+        @mouseenter="onMouseEnter"
+        @mouseleave="onMouseLeave">
 
         <!-- Logo Icon -->
         <div class="giopic-ball-content">
@@ -104,6 +104,7 @@ import { ref, computed, onMounted, watch, nextTick, type CSSProperties } from 'v
 import browser from 'webextension-polyfill'
 import { useDraggable } from '@/content/composables/useDraggable'
 import { useI18n } from 'vue-i18n'
+import { getDefaultSettings } from '@/constants/defaultSettings'
 
 const { t, locale } = useI18n()
 
@@ -113,6 +114,13 @@ interface SidebarSettings {
     mode?: 'inject' | 'native'
     position: { x: number, y: number }
     opacity: number
+    autoHide?: {
+        enabled: boolean
+        delay: number
+        opacity: number
+        scale: number
+        translateX: number
+    }
 }
 
 interface LegacyUploadArea {
@@ -146,14 +154,68 @@ const settings = ref<SidebarSettings>({
     enabled: true,
     mode: 'inject',
     position: defaultPosition(),
-    opacity: 80
+    opacity: getDefaultSettings().sidebarSettings.opacity,
+    autoHide: getDefaultSettings().sidebarSettings.autoHide
 })
 const disabledSites = ref<string[]>([])
 const isSessionClosed = ref(false)
 const isPageClosed = ref(false)
 
 // Draggable
-const { isDragging, position } = useDraggable(ballRef, ballRef, settings.value.position)
+const draggableOptions = {
+    padding: { top: 10, bottom: 10, left: 10, right: 10 }
+}
+const { isDragging, position, isStuckToLeft, isStuckToRight } = useDraggable(ballRef, ballRef, settings.value.position, draggableOptions)
+
+// Idle State for auto-hide
+const isIdle = ref(false)
+let idleTimer: any = null
+
+const onMouseEnter = () => {
+    isHovering.value = true
+    isIdle.value = false
+    if (idleTimer) {
+        clearTimeout(idleTimer)
+        idleTimer = null
+    }
+}
+
+const onMouseLeave = () => {
+    isHovering.value = false
+    if (idleTimer) clearTimeout(idleTimer)
+    
+    // Check if auto-hide is enabled
+    if (settings.value.autoHide?.enabled !== false) {
+        const defaultDelay = getDefaultSettings().sidebarSettings.autoHide.delay
+        const delay = (settings.value.autoHide?.delay || defaultDelay) * 1000
+        idleTimer = setTimeout(() => {
+            isIdle.value = true
+        }, delay)
+    }
+}
+
+// Watch dragging to reset idle
+watch(isDragging, (val) => {
+    if (val) {
+        if (idleTimer) clearTimeout(idleTimer)
+        isIdle.value = false
+    } else {
+        // Drag end, start timer immediately
+        onMouseLeave()
+    }
+})
+
+// Watch auto-hide enabled state to trigger idle check immediately
+watch(() => settings.value.autoHide?.enabled, (newVal) => {
+    if (newVal) {
+        if (!isHovering.value && !isDragging.value) {
+            onMouseLeave()
+        }
+    } else {
+        if (idleTimer) clearTimeout(idleTimer)
+        isIdle.value = false
+    }
+})
 
 // Computed
 const isVisible = computed(() => {
@@ -196,13 +258,36 @@ const logoUrl = browser.runtime.getURL('assets/icons/logo64.png')
 
 const ballStyle = computed<CSSProperties>(() => {
     const showBall = !iframeShow.value
+    
+    let transform = showBall ? (isHovering.value ? 'scale(1.1)' : 'scale(1)') : 'scale(0)'
+    let opacity = showBall ? (isHovering.value || isDragging.value ? 1 : settings.value.opacity / 100) : 0
+    
+    // Auto-hide when idle and stuck to edge
+    if (showBall && !isHovering.value && !isDragging.value && isIdle.value && settings.value.autoHide?.enabled !== false) {
+        const autoHide = settings.value.autoHide || getDefaultSettings().sidebarSettings.autoHide
+        const targetOpacity = autoHide!.opacity / 100
+        const targetScale = autoHide!.scale / 100
+        const tx = autoHide!.translateX
+        const pLeft = draggableOptions.padding.left
+        const pRight = draggableOptions.padding.right
+
+        if (isStuckToRight.value) {
+            transform = `translateX(calc(${tx}% + ${pRight}px)) scale(${targetScale})`
+            opacity = Math.min(opacity, targetOpacity)
+        } else if (isStuckToLeft.value) {
+            transform = `translateX(calc(-${tx}% - ${pLeft}px)) scale(${targetScale})`
+            opacity = Math.min(opacity, targetOpacity)
+        }
+    }
+
     return {
         left: `${position.value.x}px`,
         top: `${position.value.y}px`,
-        opacity: showBall ? (isHovering.value || isDragging.value ? 1 : settings.value.opacity / 100) : 0,
-        transform: showBall ? (isHovering.value ? 'scale(1.1)' : 'scale(1)') : 'scale(0)',
+        opacity,
+        transform,
         cursor: isDragging.value ? 'grabbing' : 'pointer',
-        pointerEvents: showBall ? 'auto' : 'none'
+        pointerEvents: showBall ? 'auto' : 'none',
+        transition: isDragging.value ? 'none' : 'all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1)'
     }
 })
 
@@ -426,7 +511,7 @@ onMounted(async () => {
                 x: old.position === 'Left' ? 20 : window.innerWidth - 60,
                 y: ((old.location || 40) / 100) * window.innerHeight
             },
-            opacity: old.opacity || 80
+            opacity: old.opacity || getDefaultSettings().sidebarSettings.opacity
         }
         await browser.storage.local.set({ sidebarSettings: settings.value })
         await browser.storage.local.remove('uploadArea')
@@ -434,7 +519,8 @@ onMounted(async () => {
         settings.value = {
             ...oldStorage.sidebarSettings,
             mode: oldStorage.sidebarSettings.mode || 'inject',
-            position: normalizePosition(oldStorage.sidebarSettings.position)
+            position: normalizePosition(oldStorage.sidebarSettings.position),
+            autoHide: oldStorage.sidebarSettings.autoHide || getDefaultSettings().sidebarSettings.autoHide
         }
         // Sync position ref immediately
         position.value = settings.value.position
@@ -496,6 +582,9 @@ onMounted(async () => {
             }
         }
     })
+
+    // Start idle timer immediately
+    onMouseLeave()
 })
 
 </script>

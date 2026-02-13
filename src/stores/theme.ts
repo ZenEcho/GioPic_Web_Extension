@@ -64,11 +64,28 @@ export const themeColors: Record<ThemeColor, { primary: string, hover: string, p
  * Theme Store
  * 管理全局外观设置
  */
+export type ThemeMode = 'light' | 'dark' | 'auto'
+
+/**
+ * Theme Store
+ * 管理全局外观设置
+ */
 export const useThemeStore = defineStore('theme', () => {
   const currentColor = ref<ThemeColor>('blue')
-  const isDark = ref(false)
+  const themeMode = ref<ThemeMode>('auto')
+  const systemIsDark = ref(window.matchMedia('(prefers-color-scheme: dark)').matches)
   const uiMode = ref<UiMode>('classic')
+  
+  // 监听系统主题变化
+  window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', e => {
+    systemIsDark.value = e.matches
+  })
 
+  // 计算当前实际是否为暗黑模式
+  const isDark = computed(() => {
+    if (themeMode.value === 'auto') return systemIsDark.value
+    return themeMode.value === 'dark'
+  })
 
   // 从 storage.local 加载主题色
   browser.storage.local.get('giopic-theme-color').then(res => {
@@ -80,9 +97,17 @@ export const useThemeStore = defineStore('theme', () => {
   
 
   // 从 extension storage 加载暗黑模式设置（以便 Content Scripts 也能读取）
-  browser.storage.local.get('giopic-dark-mode').then(res => {
-      const mode = res['giopic-dark-mode']
-      if (mode === 'true') isDark.value = true
+  browser.storage.local.get('giopic-theme-mode').then(res => {
+      const mode = res['giopic-theme-mode'] as ThemeMode
+      if (mode === 'light' || mode === 'dark' || mode === 'auto') {
+          themeMode.value = mode
+      } else {
+          // 兼容旧版 giopic-dark-mode 设置
+          browser.storage.local.get('giopic-dark-mode').then(oldRes => {
+             if (oldRes['giopic-dark-mode'] === 'true') themeMode.value = 'dark'
+             else if (oldRes['giopic-dark-mode'] === 'false') themeMode.value = 'light'
+          })
+      }
   })
 
   // 加载 UI 模式设置
@@ -94,9 +119,12 @@ export const useThemeStore = defineStore('theme', () => {
   })
 
   // 监听暗黑模式变化，同步到 storage 和 DOM class
-  watch(isDark, (val) => {
-    browser.storage.local.set({ 'giopic-dark-mode': String(val) })
-    if (val) {
+  watch([themeMode, isDark], ([mode, dark]) => {
+    browser.storage.local.set({ 'giopic-theme-mode': mode })
+    // 为了兼容旧代码，也设置 giopic-dark-mode
+    browser.storage.local.set({ 'giopic-dark-mode': String(dark) })
+    
+    if (dark) {
       document.documentElement.classList.add('dark')
     } else {
       document.documentElement.classList.remove('dark')
@@ -157,10 +185,18 @@ export const useThemeStore = defineStore('theme', () => {
   }
 
   /**
-   * 切换暗黑模式
+   * 设置主题模式
+   */
+  function setThemeMode(mode: ThemeMode) {
+    themeMode.value = mode
+  }
+
+  /**
+   * 切换暗黑模式 (legacy)
    */
   function toggleDark() {
-    isDark.value = !isDark.value
+    if (isDark.value) setThemeMode('light')
+    else setThemeMode('dark')
   }
 
   /**
@@ -174,11 +210,13 @@ export const useThemeStore = defineStore('theme', () => {
 
   return {
     currentColor,
+    themeMode,
     isDark,
     uiMode,
     naiveTheme,
     themeOverrides,
     setThemeColor,
+    setThemeMode,
     toggleDark,
     setUiMode,
   }

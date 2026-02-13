@@ -84,7 +84,7 @@ onMounted(() => {
 
             <div class="flex flex-row items-center gap-1">
                  <button class="giopic-icon-btn text-gray-400 hover:text-primary text-xl"
-                        @click="themeStore.isDark = !themeStore.isDark">
+                        @click="themeStore.toggleDark()">
                         <div :class="themeStore.isDark ? 'i-ph-moon' : 'i-ph-sun'" />
                     </button>
                 <button

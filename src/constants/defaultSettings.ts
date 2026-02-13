@@ -13,6 +13,13 @@ export function getDefaultSettings() {
             enabled: true, // 是否开启侧边栏
             mode: 'inject', // 侧边栏模式
             opacity: 80, // 侧边栏透明度
+            autoHide: {
+                enabled: true, // 是否开启贴边自动缩进
+                delay: 1, // 触发时间 (秒)
+                opacity: 70, // 缩进后透明度
+                scale: 90, // 缩进后缩放比例
+                translateX: 40 // 缩进距离 (%)
+            }
         },
         sidebar_disabled_sites: [] as string[] // 侧边栏禁用的站点
     }
