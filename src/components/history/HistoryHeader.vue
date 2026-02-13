@@ -63,7 +63,7 @@ const themeStore = useThemeStore()
             </div>
         </div>
 
-        <div class="flex md:flex-row flex-col gap-3 p-1.5 bg-gray-100 dark:bg-gray-800/50 rounded-xl border border-gray-200 dark:border-gray-700/50">
+        <div class="flex md:flex-row flex-col gap-3 p-1.5  rounded-xl border border-gray-200 dark:border-gray-700/50">
 
             <div class="flex flex-row bg-white dark:bg-gray-800 rounded-lg  shadow-sm border border-gray-100 dark:border-gray-700">
                 <button v-for="fmt in COPY_FORMATS" :key="fmt"

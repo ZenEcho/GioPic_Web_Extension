@@ -129,6 +129,7 @@ export default {
       selectedCount: '已选 {count} 项',
       deleteSelected: '删除选中',
       deleteSelectedConfirm: '确定要删除选中的 {count} 项吗？',
+      clearConfirm: '确定要清空所有历史记录吗？此操作无法撤销。',
     },
     upload: {
       selectNodeWarning: '请选择一个分发节点',

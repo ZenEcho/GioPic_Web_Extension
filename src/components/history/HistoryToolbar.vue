@@ -25,8 +25,11 @@
  * - update:sortBy: 更新排序方式
  -->
 <script setup lang="ts">
+import { ref } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { useMessage } from 'naive-ui'
 import type { SelectOption } from 'naive-ui'
+import { insertMockRecordsToStore } from '@/utils/mock'
 
 defineProps<{
     searchQuery: string
@@ -43,41 +46,49 @@ const emit = defineEmits<{
 }>()
 
 const { t } = useI18n()
+
+const isDev = import.meta.env.DEV
+const message = useMessage()
+const customMockCount = ref<number | null>(null)
+
+function insertMockRecords(count: number) {
+    const inserted = insertMockRecordsToStore(count)
+    message.success(`已插入 ${inserted} 条模拟数据`)
+}
+
+function insertCustomMockRecords() {
+    if (customMockCount.value === null) return
+    insertMockRecords(customMockCount.value)
+}
 </script>
 
 <template>
     <div class="mb-6 flex flex-col md:flex-row gap-3">
         <div class="flex-1 flex gap-2">
-            <n-input 
-                :value="searchQuery" 
-                @update:value="emit('update:searchQuery', $event)"
-                :placeholder="t('home.history.searchPlaceholder')" 
-                clearable 
-                size="large"
-                class="flex-1 rounded-xl shadow-sm border-0"
-            >
+            <n-input :value="searchQuery" @update:value="emit('update:searchQuery', $event)"
+                :placeholder="t('home.history.searchPlaceholder')" clearable size="large"
+                class="flex-1 rounded-xl shadow-sm border-0">
                 <template #prefix>
                     <div class="i-ph-magnifying-glass text-gray-400 text-lg" />
                 </template>
             </n-input>
         </div>
-        <div class="flex gap-3">
-            <n-select 
-                :value="filterConfig" 
-                @update:value="emit('update:filterConfig', $event)"
-                :options="configOptions" 
-                clearable 
-                size="large"
-                :placeholder="t('home.history.filterConfig')" 
-                class="w-full md:w-48" 
-            />
-            <n-select 
-                :value="sortBy" 
-                @update:value="emit('update:sortBy', $event)" 
-                :options="sortOptions"
-                size="large"
-                class="w-full md:w-48" 
-            />
+        <div class="flex gap-3 flex-wrap items-center">
+            <n-select :value="filterConfig" @update:value="emit('update:filterConfig', $event)" :options="configOptions"
+                clearable size="large" :placeholder="t('home.history.filterConfig')" class="w-full md:w-48" />
+            <n-select :value="sortBy" @update:value="emit('update:sortBy', $event)" :options="sortOptions" size="large"
+                class="w-full md:w-48" />
         </div>
+
+    </div>
+    <!-- 开发环境下的工具按钮 -->
+    <div v-if="isDev" class="mb-6 flex gap-2 items-center">
+        <n-button size="large" secondary @click="insertMockRecords(10)">插入10条</n-button>
+        <n-button size="large" secondary @click="insertMockRecords(50)">插入50条</n-button>
+        <n-input-number :value="customMockCount" @update:value="customMockCount = $event" size="large" :min="1"
+            :max="20000000" :show-button="false" placeholder="自定义条数" class="w-32" />
+        <n-button size="large" type="primary" :disabled="customMockCount === null" @click="insertCustomMockRecords">
+            插入
+        </n-button>
     </div>
 </template>

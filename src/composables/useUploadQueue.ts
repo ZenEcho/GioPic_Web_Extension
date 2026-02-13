@@ -123,7 +123,18 @@ export function useUploadQueue() {
      * @param file - 待上传的文件
      */
     function addFileToQueue(file: File) {
-        if (configStore.selectedIds.length === 0) {
+        // 检查文件是否携带了模拟配置 (Dev Only)
+        const mockConfig = (file as any)._mockConfig
+        let targetConfigIds = configStore.selectedIds
+
+        if (mockConfig) {
+            // 如果是模拟上传，直接使用模拟配置 ID
+            // 确保配置存在于 Store 中 (如果不存在则临时添加)
+            if (!configStore.configs.find(c => c.id === mockConfig.id)) {
+                configStore.addConfig(mockConfig)
+            }
+            targetConfigIds = [mockConfig.id]
+        } else if (configStore.selectedIds.length === 0) {
             message.warning(t('home.upload.selectNodeWarning'))
             return
         }
@@ -132,7 +143,7 @@ export function useUploadQueue() {
         const preview = URL.createObjectURL(file)
 
         // 为当前选中的每个图床配置创建一个子任务
-        const tasks: UploadTask[] = configStore.selectedIds.map(configId => ({
+        const tasks: UploadTask[] = targetConfigIds.map(configId => ({
             id: id + '-' + configId,
             configId,
             status: 'pending',

@@ -25,11 +25,17 @@ export function useUploadInput(onFiles: (files: File[]) => void) {
      * 
      * @param files - 拖拽的文件列表对象
      */
-    function onFilesDropped(files: FileList) {
+    function onFilesDropped(files: FileList | File[]) {
         const fileList: File[] = []
-        for (let i = 0; i < files.length; i++) {
-            const file = files[i]
-            if (file) fileList.push(file)
+        if (Array.isArray(files)) {
+            files.forEach(file => {
+                if (file) fileList.push(file)
+            })
+        } else {
+            for (let i = 0; i < files.length; i++) {
+                const file = files[i]
+                if (file) fileList.push(file)
+            }
         }
         if (fileList.length) onFiles(fileList)
     }

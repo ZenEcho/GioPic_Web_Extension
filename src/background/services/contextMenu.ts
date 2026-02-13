@@ -291,9 +291,5 @@ async function handleContextMenuClick(info: any, tab: any) {
 async function saveToHistory(record: UploadRecord) {
     const history = (await db.get<UploadRecord[]>('giopic-history')) || []
     history.unshift(record)
-    // Limit to 1000
-    if (history.length > 1000) {
-        history.length = 1000
-    }
     await db.set('giopic-history', history)
 }

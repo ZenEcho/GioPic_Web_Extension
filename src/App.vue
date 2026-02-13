@@ -4,7 +4,7 @@ import AppLayout from '@/layouts/AppLayout.vue'
 </script>
 
 <template>
-  <AppLayout>
+  <AppLayout class=" overflow-hidden">
     <RouterView />
   </AppLayout>
 </template>

@@ -10,7 +10,7 @@ const themeStore = useThemeStore()
     <n-global-style />
     <n-message-provider>
       <n-dialog-provider>
-        <div class="h-screen w-screen bg-[#F5F7FA] dark:bg-[#101014] overflow-hidden transition-colors duration-300 min-h-[600px] min-w-[500px]">
+        <div class=" bg-[#F5F7FA] dark:bg-[#101014] overflow-hidden transition-colors duration-300 min-h-[600px] min-w-[500px]">
              <slot />
         </div>
       </n-dialog-provider>

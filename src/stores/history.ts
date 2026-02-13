@@ -4,8 +4,7 @@
  * 
  * 职责：
  * 1. 管理图片上传的历史记录
- * 2. 限制历史记录的最大数量（目前限制为 1000 条）
- * 3. 持久化历史记录到 IndexedDB
+ * 2. 持久化历史记录到 IndexedDB
  * 
  * 依赖：
  * - pinia: 状态管理
@@ -14,7 +13,7 @@
  */
 
 import { defineStore } from 'pinia'
-import { ref, watch } from 'vue'
+import { shallowRef, triggerRef, toRaw } from 'vue'
 import type { UploadRecord } from '@/types'
 import { db } from '@/utils/storage'
 
@@ -25,7 +24,9 @@ const STORAGE_KEY = 'giopic-history'
  * 管理上传历史记录
  */
 export const useHistoryStore = defineStore('history', () => {
-  const history = ref<UploadRecord[]>([])
+  // 使用 shallowRef 优化性能，避免 Vue 深度监听数万条记录
+  // 仅监听数组本身的赋值操作，不监听内部对象的变化
+  const history = shallowRef<UploadRecord[]>([])
 
   /**
    * 初始化加载历史记录
@@ -44,28 +45,32 @@ export const useHistoryStore = defineStore('history', () => {
 
   loadHistory()
 
-  // 监听变化保存
-  // 当历史记录变化时，自动同步到 IndexedDB
-  watch(history, async (newVal) => {
-    try {
-        await db.set(STORAGE_KEY, JSON.parse(JSON.stringify(newVal)))
-    } catch (e) {
-        console.error('Failed to save history to db', e)
-    }
-  }, { deep: true })
+  // 防抖保存，避免频繁写入 IndexedDB 导致卡顿
+  let saveTimer: any = null
+  function scheduleSave() {
+    if (saveTimer) clearTimeout(saveTimer)
+    saveTimer = setTimeout(async () => {
+        try {
+            // 使用 shallowRef 后，history.value 内部为普通对象，无需手动 map 序列化
+            // toRaw 确保获取原始数组，虽然 shallowRef.value 已经是原始数组（除非被其他 reactive 包裹）
+            await db.set(STORAGE_KEY, toRaw(history.value))
+        } catch (e) {
+            console.error('Failed to save history to db', e)
+        }
+    }, 1000) // 延迟 1 秒保存
+  }
 
   /**
    * 添加一条新的上传记录
-   * 新记录插入到列表头部，并维护最大记录数限制
+   * 新记录插入到列表头部
    * 
    * @param record - 上传记录对象
    */
   function addRecord(record: UploadRecord) {
+    // shallowRef 不会监听 push/unshift，需要重新赋值或手动触发
     history.value.unshift(record)
-    // 限制历史记录数量，例如 1000 条
-    if (history.value.length > 1000) {
-      history.value = history.value.slice(0, 1000)
-    }
+    triggerRef(history)
+    scheduleSave()
   }
 
   /**
@@ -73,6 +78,7 @@ export const useHistoryStore = defineStore('history', () => {
    */
   function clearHistory() {
     history.value = []
+    scheduleSave()
   }
 
   /**
@@ -81,19 +87,39 @@ export const useHistoryStore = defineStore('history', () => {
    */
   function removeRecord(id: string) {
     history.value = history.value.filter(r => r.id !== id)
+    scheduleSave()
   }
 
   /**
    * 批量删除历史记录
+   * 优化：使用 Set 提高查找效率，从 O(M*N) 降低到 O(M)
    * @param ids - 待删除的记录 ID 数组
    */
   function removeRecords(ids: string[]) {
-    history.value = history.value.filter(r => !ids.includes(r.id))
+    if (ids.length === 0) return
+    const idSet = new Set(ids)
+    
+    // 如果删除数量很大（超过总量的 50%），使用反向构建可能更快，但 filter + Set 足够通用且高效
+    history.value = history.value.filter(r => !idSet.has(r.id))
+    scheduleSave()
+  }
+
+  /**
+   * 批量添加历史记录
+   * @param records - 记录数组
+   */
+  function batchAddRecords(records: UploadRecord[]) {
+    if (records.length === 0) return
+    
+    // 使用 concat 或 spread 构造新数组，一次性赋值
+    history.value = [...records, ...history.value]
+    scheduleSave()
   }
 
   return {
     history,
     addRecord,
+    batchAddRecords,
     clearHistory,
     removeRecord,
     removeRecords,

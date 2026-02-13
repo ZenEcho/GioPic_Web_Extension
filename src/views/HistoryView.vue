@@ -43,36 +43,52 @@ const {
     clearSelection
 } = useBatchSelection(displayList)
 
-function deleteSelected() {
+// 通用确认对话框
+function showConfirmDialog(content: string, onConfirm: () => void, positiveText = t('common.confirm')) {
     dialog.warning({
         title: t('common.confirm'),
-        content: t('home.history.deleteSelectedConfirm', { count: selectedIds.value.size }),
-        positiveText: t('common.delete'),
+        content,
+        positiveText,
         negativeText: t('common.cancel'),
-        onPositiveClick: () => {
-            const ids = Array.from(selectedIds.value)
-            historyStore.removeRecords(ids)
-            clearSelection()
-            message.success(t('common.success'))
-        }
+        onPositiveClick: onConfirm
     })
 }
 
-// Delete filtered results
+function deleteSelected() {
+    showConfirmDialog(
+        t('home.history.deleteSelectedConfirm', { count: selectedIds.value.size }),
+        () => {
+            historyStore.removeRecords(Array.from(selectedIds.value))
+            clearSelection()
+            message.success(t('common.success'))
+        },
+        t('common.delete')
+    )
+}
+
 function deleteFilteredRecords() {
     const idsToDelete = sortedAndFilteredList.value.map(record => record.id)
     if (idsToDelete.length === 0) return
 
-    dialog.warning({
-        title: t('common.confirm'),
-        content: t('home.history.deleteSelectedConfirm', { count: idsToDelete.length }), // Reusing message or add new one
-        positiveText: t('common.delete'),
-        negativeText: t('common.cancel'),
-        onPositiveClick: () => {
+    showConfirmDialog(
+        t('home.history.deleteSelectedConfirm', { count: idsToDelete.length }),
+        () => {
             historyStore.removeRecords(idsToDelete)
             message.success(t('common.success'))
+        },
+        t('common.delete')
+    )
+}
+
+function clearHistoryWithConfirm() {
+    showConfirmDialog(
+        t('home.history.clearConfirm'),
+        () => {
+            historyStore.clearHistory()
+            clearSelection()
+            message.success(t('common.success'))
         }
-    })
+    )
 }
 
 onMounted(() => {
@@ -81,7 +97,7 @@ onMounted(() => {
 </script>
 
 <template>
-    <div class="bg-[#F5F7FA] dark:bg-[#101014] flex flex-col p-4 md:p-8 h-[calc(100vh-56px)] overflow-hidden">
+    <div class="bg-[#F5F7FA] dark:bg-[#101014] flex flex-col p-4 md:p-8 min-h-[calc(100vh-64px)]">
         <!-- Header -->
         <HistoryHeader :isBatchMode="isBatchMode" :isAllSelected="isAllSelected" v-model:copyFormat="copyFormat"
             @toggleBatchMode="toggleBatchMode" @toggleSelectAll="toggleSelectAll" />
@@ -93,11 +109,12 @@ onMounted(() => {
         <!-- Content -->
         <HistoryGrid :displayList="displayList" :isBatchMode="isBatchMode" :selectedIds="selectedIds"
             :copyFormat="copyFormat" :hasMore="hasMore" @toggleSelection="toggleSelection"
-            @deleteRecord="historyStore.removeRecord" @loadMore="loadMore">
-            <template #footer>
-                <!-- Bottom Action Bar -->
+            @deleteRecord="historyStore.removeRecord" @loadMore="loadMore" @update:copyFormat="copyFormat = $event">
+
+            <template #clearTool>
+                <!-- Top Action Bar -->
                 <div v-if="historyStore.history.length > 0"
-                    class="mt-4 pt-4 border-t border-gray-100 dark:border-gray-700 flex justify-end gap-3 items-center">
+                    class="mb-4 pb-4 border-b border-gray-100 dark:border-gray-700 flex justify-end gap-3 items-center">
                     <!-- Selected count text -->
                     <div v-if="isBatchMode && hasSelected" class="mr-auto text-xs font-bold text-primary">
                         {{ t('home.history.selectedCount', { count: selectedIds.size }) }}
@@ -114,13 +131,14 @@ onMounted(() => {
                         <div class="i-ph-trash" />
                         {{ t('home.history.deleteFiltered') }}
                     </button>
-                    <button @click="historyStore.clearHistory()"
+                    <button @click="clearHistoryWithConfirm"
                         class="text-xs font-medium text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 px-4 py-2 rounded-lg transition-colors flex items-center gap-2">
                         <div class="i-ph-broom" />
                         {{ t('home.history.clear') }}
                     </button>
                 </div>
             </template>
+
         </HistoryGrid>
     </div>
 </template>

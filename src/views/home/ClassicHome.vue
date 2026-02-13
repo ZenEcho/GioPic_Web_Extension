@@ -29,7 +29,7 @@ const { onFilesDropped } = useUploadInput((files) => {
 </script>
 
 <template>
-    <div class="h-full flex flex-col md:flex-row overflow-y-auto md:overflow-hidden">
+    <div class=" h-screen flex flex-col md:flex-row overflow-y-auto md:overflow-hidden">
         <!-- 左侧：分发节点 -->
         <ClassicSidebar v-model:selectedIds="configStore.selectedIds" @add="emit('addConfig')"
             @edit="(c) => emit('editConfig', c)" @openSettings="emit('openSettings')" />
@@ -38,7 +38,7 @@ const { onFilesDropped } = useUploadInput((files) => {
         <UploadZone @filesDropped="onFilesDropped" />
 
         <!-- 右侧：历史/结果 -->
-        <UploadQueue class="m-4 md:m-6 mb-[86px]  md:w-[320px] max-md:h-[calc(100vh-466px)]"
+        <UploadQueue class="m-4 md:m-6 mb-[86px]  md:w-[320px] "
             :uploadQueue="fileQueue.items" @upload-all="fileQueue.start()"
             @upload-item="(id: string) => fileQueue.trigger(id)" @retry-item="(id: string) => fileQueue.retry(id)"
             @remove-item="(id: string): void => fileQueue.remove(id)" @clear-all="fileQueue.clear()"

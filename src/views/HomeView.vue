@@ -122,7 +122,7 @@ onMounted(async () => {
 </script>
 
 <template>
-    <div class="h-full w-full overflow-hidden transition-colors duration-300 bg-[#F5F7FA] dark:bg-[#101014]">
+    <div class=" h-screen w-full overflow-hidden transition-colors duration-300 bg-[#F5F7FA] dark:bg-[#101014]">
 
         <ClassicHome v-if="themeStore.uiMode === 'classic'" :fileQueue="fileQueue" @filesDropped="handleFilesDropped"
             @addConfig="handleAddConfig" @editConfig="handleEditConfig" @openSettings="showSettingsModal = true" />

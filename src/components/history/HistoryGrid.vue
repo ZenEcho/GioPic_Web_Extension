@@ -27,14 +27,14 @@
  -->
 
 <script setup lang="ts">
-import { ref, watch, onMounted, onUnmounted } from 'vue'
+import { ref, watch, onMounted, onUnmounted, computed } from 'vue'
 
 import { useI18n } from 'vue-i18n'
 import { useMessage } from 'naive-ui'
 import browser from 'webextension-polyfill'
 
 import type { UploadRecord } from '@/types'
-import { formatLink, copyToClipboard } from '@/utils/common'
+import { formatLink, copyToClipboard, COPY_FORMATS, FORMAT_LABELS } from '@/utils/common'
 
 const props = defineProps<{
     displayList: UploadRecord[]
@@ -48,11 +48,19 @@ const emit = defineEmits<{
     (e: 'toggleSelection', id: string): void
     (e: 'deleteRecord', id: string): void
     (e: 'loadMore'): void
+    (e: 'update:copyFormat', value: string): void
 }>()
 
 const showDetail = ref(false)
 const currentDetail = ref<UploadRecord | null>(null)
 const currentImageInfo = ref<{ width: number; height: number } | null>(null)
+
+const copyFormatOptions = computed(() =>
+    COPY_FORMATS.map(format => ({
+        label: FORMAT_LABELS[format] || format,
+        value: format
+    }))
+)
 
 function openDetail(record: UploadRecord) {
     currentDetail.value = record
@@ -175,7 +183,11 @@ async function handleInject(url: string) {
 </script>
 
 <template>
-    <div class="flex-1 bg-white dark:bg-gray-800 rounded-[24px] p-6 shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden flex flex-col">
+    <div
+        class="flex-1 bg-white dark:bg-gray-800 rounded-[24px] p-6 shadow-sm border border-gray-100 dark:border-gray-700  flex flex-col ">
+        <!-- Footer Slot -->
+        <slot name="clearTool" />
+
         <!-- List -->
         <div v-if="displayList.length > 0" class="overflow-y-auto custom-scrollbar flex-1 p-1">
             <n-image-group>
@@ -189,17 +201,17 @@ async function handleInject(url: string) {
                             isBatchMode
                                 ? 'cursor-pointer hover:border-primary/50 hover:bg-primary-50/30 dark:hover:bg-primary-950/10'
                                 : 'hover:border-primary/30 hover:shadow-sm hover:-translate-y-0.5 hover:bg-white dark:hover:bg-gray-800/80'
-                        ]"
-                        @click="isBatchMode ? emit('toggleSelection', record.id) : null">
-                        
+                        ]" @click="isBatchMode ? emit('toggleSelection', record.id) : null">
+
                         <!-- Image Container -->
                         <div class="relative aspect-square w-full overflow-hidden bg-gray-100 dark:bg-gray-800">
-                            <n-image :src="imageBlobs[record.id] || record.thumbUrl || record.url" :preview-src="imageBlobs[record.id] || record.url"
-                                :preview-disabled="isBatchMode" lazy object-fit="cover"
-                                class="w-full h-full flex items-center justify-center"
+                            <n-image :src="imageBlobs[record.id] || record.thumbUrl || record.url"
+                                :preview-src="imageBlobs[record.id] || record.url" :preview-disabled="isBatchMode" lazy
+                                object-fit="cover" class="w-full h-full flex items-center justify-center"
                                 :img-props="{ class: 'w-full h-full object-cover transition-transform duration-700 group-hover:scale-110' }">
                                 <template #placeholder>
-                                    <div class="w-full h-full flex items-center justify-center bg-gray-100 dark:bg-gray-800 text-gray-300">
+                                    <div
+                                        class="w-full h-full flex items-center justify-center bg-gray-100 dark:bg-gray-800 text-gray-300">
                                         <div class="i-ph-image text-2xl" />
                                     </div>
                                 </template>
@@ -218,13 +230,12 @@ async function handleInject(url: string) {
 
                             <!-- Hover Actions Overlay (Normal Mode) -->
                             <div v-if="!isBatchMode"
-                                 class="absolute inset-0 bg-black/20 backdrop-blur-[2px] opacity-0 group-hover:opacity-100 transition-all duration-300 flex items-center justify-center gap-3 z-20">
-                                
+                                class="absolute inset-0 bg-black/20 backdrop-blur-[2px] opacity-0 group-hover:opacity-100 transition-all duration-300 flex items-center justify-center gap-3 z-20">
+
                                 <!-- Inject -->
                                 <button
                                     class="w-10 h-10 rounded-full bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-200 hover:text-primary hover:scale-110 shadow-lg flex items-center justify-center transition-all duration-300 transform translate-y-4 group-hover:translate-y-0 delay-75"
-                                    :title="t('common.inject')"
-                                    @click.stop="handleInject(record.url)">
+                                    :title="t('common.inject')" @click.stop="handleInject(record.url)">
                                     <div class="i-ph-magic-wand text-xl" />
                                 </button>
 
@@ -239,8 +250,7 @@ async function handleInject(url: string) {
                                 <!-- Delete -->
                                 <button
                                     class="w-10 h-10 rounded-full bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-200 hover:text-red-500 hover:scale-110 shadow-lg flex items-center justify-center transition-all duration-300 transform translate-y-4 group-hover:translate-y-0 delay-100"
-                                    :title="t('common.delete')"
-                                    @click.stop="emit('deleteRecord', record.id)">
+                                    :title="t('common.delete')" @click.stop="emit('deleteRecord', record.id)">
                                     <div class="i-ph-trash text-xl" />
                                 </button>
                             </div>
@@ -248,19 +258,18 @@ async function handleInject(url: string) {
 
                         <!-- Footer Info -->
                         <div class="px-3 py-2 border-t backdrop-blur-sm flex-1 flex flex-col justify-center transition-colors group/footer"
-                             :class="[
+                            :class="[
                                 isBatchMode && selectedIds.has(record.id)
                                     ? 'border-primary/20 bg-primary-50 dark:bg-primary-950/30'
                                     : 'bg-white/90 dark:bg-gray-800/70 border-gray-100 dark:border-gray-700 cursor-pointer group-hover:bg-gray-50/80 dark:group-hover:bg-gray-700/40'
-                             ]"
-                             @click.stop="!isBatchMode ? openDetail(record) : emit('toggleSelection', record.id)">
+                            ]" @click.stop="!isBatchMode ? openDetail(record) : emit('toggleSelection', record.id)">
                             <div class="flex items-center justify-between mb-1">
                                 <span class="text-sm font-medium truncate flex-1 mr-2 transition-colors"
-                                      :class="selectedIds.has(record.id) ? 'text-primary font-bold' : 'text-gray-700 dark:text-gray-200 group-hover/footer:text-primary'">
+                                    :class="selectedIds.has(record.id) ? 'text-primary font-bold' : 'text-gray-700 dark:text-gray-200 group-hover/footer:text-primary'">
                                     {{ record.filename }}
                                 </span>
-                                <div class="i-ph-info text-gray-400 opacity-0 group-hover/footer:opacity-100 transition-opacity text-xs" 
-                                     v-if="!isBatchMode"/>
+                                <div class="i-ph-info text-gray-400 opacity-0 group-hover/footer:opacity-100 transition-opacity text-xs"
+                                    v-if="!isBatchMode" />
                             </div>
                             <div class="flex items-center justify-between text-[10px] text-gray-400">
                                 <div class="flex items-center gap-1 min-w-0">
@@ -273,7 +282,7 @@ async function handleInject(url: string) {
                     </div>
                 </div>
             </n-image-group>
-            
+
             <!-- Load Trigger -->
             <div ref="loadTrigger" class="h-8 w-full mt-4 flex items-center justify-center text-gray-400 text-xs">
                 <span v-if="hasMore">{{ t('home.history.loading') }}</span>
@@ -334,17 +343,24 @@ async function handleInject(url: string) {
 
                 <!-- URL Section -->
                 <div
-                    class="bg-gray-50 dark:bg-gray-800/50 p-4 rounded-xl border border-gray-100 dark:border-gray-700 flex items-center justify-between gap-4">
-                    <div class="flex-1 min-w-0">
-                        <div class="text-xs text-gray-400 mb-1">{{ t('common.link') }}</div>
-                        <div class="font-mono text-sm truncate text-gray-600 dark:text-gray-300 select-all">{{
-                            currentDetail.url }}</div>
+                    class="bg-gray-50 dark:bg-gray-800/50 p-4 rounded-xl border border-gray-100 dark:border-gray-700">
+                    <div class="flex items-center justify-between gap-4 mb-3">
+                        <div class="text-xs text-gray-400">{{ t('common.link') }}</div>
+                        <n-select :value="copyFormat" :options="copyFormatOptions" size="small"
+                            class="w-32" @update:value="emit('update:copyFormat', $event)" />
                     </div>
-                    <button
-                        class="p-2 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-lg transition-colors text-primary"
-                        @click="handleCopy(currentDetail.url)">
-                        <div class="i-ph-copy text-xl" />
-                    </button>
+                    <div class="flex items-center gap-3">
+                        <div class="flex-1 min-w-0 bg-white dark:bg-gray-900/50 rounded-lg p-3 border border-gray-200 dark:border-gray-600">
+                            <div class="font-mono text-sm truncate text-gray-600 dark:text-gray-300 select-all">
+                                {{ formatLink(currentDetail.url, copyFormat) }}
+                            </div>
+                        </div>
+                        <button
+                            class="p-3 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-lg transition-colors text-primary shrink-0"
+                            @click="handleCopy(formatLink(currentDetail.url, copyFormat))">
+                            <div class="i-ph-copy text-xl" />
+                        </button>
+                    </div>
                 </div>
             </div>
         </n-modal>

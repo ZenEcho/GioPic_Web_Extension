@@ -129,6 +129,7 @@ export default {
       selectedCount: 'Selected {count} items',
       deleteSelected: 'Delete Selected',
       deleteSelectedConfirm: 'Are you sure you want to delete {count} selected items?',
+      clearConfirm: 'Are you sure you want to clear all history records? This action cannot be undone.',
     },
     upload: {
        selectNodeWarning: 'Please select a node',

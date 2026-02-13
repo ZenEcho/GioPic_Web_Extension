@@ -20,17 +20,29 @@
  -->
 <script setup lang="ts">
 import { ref } from 'vue'
-
 import { useI18n } from 'vue-i18n'
-
+import { createMockFile, mockConfig } from '@/utils/mock'
 
 const emit = defineEmits<{
-    (e: 'filesDropped', files: FileList): void
+    (e: 'filesDropped', files: FileList | File[]): void
 }>()
 
 const { t } = useI18n()
 const currentHover = ref(false)
 
+// Dev Tools Logic
+const isDev = import.meta.env.DEV
+const mockCount = ref(1)
+
+async function handleMockUpload(count: number) {
+    const files: File[] = []
+    for (let i = 0; i < count; i++) {
+        const file = await createMockFile(i + 1)
+        ;(file as any)._mockConfig = mockConfig
+        files.push(file)
+    }
+    emit('filesDropped', files)
+}
 
 function onDrop(e: DragEvent) {
 
@@ -78,6 +90,14 @@ function onFileChange(e: Event) {
 
         <input type="file" multiple accept="image/*" class="absolute inset-0 opacity-0 cursor-pointer"
             @change="onFileChange" />
+
+        <!-- Dev Tools (Mock Upload) -->
+        <div v-if="isDev" class="absolute bottom-4 right-4 z-20 flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300" @click.stop>
+            <n-input-number v-model:value="mockCount" size="small" :min="1" :max="50" :show-button="false" class="w-16 shadow-sm" placeholder="Count" />
+            <n-button size="small" type="primary" class="shadow-sm" @click="handleMockUpload(mockCount)">
+                模拟上传 {{ mockCount }}
+            </n-button>
+        </div>
     </div>
 </template>
 

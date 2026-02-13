@@ -80,7 +80,7 @@ function handleNavigate(view: 'upload' | 'history') {
         </div>
 
         <!-- 内容区 -->
-        <div class="flex-1 overflow-hidden relative">
+        <div class="flex-1  relative overflow-y-auto ">
             <!-- 上传视图: 上下分栏 -->
             <div v-if="currentView === 'upload'" class="h-full flex flex-col">
                 <!-- 上部分: 上传区域 -->
@@ -91,7 +91,7 @@ function handleNavigate(view: 'upload' | 'history') {
                 <!-- 下部分: 上传队列 -->
                 <div class="flex-1 min-h-0 px-3 md:px-6 py-3 md:pb-6">
                     <div
-                        class="h-full bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden flex flex-col">
+                        class=" bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700  flex flex-col">
                         <UploadQueue :uploadQueue="fileQueue.items" @upload-all="fileQueue.start()"
                             @upload-item="(id: string) => fileQueue.trigger(id)"
                             @retry-item="(id: string) => fileQueue.retry(id)"
@@ -103,7 +103,7 @@ function handleNavigate(view: 'upload' | 'history') {
             </div>
 
             <!-- 历史视图 -->
-            <div v-else-if="currentView === 'history'" class="h-full w-full">
+            <div v-else-if="currentView === 'history'" class="h-full w-full overflow-auto">
                 <HistoryView />
             </div>
         </div>

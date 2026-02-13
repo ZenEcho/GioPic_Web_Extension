@@ -626,9 +626,18 @@ async function uploadTest(file: File, config: TestConfig, onProgress: ProgressCa
     onProgress(i * 10)
   }
 
+  // 尝试从文件名中提取 seed 以保持图片一致性
+  // 格式: mock_img_seed_{seed}.jpg
+  const match = file.name.match(/mock_img_seed_(.+)\./)
+  let url = 'https://picsum.photos/800/600'
+  
+  if (match && match[1]) {
+    url = `https://picsum.photos/seed/${match[1]}/800/600`
+  }
+
   return {
-    url: 'https://example.com/test/' + file.name,
-    thumbUrl: 'https://example.com/test/thumb/' + file.name
+    url,
+    thumbUrl: url
   }
 }
 

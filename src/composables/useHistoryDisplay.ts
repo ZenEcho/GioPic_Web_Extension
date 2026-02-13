@@ -49,9 +49,12 @@ export function useHistoryDisplay(history: Ref<UploadRecord[]>) {
     /**
      * 计算属性：配置筛选选项列表
      * 从现有历史记录中提取所有不重复的配置名
+     * 优化：仅扫描最近的 5000 条记录以避免大数据量卡顿
      */
     const configOptions = computed(() => {
-        const names = new Set(history.value.map(r => r.configName))
+        const limit = 5000
+        const source = history.value.length > limit ? history.value.slice(0, limit) : history.value
+        const names = new Set(source.map(r => r.configName))
         return Array.from(names).map(name => ({ label: name, value: name }))
     })
 
@@ -60,6 +63,12 @@ export function useHistoryDisplay(history: Ref<UploadRecord[]>) {
      * 执行顺序：搜索 -> 筛选 -> 排序
      */
     const sortedAndFilteredList = computed(() => {
+        // 如果没有搜索、筛选，且排序为默认的时间倒序（假设原数据即为倒序）
+        // 则直接返回原数组，避免昂贵的复制和排序操作
+        if (!searchQuery.value && !filterConfig.value && sortBy.value === 'timeDesc') {
+            return history.value
+        }
+
         let result = [...history.value]
 
         // 搜索过滤
@@ -74,15 +83,20 @@ export function useHistoryDisplay(history: Ref<UploadRecord[]>) {
         }
 
         // 排序
-        result.sort((a, b) => {
-            switch (sortBy.value) {
-                case 'timeAsc': return a.createdAt - b.createdAt
-                case 'timeDesc': return b.createdAt - a.createdAt
-                case 'nameAsc': return a.filename.localeCompare(b.filename)
-                case 'nameDesc': return b.filename.localeCompare(a.filename)
-                default: return 0
-            }
-        })
+        // 只有当不是默认排序时才进行排序
+        if (sortBy.value !== 'timeDesc') {
+             result.sort((a, b) => {
+                switch (sortBy.value) {
+                    case 'timeAsc': return a.createdAt - b.createdAt
+                    // timeDesc 是默认顺序，如果走到这里说明用户显式选择了 timeDesc 但经过了过滤，或者原数据顺序不保证
+                    // 但通常 filter 保持相对顺序。如果为了严谨可以保留 sort，但在大数据下建议跳过
+                    case 'timeDesc': return b.createdAt - a.createdAt 
+                    case 'nameAsc': return a.filename.localeCompare(b.filename)
+                    case 'nameDesc': return b.filename.localeCompare(a.filename)
+                    default: return 0
+                }
+            })
+        }
 
         return result
     })

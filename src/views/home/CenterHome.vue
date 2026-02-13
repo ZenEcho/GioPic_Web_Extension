@@ -43,7 +43,7 @@ const { onFilesDropped } = useUploadInput((files) => {
 
 
 <template>
-    <div class="h-full w-full flex flex-col bg-[#F5F7FA] dark:bg-[#101014] overflow-hidden">
+    <div class="h-full w-full flex flex-col bg-[#F5F7FA] dark:bg-[#101014]">
         <!-- 顶部导航栏 -->
         <div
             class="flex-shrink-0 bg-white dark:bg-gray-800 border-b border-gray-100 dark:border-gray-700 px-4 h-16 flex items-center justify-between z-10">
@@ -85,7 +85,7 @@ const { onFilesDropped } = useUploadInput((files) => {
         </div>
 
         <!-- 主内容区域 -->
-        <div class="flex-1 overflow-y-auto overflow-x-hidden p-4 md:p-8 custom-scrollbar">
+        <div class="flex-1 overflow-y-auto p-4 md:p-8 custom-scrollbar">
             <div class="max-w-5xl mx-auto h-full flex flex-col">
 
                 <!-- Upload View -->
