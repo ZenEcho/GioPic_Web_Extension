@@ -11,7 +11,7 @@ GioPic 是一个支持多节点并发的浏览器图片上传扩展，一次操�
 - **多节点分发**: 配置多个「分发节点」，一次上传即可并行推送到所有目标。
 - **强大的插件系统**: 支持导入 JavaScript 插件 (.json) 来扩展任意图床支持，插件在安全的沙箱环境（Sandbox）中运行。
 - **广泛的图床支持**:
-  - **图床平台**: Lsky Pro (兰空图床), EasyImages (简单图床), Chevereto, ImgURL, Hellohao, SM.MS, Imgur
+  - **图床平台**: Lsky Pro (兰空图床), EasyImages (简单图床), Chevereto, ImgURL, Zpic, Hellohao, SM.MS, Imgur, ImgDD, OneImg
   - **对象存储**: 阿里云 OSS, 腾讯云 COS, AWS S3
   - **其他**: GitHub 仓库, 自定义 HTTP 接口
   - **插件扩展**: 支持用户自定义 JavaScript 插件
@@ -30,6 +30,7 @@ GioPic 是一个支持多节点并发的浏览器图片上传扩展，一次操�
 
 - Google Chrome (最新版)
 - Microsoft Edge (最新版)
+- Mozilla Firefox (最新版)
 
 ## 演示
 
@@ -39,16 +40,21 @@ GioPic 是一个支持多节点并发的浏览器图片上传扩展，一次操�
 [![](https://i.mji.rip/2026/01/20/7234d8599422e583241f0553b6928922.png)](https://i.mji.rip/2026/01/20/7234d8599422e583241f0553b6928922.png)
 [![](https://i.mji.rip/2026/01/20/0a473ec9fadb00999173f0e462f73a82.png)](https://i.mji.rip/2026/01/20/0a473ec9fadb00999173f0e462f73a82.png)
 [![](https://i.mji.rip/2026/01/20/86b0aebb56aba750299fd67648401456.png)](https://i.mji.rip/2026/01/20/86b0aebb56aba750299fd67648401456.png)
+
 ### 自动注入演示
+
 ![image](https://i.mji.rip/2026/01/26/114f48702f3d79e4527aeeb68fc45e02.gif)
 
 ### 右键上传演示
+
 ![image](https://wmimg.com/i/1550/2026/01/69707abba7d4b.gif)
 
 ### 多节点同步上传
+
 ![image](https://i.mji.rip/2026/01/26/b94ff1213587c428da665aac830e342c.png)
 
 ### 一键配置
+
 对于支持的站点（如兰空图床、简单图床），当您访问该站点时，GioPic 可能会检测到并提供 "一键添加" 按钮，自动配置扩展。
 ![image](https://i.mji.rip/2026/01/26/e7355efe889a37dca766945154e5fff8.png)
 ![image](https://i.mji.rip/2026/01/26/1e99ccbcfe5f892ae40ef4fa0f47578c.png)
@@ -83,7 +89,7 @@ GioPic 是一个支持多节点并发的浏览器图片上传扩展，一次操�
 
 ### 前置要求
 
-- Node.js >= 20.19.0
+- Node.js ^20.19.0 或 >=22.12.0
 - pnpm
 
 ### 初始化
@@ -142,22 +148,33 @@ pnpm test
     - 在 `DRIVE_REGISTRY` 对象中添加新条目，包含标签、图标、主题色、分类和表单配置。
 
     示例:
+
     ```typescript
     export const DRIVE_REGISTRY: Record<string, DriveRegistryItem> = {
       // ...
       new_host: {
-        key: 'new_host',
-        label: 'New Host Name',
-        icon: 'i-ph-cloud-duotone', // 图标类名
-        color: 'text-blue-600 bg-blue-100', // 主题色
-        darkColor: 'dark:text-blue-300 dark:bg-blue-900/30', // 暗色模式主题色
-        category: 'custom', // 分类: self-hosted, cloud, public, custom
+        key: "new_host",
+        label: "New Host Name",
+        icon: "i-ph-cloud-duotone", // 图标类名
+        color: "text-blue-600 bg-blue-100", // 主题色
+        darkColor: "dark:text-blue-300 dark:bg-blue-900/30", // 暗色模式主题色
+        category: "custom", // 分类: self-hosted, cloud, public, custom
         fields: [
-          { key: 'apiUrl', label: 'config.form.apiUrl', type: 'text', required: true },
-          { key: 'token', label: 'config.form.token', type: 'password', required: true },
-        ]
-      }
-    }
+          {
+            key: "apiUrl",
+            label: "config.form.apiUrl",
+            type: "text",
+            required: true,
+          },
+          {
+            key: "token",
+            label: "config.form.token",
+            type: "password",
+            required: true,
+          },
+        ],
+      },
+    };
     ```
 
 3.  **添加多语言翻译**:
@@ -165,6 +182,7 @@ pnpm test
     - 在 `providers` 对象下添加节点名称。
 
     示例:
+
     ```typescript
     // src/locales/en-US.ts
     providers: {
@@ -180,6 +198,7 @@ pnpm test
     - 在主 `uploadImage` 函数中注册新类型。
 
     示例:
+
     ```typescript
     // 1. 在 uploadImage 中注册
     export async function uploadImage(...) {

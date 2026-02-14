@@ -11,7 +11,7 @@ GioPic is a browser extension for multi-node concurrent image uploading that ena
 - **Multi-node Distribution**: Configure multiple "distribution nodes" to push images to all targets in parallel with a single upload.
 - **Powerful Plugin System**: Support importing JavaScript plugins (.json) to extend support for any image host, running in a secure Sandbox environment.
 - **Extensive Provider Support**:
-  - **Image Hosting Platforms**: Lsky Pro, EasyImages, Chevereto, ImgURL, Hellohao, SM.MS, Imgur
+  - **Image Hosting Platforms**: Lsky Pro, EasyImages, Chevereto, ImgURL, Zpic, Hellohao, SM.MS, Imgur, ImgDD, OneImg
   - **Object Storage**: Alibaba Cloud OSS, Tencent Cloud COS, AWS S3
   - **Others**: GitHub Repository, Custom HTTP Interface
   - **Plugin Extensions**: Support user-defined JavaScript plugins
@@ -30,6 +30,7 @@ GioPic is a browser extension for multi-node concurrent image uploading that ena
 
 - Google Chrome (Latest)
 - Microsoft Edge (Latest)
+- Mozilla Firefox (Latest)
 
 ## Demo
 
@@ -41,15 +42,19 @@ GioPic is a browser extension for multi-node concurrent image uploading that ena
 [![](https://i.mji.rip/2026/01/20/86b0aebb56aba750299fd67648401456.png)](https://i.mji.rip/2026/01/20/86b0aebb56aba750299fd67648401456.png)
 
 ### Auto Injection Demo
+
 ![image](https://i.mji.rip/2026/01/26/114f48702f3d79e4527aeeb68fc45e02.gif)
 
 ### Right-click Upload Demo
+
 ![image](https://wmimg.com/i/1550/2026/01/69707abba7d4b.gif)
 
 ### Multi-node Sync Upload
+
 ![image](https://i.mji.rip/2026/01/26/b94ff1213587c428da665aac830e342c.png)
 
 ### One-Click Setup
+
 For supported sites (e.g., Lsky Pro, EasyImages), when you visit the site, GioPic may detect it and provide a "One-Click Add" button to automatically configure the extension.
 ![image](https://i.mji.rip/2026/01/26/e7355efe889a37dca766945154e5fff8.png)
 ![image](https://i.mji.rip/2026/01/26/1e99ccbcfe5f892ae40ef4fa0f47578c.png)
@@ -84,7 +89,7 @@ For supported sites (e.g., Lsky Pro, EasyImages), when you visit the site, GioPi
 
 ### Prerequisites
 
-- Node.js >= 20.19.0
+- Node.js ^20.19.0 or >=22.12.0
 - pnpm
 
 ### Initialization
@@ -143,22 +148,33 @@ If you want to build the provider into the extension, you need to modify the fol
     - Add a new entry to the `DRIVE_REGISTRY` object, including label, icon, theme color, category, and form configuration.
 
     Example:
+
     ```typescript
     export const DRIVE_REGISTRY: Record<string, DriveRegistryItem> = {
       // ...
       new_host: {
-        key: 'new_host',
-        label: 'New Host Name',
-        icon: 'i-ph-cloud-duotone', // Icon class name
-        color: 'text-blue-600 bg-blue-100', // Theme color
-        darkColor: 'dark:text-blue-300 dark:bg-blue-900/30', // Dark mode theme color
-        category: 'custom', // Category: self-hosted, cloud, public, custom
+        key: "new_host",
+        label: "New Host Name",
+        icon: "i-ph-cloud-duotone", // Icon class name
+        color: "text-blue-600 bg-blue-100", // Theme color
+        darkColor: "dark:text-blue-300 dark:bg-blue-900/30", // Dark mode theme color
+        category: "custom", // Category: self-hosted, cloud, public, custom
         fields: [
-          { key: 'apiUrl', label: 'config.form.apiUrl', type: 'text', required: true },
-          { key: 'token', label: 'config.form.token', type: 'password', required: true },
-        ]
-      }
-    }
+          {
+            key: "apiUrl",
+            label: "config.form.apiUrl",
+            type: "text",
+            required: true,
+          },
+          {
+            key: "token",
+            label: "config.form.token",
+            type: "password",
+            required: true,
+          },
+        ],
+      },
+    };
     ```
 
 3.  **Add Translations**:
@@ -166,6 +182,7 @@ If you want to build the provider into the extension, you need to modify the fol
     - Add the provider name under the `providers` object.
 
     Example:
+
     ```typescript
     // src/locales/en-US.ts
     providers: {
@@ -181,6 +198,7 @@ If you want to build the provider into the extension, you need to modify the fol
     - Register the new type in the main `uploadImage` function.
 
     Example:
+
     ```typescript
     // 1. Register in uploadImage
     export async function uploadImage(...) {

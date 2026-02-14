@@ -306,10 +306,6 @@ function printStyledLogs() {
 
 injectPageBundle()
 
-
-try {
-    browser.runtime.sendMessage({ type: 'REGISTER_CONTENT' })
-} catch { }
 // 挂载单一容器
 if (window.self === window.top) {
     mountComponent(ContentOverlay, 'giopic-content-overlay', true, {}, true)

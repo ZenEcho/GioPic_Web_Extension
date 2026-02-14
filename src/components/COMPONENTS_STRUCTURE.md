@@ -1,6 +1,7 @@
-# Components Architecture (v2.3.1)
+# Components Architecture (v2.3.2)
 
 ## 1. 简介 (Introduction)
+
 `src/components` 目录包含了 GioPic 主界面（Console/Dashboard）的核心 UI 组件。这些组件主要运行在 Extension 的 Popup、Side Panel 或 Options 页面中，基于 Vue 3 + UnoCSS 构建，负责处理核心的图床管理、文件上传、历史记录和全局设置。
 
 ## 2. 目录结构 (Directory Structure)
@@ -42,46 +43,51 @@ src/components/
 
 组件库按照**功能领域 (Functional Domain)** 进行组织，确保关注点分离：
 
-| 模块 (Module) | 职责 (Responsibility) | 关键交互 |
-| :--- | :--- | :--- |
-| **Config** | 管理不同图床驱动（S3, GitHub, Custom 等）的配置表单 | 动态表单渲染、魔术变量预览、配置验证、驱动选择 |
-| **Home** | 构建主控制台的布局与核心工作流 | 侧边栏导航、文件拖拽上传、队列管理 |
-| **History** | 展示与管理历史上传记录 | 分页加载、搜索过滤、复制链接 |
-| **Settings** | 管理扩展的全局偏好设置 | 界面定制、快捷键设置、语言切换、编辑器自动绑定管理 |
+| 模块 (Module) | 职责 (Responsibility)                               | 关键交互                                           |
+| :------------ | :-------------------------------------------------- | :------------------------------------------------- |
+| **Config**    | 管理不同图床驱动（S3, GitHub, Custom 等）的配置表单 | 动态表单渲染、魔术变量预览、配置验证、驱动选择     |
+| **Home**      | 构建主控制台的布局与核心工作流                      | 侧边栏导航、文件拖拽上传、队列管理                 |
+| **History**   | 展示与管理历史上传记录                              | 分页加载、搜索过滤、复制链接                       |
+| **Settings**  | 管理扩展的全局偏好设置                              | 界面定制、快捷键设置、语言切换、编辑器自动绑定管理 |
 
 ## 4. 核心模块详解 (Core Modules)
 
 ### 4.1 动态配置系统 (`config/`)
-*   **DriveSelector.vue**: 提供分类（自托管、云存储、公共图床、自定义、插件）的驱动选择界面。
-    *   **动态加载**: 基于 `useDriveRegistry` 动态加载可用驱动。
-    *   **插件支持**: 支持展示通过插件系统注册的图床驱动。
-*   **DynamicConfigForm.vue**:
-    *   根据 Drive Schema 动态生成表单项。
-    *   **魔术变量预览**: 实时演示 `{uuid}`, `{year}` 等变量的替换结果。
-    *   处理表单验证与数据绑定。
+
+- **DriveSelector.vue**: 提供分类（自托管、云存储、公共图床、自定义、插件）的驱动选择界面。
+  - **动态加载**: 基于 `useDriveRegistry` 动态加载可用驱动。
+  - **插件支持**: 支持展示通过插件系统注册的图床驱动。
+- **DynamicConfigForm.vue**:
+  - 根据 Drive Schema 动态生成表单项。
+  - **魔术变量预览**: 实时演示 `{uuid}`, `{year}` 等变量的替换结果。
+  - 处理表单验证与数据绑定。
 
 ### 4.2 主界面布局 (`home/`)
-*   **ConsoleSidebar**: 应用的主导航，支持折叠状态持久化 (通过 `storage.local`)。
-*   **UploadZone**: 核心交互区域，支持拖拽文件、粘贴上传。
-*   **UploadQueue**: 管理上传任务队列，展示进度条与状态（成功/失败）。
+
+- **ConsoleSidebar**: 应用的主导航，支持折叠状态持久化 (通过 `storage.local`)。
+- **UploadZone**: 核心交互区域，支持拖拽文件、粘贴上传。
+- **UploadQueue**: 管理上传任务队列，展示进度条与状态（成功/失败）。
 
 ### 4.3 全局设置 (`settings/`)
-*   **SettingsModal**: 统一的设置入口，集成通用设置、外观设置等。
-*   **PluginManagerModal**: 插件管理界面，允许用户管理扩展图床插件。
-*   **SiteEditorSettings**:
-    *   管理“域名-编辑器”的绑定关系。
-    *   支持手动添加/删除绑定规则。
-    *   配合 Content Script 实现编辑器的自动识别与精准注入。
+
+- **SettingsModal**: 统一的设置入口，集成通用设置、外观设置等。
+- **PluginManagerModal**: 插件管理界面，允许用户管理扩展图床插件。
+- **SiteEditorSettings**:
+  - 管理“域名-编辑器”的绑定关系。
+  - 支持手动添加/删除绑定规则。
+  - 配合 Content Script 实现编辑器的自动识别与精准注入。
 
 ## 5. 关键流程与数据流 (Key Processes & Data Flow)
 
 ### 5.1 配置新增/编辑流程
+
 1.  用户点击侧边栏 "Add Config" -> 打开 `ConfigModal`。
 2.  `DriveSelector` 展示可用驱动 (包括内置和插件) -> 用户选择驱动类型。
 3.  `DynamicConfigForm` 渲染对应 Schema 的表单 -> 用户输入 -> 实时预览变量。
 4.  保存 -> 数据写入 `storage.local` -> 触发 `REFRESH_CONFIG` 事件。
 
 ### 5.2 网站编辑器绑定流程
+
 1.  Content Script 成功注入图片到某网站编辑器 -> 自动记录“域名-编辑器类型”到 `storage.local`。
 2.  用户打开设置 -> `SiteEditorSettings` 读取并展示绑定列表。
 3.  用户手动修改/删除绑定 -> 更新 `storage.local`。

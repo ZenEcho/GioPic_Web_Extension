@@ -1,6 +1,7 @@
-# Content Script Architecture (v2.3.1)
+# Content Script Architecture (v2.3.2)
 
 ## 1. 简介 (Introduction)
+
 Content Script 是注入到宿主页面中运行的脚本，负责与页面进行交互（如上传图片、编辑器注入）以及渲染覆盖在页面上的 UI（如悬浮球）。GioPic 采用了 **双重注入策略 (Dual Injection Strategy)**，以同时满足 UI 隔离和页面 JS 交互的需求。
 
 ## 2. 目录结构 (Directory Structure)
@@ -43,50 +44,56 @@ src/content/
 
 GioPic 将注入逻辑分为两个独立的层级，分别运行在不同的上下文中：
 
-| 层级 (Layer) | 运行环境 (Context) | 代码入口 | 可见性 | 职责 |
-| :--- | :--- | :--- | :--- | :--- |
-| **Content Overlay** | **Isolated World** <br> (扩展独立环境) | `src/content/index.ts` | ✅ Shadow DOM | 渲染悬浮球、侧边栏、通知等 UI。<br>特点：**样式完全隔离**，不受页面 CSS 污染。 |
-| **Page Script** | **Main World** <br> (页面原生环境) | `src/content/page/index.ts` | ❌ 无可见 UI | 访问页面 JS 对象（如 `window.editor`），监听事件。<br>特点：**与页面 JS 共享作用域**。 |
+| 层级 (Layer)        | 运行环境 (Context)                     | 代码入口                    | 可见性        | 职责                                                                                   |
+| :------------------ | :------------------------------------- | :-------------------------- | :------------ | :------------------------------------------------------------------------------------- |
+| **Content Overlay** | **Isolated World** <br> (扩展独立环境) | `src/content/index.ts`      | ✅ Shadow DOM | 渲染悬浮球、侧边栏、通知等 UI。<br>特点：**样式完全隔离**，不受页面 CSS 污染。         |
+| **Page Script**     | **Main World** <br> (页面原生环境)     | `src/content/page/index.ts` | ❌ 无可见 UI  | 访问页面 JS 对象（如 `window.editor`），监听事件。<br>特点：**与页面 JS 共享作用域**。 |
 
 ## 4. 核心模块详解 (Core Modules)
 
 ### 4.1 UI 容器 (`components/ContentOverlay.vue`)
-*   **角色**: 唯一的 UI 挂载点。
-*   **实现**:
-    *   作为所有浮层组件 (`WebSidebar`, `UploadList`, `NotificationView`) 的父容器。
-    *   通过 Shadow DOM 挂载到页面 (`#giopic-content-overlay`)。
-    *   管理 `pointer-events`，确保透明区域不遮挡页面操作。
+
+- **角色**: 唯一的 UI 挂载点。
+- **实现**:
+  - 作为所有浮层组件 (`WebSidebar`, `UploadList`, `NotificationView`) 的父容器。
+  - 通过 Shadow DOM 挂载到页面 (`#giopic-content-overlay`)。
+  - 管理 `pointer-events`，确保透明区域不遮挡页面操作。
 
 ### 4.2 编辑器注入系统 (`page/EditorInjector/`)
-*   **Detector 类**: 核心探测器。
-    *   `detect()`: 遍历适配器列表，识别当前页面的编辑器。
-    *   `inject()`: 执行图片 URL 注入。支持 **Preferred Editor Type** 机制，即优先使用用户绑定或上次成功使用的编辑器类型。
-    *   **自动绑定**: 注入成功后，会触发成功事件，Content Script 捕获后记录域名与编辑器的绑定关系。
+
+- **Detector 类**: 核心探测器。
+  - `detect()`: 遍历适配器列表，识别当前页面的编辑器。
+  - `inject()`: 执行图片 URL 注入。支持 **Preferred Editor Type** 机制，即优先使用用户绑定或上次成功使用的编辑器类型。
+  - **自动绑定**: 注入成功后，会触发成功事件，Content Script 捕获后记录域名与编辑器的绑定关系。
 
 ### 4.3 Token 探测系统 (`components/detectors/`)
-*   **探测器组件**: 针对特定图床系统（如 Chevereto, Lsky Pro, EasyImages 等）的 Vue 组件。
-*   **工作流**: 当用户访问支持的图床网站时，对应的探测器组件激活，尝试自动获取认证 Token 并提示用户保存。
-*   **扩展性**: 新增图床支持只需在 `detectors` 目录添加对应组件并在 Registry 注册。
+
+- **探测器组件**: 针对特定图床系统（如 Chevereto, Lsky Pro, EasyImages 等）的 Vue 组件。
+- **工作流**: 当用户访问支持的图床网站时，对应的探测器组件激活，尝试自动获取认证 Token 并提示用户保存。
+- **扩展性**: 新增图床支持只需在 `detectors` 目录添加对应组件并在 Registry 注册。
 
 ### 4.4 消息广播系统 (`utils/injector.ts`)
-*   **功能**: 解决 iframe 内编辑器无法接收注入消息的问题。
-*   **机制**:
-    *   `broadcastInjectMessage`: 负责发送注入指令。
-    *   **智能路由**: 不仅向当前窗口发送 `postMessage`，如果是顶层窗口，还会遍历页面所有 `iframe` 并广播消息，确保嵌套在 iframe 中的编辑器也能接收到图片数据。
+
+- **功能**: 解决 iframe 内编辑器无法接收注入消息的问题。
+- **机制**:
+  - `broadcastInjectMessage`: 负责发送注入指令。
+  - **智能路由**: 不仅向当前窗口发送 `postMessage`，如果是顶层窗口，还会遍历页面所有 `iframe` 并广播消息，确保嵌套在 iframe 中的编辑器也能接收到图片数据。
 
 ## 5. 关键流程与数据流 (Key Processes & Data Flow)
 
 ### 5.1 UI 注入流程
+
 1.  浏览器加载页面 -> 运行 `src/content/index.ts`。
 2.  `index.ts` 创建 `div#giopic-content-overlay` -> 附加 Shadow Root。
 3.  Vue 应用 (`ContentOverlay`) 挂载到 Shadow Root 中。
 4.  用户看到悬浮球，但页面 CSS 无法影响它。
 
 ### 5.2 图片上传与智能注入流程
+
 1.  **上传**: 用户通过悬浮球上传图片 -> Background 完成上传 -> 发送 `UPLOAD_EVENT` 消息。
 2.  **中转**: `content/index.ts` 收到消息 -> 读取 `storage.local` 中的 `siteEditorConfig` (获取该网站绑定的编辑器类型) -> 调用 `broadcastInjectMessage`。
 3.  **广播**: 消息被发送到当前 Window 以及所有子 iframe。
 4.  **注入**: `page/index.ts` (Main World) 监听到消息 -> 调用 `Detector.inject(url, preferredType)`。
-    *   如果存在 `preferredType`，直接使用对应适配器注入。
-    *   如果不存在，尝试自动探测并注入。
+    - 如果存在 `preferredType`，直接使用对应适配器注入。
+    - 如果不存在，尝试自动探测并注入。
 5.  **反馈**: 注入成功后，Page Script 发送成功消息 -> Content Script 更新 `siteEditorConfig` 绑定关系。

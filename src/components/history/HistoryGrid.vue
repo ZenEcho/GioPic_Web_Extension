@@ -167,14 +167,27 @@ async function handleCopy(text: string) {
 
 async function handleInject(url: string) {
     try {
-        const tabs = await browser.tabs.query({ active: true, currentWindow: true })
-        if (tabs && tabs.length > 0 && tabs[0]?.id) {
-            await browser.tabs.sendMessage(tabs[0].id, {
+        // 优先直接使用 browser.tabs（Chrome 等环境）
+        if (browser.tabs?.query) {
+            const tabs = await browser.tabs.query({ active: true, currentWindow: true })
+            if (tabs && tabs.length > 0 && tabs[0]?.id) {
+                await browser.tabs.sendMessage(tabs[0].id, {
+                    type: 'MANUAL_INJECT',
+                    payload: { url }
+                })
+                message.success(t('common.success'))
+                return
+            }
+        }
+        // 回退：通过 Background Script 中转（Firefox Sidebar 等无 tabs 权限的上下文）
+        await browser.runtime.sendMessage({
+            type: 'FORWARD_TO_TAB',
+            payload: {
                 type: 'MANUAL_INJECT',
                 payload: { url }
-            })
-            message.success(t('common.success'))
-        }
+            }
+        })
+        message.success(t('common.success'))
     } catch (e) {
         console.error('Injection failed', e)
         // message.error(t('common.failed'))
@@ -342,15 +355,15 @@ async function handleInject(url: string) {
                 </div>
 
                 <!-- URL Section -->
-                <div
-                    class="bg-gray-50 dark:bg-gray-800/50 p-4 rounded-xl border border-gray-100 dark:border-gray-700">
+                <div class="bg-gray-50 dark:bg-gray-800/50 p-4 rounded-xl border border-gray-100 dark:border-gray-700">
                     <div class="flex items-center justify-between gap-4 mb-3">
                         <div class="text-xs text-gray-400">{{ t('common.link') }}</div>
-                        <n-select :value="copyFormat" :options="copyFormatOptions" size="small"
-                            class="w-32" @update:value="emit('update:copyFormat', $event)" />
+                        <n-select :value="copyFormat" :options="copyFormatOptions" size="small" class="w-32"
+                            @update:value="emit('update:copyFormat', $event)" />
                     </div>
                     <div class="flex items-center gap-3">
-                        <div class="flex-1 min-w-0 bg-white dark:bg-gray-900/50 rounded-lg p-3 border border-gray-200 dark:border-gray-600">
+                        <div
+                            class="flex-1 min-w-0 bg-white dark:bg-gray-900/50 rounded-lg p-3 border border-gray-200 dark:border-gray-600">
                             <div class="font-mono text-sm truncate text-gray-600 dark:text-gray-300 select-all">
                                 {{ formatLink(currentDetail.url, copyFormat) }}
                             </div>

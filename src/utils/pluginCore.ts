@@ -39,17 +39,22 @@ export async function broadcastPluginUpdate() {
     // 1. Notify Extension Pages
     try {
         await browser.runtime.sendMessage({ type: 'REFRESH_PLUGINS' })
-    } catch {}
+    } catch { }
 
     // 2. Notify Content Scripts
     try {
-        const tabs = await browser.tabs.query({})
-        for (const tab of tabs) {
-            if (tab.id) {
-                browser.tabs.sendMessage(tab.id, { type: 'REFRESH_PLUGINS' }).catch(() => {})
+        if (browser.tabs?.query) {
+            // 直接使用 browser.tabs（Chrome 或 Background 上下文）
+            const tabs = await browser.tabs.query({})
+            for (const tab of tabs) {
+                if (tab.id) {
+                    browser.tabs.sendMessage(tab.id, { type: 'REFRESH_PLUGINS' }).catch(() => { })
+                }
             }
         }
-    } catch {}
+        // Firefox Sidebar 等无 tabs 权限的上下文已通过 runtime.sendMessage 通知了 Background，
+        // Background 会自行处理 REFRESH_PLUGINS 广播
+    } catch { }
 }
 
 /**
@@ -62,7 +67,7 @@ export async function installPluginToStorage(plugin: PluginMeta): Promise<void> 
     const stored = await db.get<PluginMeta[]>('plugins')
     const plugins = stored || []
     const index = plugins.findIndex(p => p.id === plugin.id)
-    
+
     const newPlugin = { ...plugin, enabled: true }
 
     if (index > -1) {
@@ -85,7 +90,7 @@ export async function uninstallPluginFromStorage(pluginId: string): Promise<bool
     let plugins = stored || []
     const initialLength = plugins.length
     plugins = plugins.filter(p => p.id !== pluginId)
-    
+
     if (plugins.length === initialLength) {
         return false
     }

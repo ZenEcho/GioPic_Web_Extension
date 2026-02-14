@@ -182,8 +182,6 @@ export async function handleMessage(message: any, sender: Runtime.MessageSender)
         await handleAddConfig(message, sender)
     } else if (message.type === 'FETCH_IMAGE_BLOB') {
         return await handleFetchImageBlob(message)
-    } else if (message.type === 'REGISTER_CONTENT') {
-        await handleRegisterContent(sender)
     } else if (message.type === 'DESKTOP_LINK_GET_STATUS') {
         return getDesktopLinkStatus()
     } else if (message.type === 'DESKTOP_LINK_SET_ENABLED') {
@@ -202,6 +200,9 @@ export async function handleMessage(message: any, sender: Runtime.MessageSender)
         return await handleUninstallPlugin(message.pluginId)
     } else if (message.type === 'GET_INSTALLED_PLUGINS') {
         return await handleGetInstalledPlugins()
+    } else if (message.type === 'FORWARD_TO_TAB') {
+        // Firefox 兼容：从没有 browser.tabs 权限的上下文（如 Sidebar）中转消息到当前活动 Tab
+        return await handleForwardToTab(message.payload)
     }
 }
 
@@ -486,11 +487,23 @@ async function handleFetchImageBlob(message: any) {
     }
 }
 
+
 /**
- * 注册 Content Script
- * (当前为空实现，可用于记录活跃 Tab)
+ * 转发消息到当前活动 Tab 的 Content Script
+ * 解决 Firefox Sidebar 上下文中 browser.tabs 不可用的问题
+ * 
+ * @param payload - 要转发给 Content Script 的消息对象
  */
-async function handleRegisterContent(sender: Runtime.MessageSender) {
-    // Content Script 注册（暂无特殊操作）
-    // console.log('Content script registered:', sender.tab?.id)
+async function handleForwardToTab(payload: any) {
+    try {
+        const tabs = await browser.tabs.query({ active: true, currentWindow: true })
+        if (tabs && tabs.length > 0 && tabs[0]?.id) {
+            await browser.tabs.sendMessage(tabs[0].id, payload)
+            return { success: true }
+        }
+        return { success: false, error: 'No active tab found' }
+    } catch (e: any) {
+        console.error('Forward to tab failed', e)
+        return { success: false, error: e?.message || 'Unknown error' }
+    }
 }
