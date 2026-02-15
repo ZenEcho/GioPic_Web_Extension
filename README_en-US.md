@@ -15,6 +15,10 @@ GioPic is a browser extension for multi-node concurrent image uploading that ena
   - **Object Storage**: Alibaba Cloud OSS, Tencent Cloud COS, AWS S3
   - **Others**: GitHub Repository, Custom HTTP Interface
   - **Plugin Extensions**: Support user-defined JavaScript plugins
+- **Built-in Image Editor**:
+  - Supports cropping, annotation (text, shapes, brush), and layer management.
+  - Supports filter enhancement, undo/redo, and minimap preview.
+  - Deeply optimized for mobile devices with touch zoom and gesture support.
 - **Convenient Upload Experience**:
   - Supports drag-and-drop, click-to-select, and clipboard paste uploads.
   - Right-click menu "GioPic Upload Image" on web pages.
@@ -30,7 +34,6 @@ GioPic is a browser extension for multi-node concurrent image uploading that ena
 
 - Google Chrome (Latest)
 - Microsoft Edge (Latest)
-- Mozilla Firefox (Latest)
 
 ## Demo
 

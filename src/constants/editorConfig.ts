@@ -46,4 +46,24 @@ export const TOOL_SHORTCUT_MAP: Record<string, AnnotationTool | 'crop'> = {
     n: 'number',
 }
 
-export const TEXT_FONT_OPTIONS = ['Arial', 'Georgia', 'Verdana', 'Courier New'] as const
+export const TEXT_FONT_OPTIONS = [
+    'Arial',
+    'Microsoft YaHei',
+    'SimSun',
+    'SimHei',
+    'Georgia',
+    'Verdana',
+    'Courier New',
+    'Times New Roman',
+    'Impact',
+    'Comic Sans MS',
+    'Tahoma',
+    'system-ui'
+] as const
+
+export const TEXT_STYLE_OPTIONS = [
+    { labelKey: 'imageEditor.styles.fill', value: 'fill' },
+    { labelKey: 'imageEditor.styles.stroke', value: 'stroke' },
+    { labelKey: 'imageEditor.styles.shadow', value: 'shadow' },
+    { labelKey: 'imageEditor.styles.background', value: 'background' },
+] as const

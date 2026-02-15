@@ -67,6 +67,11 @@ src/components/
 - **ConsoleSidebar**: 应用的主导航，支持折叠状态持久化 (通过 `storage.local`)。
 - **UploadZone**: 核心交互区域，支持拖拽文件、粘贴上传。
 - **UploadQueue**: 管理上传任务队列，展示进度条与状态（成功/失败）。
+- **ImageEditor**:
+  - **全功能编辑**: 集成裁剪、形状标注、文字输入、画笔涂鸦、滤镜增强。
+  - **图层管理**: 支持多图层操作，支持拖拽调整图层顺序。
+  - **响应式优化**: 适配移动端触控，支持导航图 (Minimap) 与双指缩放。
+  - **状态持久化**: 深度集成 `useImageEditor` 与 `editorRenderer`，支持撤销/重做序列化。
 
 ### 4.3 全局设置 (`settings/`)
 

@@ -2,7 +2,9 @@
 import {
     type Annotation,
     type ArrowAnnotation,
+    type ArrowStyle,
     type BrushAnnotation,
+    type GroupAnnotation,
     type MosaicAnnotation,
     type NumberAnnotation,
     type Point,
@@ -50,7 +52,13 @@ export function buildFilterString(
 }
 
 export function configureStrokePattern(ctx: CanvasRenderingContext2D, pattern: StrokePattern) {
-    ctx.setLineDash(pattern === 'dashed' ? [5, 5] : [])
+    if (pattern === 'dashed') {
+        const dashSize = Math.max(5, ctx.lineWidth * 2)
+        const gapSize = Math.max(3, ctx.lineWidth)
+        ctx.setLineDash([dashSize, gapSize])
+    } else {
+        ctx.setLineDash([])
+    }
 }
 
 export function drawBaseLayer(
@@ -131,56 +139,279 @@ export function drawShape(ctx: CanvasRenderingContext2D, item: ShapeAnnotation, 
     ctx.restore()
 }
 
-export function drawArrowHead(ctx: CanvasRenderingContext2D, from: Point, to: Point, size: number) {
-    const [left, right] = buildArrowHead(from, to, size)
-    ctx.beginPath()
-    ctx.moveTo(to.x, to.y)
-    ctx.lineTo(left.x, left.y)
-    ctx.moveTo(to.x, to.y)
-    ctx.lineTo(right.x, right.y)
-    ctx.stroke()
+export function drawArrowHead(ctx: CanvasRenderingContext2D, from: Point, to: Point, size: number, style: ArrowStyle = 'modern') {
+    const [left, right, base] = buildArrowHead(from, to, size)
+    ctx.save()
+    if (style === 'classic') {
+        // Classic is just two lines, no fill
+        ctx.beginPath()
+        ctx.moveTo(left.x, left.y)
+        ctx.lineTo(to.x, to.y)
+        ctx.lineTo(right.x, right.y)
+        ctx.stroke()
+    } else {
+        ctx.fillStyle = ctx.strokeStyle
+        ctx.beginPath()
+        ctx.moveTo(to.x, to.y)
+        ctx.lineTo(left.x, left.y)
+        if (style === 'modern') {
+            ctx.lineTo(base.x, base.y) // Barbed indent
+        } else {
+            // Flat base for bold/tapered
+            const angle = Math.atan2(to.y - from.y, to.x - from.x)
+            const baseLen = size * Math.cos(Math.PI / 6)
+            ctx.lineTo(to.x - baseLen * Math.cos(angle), to.y - baseLen * Math.sin(angle))
+        }
+        ctx.lineTo(right.x, right.y)
+        ctx.closePath()
+        ctx.fill()
+    }
+    ctx.restore()
 }
 
 export function drawArrow(ctx: CanvasRenderingContext2D, item: ArrowAnnotation, scaleFactor = 1) {
     const start = { x: item.start.x * scaleFactor, y: item.start.y * scaleFactor }
     const end = { x: item.end.x * scaleFactor, y: item.end.y * scaleFactor }
+    const headSize = item.headSize * scaleFactor
+    const width = item.width * scaleFactor
+    const style = item.style || 'modern'
+    const isDouble = item.direction === 'double'
 
     ctx.save()
+    ctx.fillStyle = item.color
     ctx.strokeStyle = item.color
-    ctx.lineWidth = item.width * scaleFactor
-    ctx.lineCap = 'round'
-    configureStrokePattern(ctx, item.pattern)
+    ctx.lineWidth = width
+    ctx.lineJoin = 'round'
+    ctx.lineCap = 'butt' // Unify dash style to straight blocks for all arrows
 
-    ctx.beginPath()
-    ctx.moveTo(start.x, start.y)
-    ctx.lineTo(end.x, end.y)
-    ctx.stroke()
+    const dx = end.x - start.x
+    const dy = end.y - start.y
+    const len = Math.sqrt(dx * dx + dy * dy)
+    if (len < 1) { ctx.restore(); return }
 
-    drawArrowHead(ctx, start, end, item.headSize * scaleFactor)
-    if (item.direction === 'double') {
-        drawArrowHead(ctx, end, start, item.headSize * scaleFactor)
+    const ux = dx / len
+    const uy = dy / len
+    const px = -uy
+    const py = ux
+
+    const headBaseLen = headSize * Math.cos(Math.PI / 6)
+
+    // For bold/tapered, we only use the integrated path if it's solid.
+    // If it has a pattern (dashed), we fall back to line + separate heads to make the pattern visible.
+    const isSolid = !item.pattern || item.pattern === 'solid'
+
+    if ((style === 'bold' || style === 'tapered') && isSolid) {
+        const halfWidth = width / 2
+        const sWidth = style === 'tapered' ? 2 * scaleFactor : halfWidth
+
+        ctx.beginPath()
+
+        // Start side
+        let shaftStart = start
+        if (isDouble) {
+            const [hL, hR] = buildArrowHead(end, start, headSize)
+            shaftStart = { x: start.x + ux * headBaseLen, y: start.y + uy * headBaseLen }
+            ctx.moveTo(start.x, start.y)
+            ctx.lineTo(hL.x, hL.y)
+            ctx.lineTo(shaftStart.x - px * halfWidth, shaftStart.y - py * halfWidth)
+        } else {
+            ctx.moveTo(start.x + px * sWidth, start.y + py * sWidth)
+            ctx.lineTo(start.x - px * sWidth, start.y - py * sWidth)
+        }
+
+        // End side
+        const shaftEnd = { x: end.x - ux * headBaseLen, y: end.y - uy * headBaseLen }
+        const [hL, hR] = buildArrowHead(start, end, headSize)
+
+        ctx.lineTo(shaftEnd.x - px * halfWidth, shaftEnd.y - py * halfWidth)
+        ctx.lineTo(hR.x, hR.y)
+        ctx.lineTo(end.x, end.y)
+        ctx.lineTo(hL.x, hL.y)
+        ctx.lineTo(shaftEnd.x + px * halfWidth, shaftEnd.y + py * halfWidth)
+
+        // Back to start side
+        if (isDouble) {
+            const [hL2, hR2] = buildArrowHead(end, start, headSize)
+            ctx.lineTo(shaftStart.x + px * halfWidth, shaftStart.y + py * halfWidth)
+            ctx.lineTo(hR2.x, hR2.y)
+        } else {
+            ctx.lineTo(start.x + px * sWidth, start.y + py * sWidth)
+        }
+
+        ctx.closePath()
+        ctx.fill()
+    } else {
+        // Line based drawing (Classic, Modern, or Dashed Bold)
+        configureStrokePattern(ctx, item.pattern)
+
+        // Determine where the shaft starts and ends
+        // Modern and Bold should stop at the head base
+        const needsIndent = style !== 'classic'
+
+        let lineStart = start
+        let lineEnd = end
+
+        if (needsIndent) {
+            lineEnd = { x: end.x - ux * headBaseLen, y: end.y - uy * headBaseLen }
+            if (isDouble) {
+                lineStart = { x: start.x + ux * headBaseLen, y: start.y + uy * headBaseLen }
+            }
+        }
+
+        if (style === 'tapered') {
+            // Tapered dashed line needs manual segmentation
+            const shaftDx = lineEnd.x - lineStart.x
+            const shaftDy = lineEnd.y - lineStart.y
+            const shaftLen = Math.sqrt(shaftDx * shaftDx + shaftDy * shaftDy)
+
+            if (shaftLen > 0) {
+                const startW = isDouble ? width : (2 * scaleFactor)
+                const endW = width
+
+                // Dash config
+                const dashLen = Math.max(5, width * 2)
+                const gapLen = Math.max(3, width)
+                const cycle = dashLen + gapLen
+
+                const sux = shaftDx / shaftLen
+                const suy = shaftDy / shaftLen
+                const spx = -suy
+                const spy = sux
+
+                let curr = 0
+                while (curr < shaftLen) {
+                    const segStart = curr
+                    const segEnd = Math.min(curr + dashLen, shaftLen)
+
+                    // Calc widths
+                    const wStart = startW + (endW - startW) * (segStart / shaftLen)
+                    const wEnd = startW + (endW - startW) * (segEnd / shaftLen)
+
+                    // Points
+                    const p1 = { x: lineStart.x + sux * segStart, y: lineStart.y + suy * segStart }
+                    const p2 = { x: lineStart.x + sux * segEnd, y: lineStart.y + suy * segEnd }
+
+                    ctx.beginPath()
+                    ctx.moveTo(p1.x + spx * (wStart / 2), p1.y + spy * (wStart / 2))
+                    ctx.lineTo(p2.x + spx * (wEnd / 2), p2.y + spy * (wEnd / 2))
+                    ctx.lineTo(p2.x - spx * (wEnd / 2), p2.y - spy * (wEnd / 2))
+                    ctx.lineTo(p1.x - spx * (wStart / 2), p1.y - spy * (wStart / 2))
+                    ctx.closePath()
+                    ctx.fill()
+
+                    curr += cycle
+                }
+            }
+        } else {
+            // Regular line
+            ctx.beginPath()
+            ctx.moveTo(lineStart.x, lineStart.y)
+            ctx.lineTo(lineEnd.x, lineEnd.y)
+            ctx.stroke()
+        }
+
+        // Draw heads (reset dash pattern for heads)
+        ctx.setLineDash([])
+        drawArrowHead(ctx, start, end, headSize, style)
+        if (isDouble) {
+            drawArrowHead(ctx, end, start, headSize, style)
+        }
     }
     ctx.restore()
 }
 
-export function resolveTextFont(item: TextAnnotation, scaleFactor = 1) {
+export function resolveTextFont(item: { fontSize: number, bold: boolean, italic: boolean, fontFamily: string }, scaleFactor = 1) {
     const weight = item.bold ? 'bold' : 'normal'
     const style = item.italic ? 'italic' : 'normal'
-    return `${style} ${weight} ${Math.max(10, item.fontSize * scaleFactor)}px ${item.fontFamily}`
+    const fontFamily = item.fontFamily || 'Arial'
+    // Adding quotes around font names with spaces and providing a generic fallback
+    const family = fontFamily.includes(' ') ? `"${fontFamily}"` : fontFamily
+    const fallback = fontFamily === 'Courier New' || fontFamily === 'Monaco' ? 'monospace' :
+        fontFamily === 'Georgia' || fontFamily === 'Times New Roman' ? 'serif' : 'sans-serif'
+
+    return `${style} ${weight} ${Math.max(10, item.fontSize * scaleFactor)}px ${family}, ${fallback}`
 }
 
 export function drawText(ctx: CanvasRenderingContext2D, item: TextAnnotation, scaleFactor = 1) {
     ctx.save()
-    ctx.fillStyle = item.color
-    ctx.textAlign = item.align
-    ctx.textBaseline = 'top'
+    ctx.textAlign = 'left' // Explicitly use left for char-by-char positioning
+    ctx.textBaseline = 'middle'
     ctx.font = resolveTextFont(item, scaleFactor)
+    const style = item.textStyle || 'fill'
+    const letterSpacing = (item.letterSpacing || 0) * scaleFactor
+    const secondaryColor = item.secondaryColor || '#3b82f6'
 
     const lines = item.text.split('\n')
     const lineHeight = item.fontSize * 1.2 * scaleFactor
 
-    lines.forEach((line, i) => {
-        ctx.fillText(line, item.x * scaleFactor, item.y * scaleFactor + i * lineHeight)
+    // Calculate layout with letter spacing
+    const lineLayouts = lines.map(line => {
+        let width = 0
+        const charWidths = []
+        for (let i = 0; i < line.length; i++) {
+            const cw = ctx.measureText(line[i]!).width
+            charWidths.push(cw)
+            width += cw + (i < line.length - 1 ? letterSpacing : 0)
+        }
+        return { line, width, charWidths }
+    })
+
+    const maxWidth = Math.max(0, ...lineLayouts.map(l => l.width))
+    const totalHeight = lines.length * lineHeight
+    const startX = item.x * scaleFactor
+    const visualStartY = item.y * scaleFactor
+
+    if (style === 'background') {
+        const paddingH = item.fontSize * 0.4 * scaleFactor
+        const paddingV = item.fontSize * 0.2 * scaleFactor
+        ctx.fillStyle = secondaryColor
+
+        ctx.beginPath()
+        const r = 4 * scaleFactor
+        const visualStartX = item.align === 'center' ? startX - maxWidth / 2 : item.align === 'right' ? startX - maxWidth : startX
+        const bx = visualStartX - paddingH
+        const by = visualStartY - totalHeight / 2 - paddingV
+        const bw = maxWidth + paddingH * 2
+        const bh = totalHeight + paddingV * 2
+
+        ctx.roundRect(bx, by, bw, bh, r)
+        ctx.fill()
+
+        ctx.fillStyle = item.color
+    } else if (style === 'shadow') {
+        ctx.shadowColor = secondaryColor
+        ctx.shadowBlur = 6 * scaleFactor
+        ctx.shadowOffsetX = 2 * scaleFactor
+        ctx.shadowOffsetY = 2 * scaleFactor
+        ctx.fillStyle = item.color
+    } else if (style === 'stroke') {
+        ctx.strokeStyle = secondaryColor
+        ctx.lineWidth = Math.max(2, (item.fontSize / 6) * scaleFactor)
+        ctx.lineJoin = 'round'
+        ctx.lineCap = 'round'
+        ctx.fillStyle = item.color
+    } else {
+        ctx.fillStyle = item.color
+    }
+
+    lineLayouts.forEach((layout, i) => {
+        const ly = visualStartY - totalHeight / 2 + (i + 0.5) * lineHeight
+        let lx = startX
+        if (item.align === 'center') lx -= layout.width / 2
+        else if (item.align === 'right') lx -= layout.width
+
+        for (let j = 0; j < layout.line.length; j++) {
+            const char = layout.line[j]!
+            const cw = layout.charWidths[j]! || 0
+
+            if (style === 'stroke') {
+                ctx.strokeText(char, lx, ly)
+                ctx.fillText(char, lx, ly)
+            } else {
+                ctx.fillText(char, lx, ly)
+            }
+            lx += cw + letterSpacing
+        }
     })
     ctx.restore()
 }
@@ -356,18 +587,68 @@ export function getAnnotationBBox(item: Annotation, ctx?: CanvasRenderingContext
         ctx.font = resolveTextFont(item)
         const lines = item.text.split('\n')
         const lineHeight = item.fontSize * 1.2
+        const letterSpacing = item.letterSpacing || 0
+
         let maxWidth = 0
         lines.forEach(line => {
-            maxWidth = Math.max(maxWidth, ctx.measureText(line).width)
+            let lw = 0
+            for (let i = 0; i < line.length; i++) {
+                lw += ctx.measureText(line[i]!).width + (i < line.length - 1 ? letterSpacing : 0)
+            }
+            maxWidth = Math.max(maxWidth, lw)
         })
         ctx.restore()
         const totalHeight = lines.length * lineHeight
         const startX = item.align === 'center' ? item.x - maxWidth / 2 : item.align === 'right' ? item.x - maxWidth : item.x
-        return { x: startX, y: item.y, w: maxWidth, h: totalHeight }
+
+        let x = startX
+        let y = item.y - totalHeight / 2
+        let w = maxWidth
+        let h = totalHeight
+
+        if (item.textStyle === 'background') {
+            const paddingH = item.fontSize * 0.4
+            const paddingV = item.fontSize * 0.2
+            x -= paddingH
+            y -= paddingV
+            w += paddingH * 2
+            h += paddingV * 2
+        } else if (item.textStyle === 'shadow') {
+            w += 6
+            h += 6
+        } else if (item.textStyle === 'stroke') {
+            const sw = Math.max(2, item.fontSize / 6)
+            x -= sw / 2
+            y -= sw / 2
+            w += sw
+            h += sw
+        }
+
+        return { x, y, w, h }
+    }
+    if (item.kind === 'group') {
+        const group = item as GroupAnnotation
+        if (group.children.length === 0) return { x: 0, y: 0, w: 0, h: 0 }
+        let minX = Number.MAX_VALUE, minY = Number.MAX_VALUE
+        let maxX = -Number.MAX_VALUE, maxY = -Number.MAX_VALUE
+        group.children.forEach(child => {
+            const bbox = getAnnotationBBox(child, ctx)
+            minX = Math.min(minX, bbox.x)
+            minY = Math.min(minY, bbox.y)
+            maxX = Math.max(maxX, bbox.x + bbox.w)
+            maxY = Math.max(maxY, bbox.y + bbox.h)
+        })
+        return { x: minX, y: minY, w: maxX - minX, h: maxY - minY }
     }
     if (item.kind === 'shape' || item.kind === 'arrow') {
         const rect = normalizeRect(item.start, item.end)
-        return { x: rect.x, y: rect.y, w: Math.max(rect.w, 1), h: Math.max(rect.h, 1) }
+        const padding = item.kind === 'arrow' ? Math.max(item.headSize, item.width * 2) * 0.8 : 0
+        return {
+            x: rect.x - padding,
+            y: rect.y - padding,
+            w: Math.max(rect.w + padding * 2, 1),
+            h: Math.max(rect.h + padding * 2, 1)
+        }
     }
     if (item.kind === 'mosaic') {
         if (item.mode === 'area' && item.area) {
@@ -472,25 +753,14 @@ export function drawSelectionOutline(ctx: CanvasRenderingContext2D, item: Annota
 }
 
 export function drawAnnotation(ctx: CanvasRenderingContext2D, item: Annotation, scaleFactor = 1) {
-    switch (item.kind) {
-        case 'brush':
-            drawBrush(ctx, item, scaleFactor)
-            break
-        case 'shape':
-            drawShape(ctx, item, scaleFactor)
-            break
-        case 'arrow':
-            drawArrow(ctx, item, scaleFactor)
-            break
-        case 'text':
-            drawText(ctx, item, scaleFactor)
-            break
-        case 'mosaic':
-            drawMosaic(ctx, item, scaleFactor)
-            break
-        case 'number':
-            drawNumber(ctx, item, scaleFactor)
-            break
+    if (item.kind === 'brush') drawBrush(ctx, item, scaleFactor)
+    else if (item.kind === 'shape') drawShape(ctx, item, scaleFactor)
+    else if (item.kind === 'arrow') drawArrow(ctx, item, scaleFactor)
+    else if (item.kind === 'text') drawText(ctx, item, scaleFactor)
+    else if (item.kind === 'mosaic') drawMosaic(ctx, item, scaleFactor)
+    else if (item.kind === 'number') drawNumber(ctx, item, scaleFactor)
+    else if (item.kind === 'group') {
+        item.children.forEach(child => drawAnnotation(ctx, child, scaleFactor))
     }
 }
 
@@ -506,6 +776,10 @@ export function getAnnotationIndicatorPoint(item: Annotation): Point {
             x: (item.start.x + item.end.x) / 2,
             y: (item.start.y + item.end.y) / 2
         }
+    }
+    if (item.kind === 'group') {
+        if (item.children.length > 0) return getAnnotationIndicatorPoint(item.children[0]!)
+        return { x: 0, y: 0 }
     }
     return { x: item.x, y: item.y }
 }

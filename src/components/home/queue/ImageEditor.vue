@@ -49,6 +49,7 @@ const {
   arrowDirection,
   arrowPattern,
   arrowHeadSize,
+  arrowStyle,
   textInput,
   textColor,
   textFontSize,
@@ -56,6 +57,10 @@ const {
   textBold,
   textItalic,
   textAlign,
+  textStyle,
+  textSecondaryColor,
+  textLetterSpacing,
+  selectedIds,
   mosaicMode,
   mosaicShape,
   mosaicPixelSize,
@@ -72,11 +77,15 @@ const {
   isPanning,
   isSpacePressed,
   displayInfo,
+  isTextEditing,
+  editingText,
+  editingTool,
   // Computed
   canUndo,
   canRedo,
   isEdited,
   dimensionText,
+  annotations,
   // Constants
   toolList,
   filterPresets,
@@ -101,17 +110,59 @@ const {
   startCrop,
   cancelCrop,
   applyCrop,
-  annotations,
   reorderAnnotations,
   onCanvasWheel,
-  isTextEditing,
-  editingText,
-  editingTool,
   confirmTextEdit,
   zoomIn,
   zoomOut,
   setZoom,
+  groupSelected,
+  ungroupSelected,
+  renameAnnotation,
+  getAnnotationLabel,
 } = useImageEditor(props, emit)
+
+const renamingId = ref<string | null>(null)
+const renamingValue = ref('')
+
+function startRename(item: any) {
+  renamingId.value = item.id
+  renamingValue.value = getAnnotationLabel(item)
+}
+
+function finishRename() {
+  if (renamingId.value && renamingValue.value.trim()) {
+    renameAnnotation(renamingId.value, renamingValue.value.trim())
+  }
+  renamingId.value = null
+}
+
+const isGroupSelected = computed(() => {
+  if (selectedIds.value.size !== 1) return false
+  const id = Array.from(selectedIds.value)[0]
+  return annotations.value.find(a => a.id === id)?.kind === 'group'
+})
+
+function onLayerItemClick(event: MouseEvent, id: string) {
+  if (event.shiftKey) {
+    const allIds = annotations.value.map(a => a.id).reverse() // Match display order
+    const lastId = Array.from(selectedIds.value).pop()
+    if (lastId) {
+      const startIdx = allIds.indexOf(lastId)
+      const endIdx = allIds.indexOf(id)
+      const range = allIds.slice(Math.min(startIdx, endIdx), Math.max(startIdx, endIdx) + 1)
+      range.forEach(rid => selectedIds.value.add(rid))
+    } else {
+      selectedIds.value.add(id)
+    }
+  } else if (event.ctrlKey || event.metaKey) {
+    if (selectedIds.value.has(id)) selectedIds.value.delete(id)
+    else selectedIds.value.add(id)
+  } else {
+    selectedIds.value.clear()
+    selectedIds.value.add(id)
+  }
+}
 
 // Drop target for drag and drop
 const dragOverIndex = ref(-1)
@@ -177,10 +228,24 @@ const arrowDirectionOptions = computed(() => [
   { label: t('imageEditor.options.double'), value: 'double' }
 ])
 
+const arrowStyleOptions = computed(() => [
+  { label: t('imageEditor.options.classic'), value: 'classic' },
+  { label: t('imageEditor.options.modern'), value: 'modern' },
+  { label: t('imageEditor.options.bold'), value: 'bold' },
+  { label: t('imageEditor.options.tapered'), value: 'tapered' }
+])
+
 const textAlignOptions = computed(() => [
-  { label: t('imageEditor.options.left'), value: 'left' },
-  { label: t('imageEditor.options.center'), value: 'center' },
-  { label: t('imageEditor.options.right'), value: 'right' }
+  { label: t('imageEditor.options.left'), value: 'left', icon: 'i-ph-text-align-left' },
+  { label: t('imageEditor.options.center'), value: 'center', icon: 'i-ph-text-align-center' },
+  { label: t('imageEditor.options.right'), value: 'right', icon: 'i-ph-text-align-right' }
+])
+
+const textStyleOptions = computed(() => [
+  { label: t('imageEditor.styles.fill'), value: 'fill' },
+  { label: t('imageEditor.styles.stroke'), value: 'stroke' },
+  { label: t('imageEditor.styles.shadow'), value: 'shadow' },
+  { label: t('imageEditor.styles.background'), value: 'background' }
 ])
 
 const mosaicModeOptions = computed(() => [
@@ -383,7 +448,7 @@ function onNavigatorPointerUp(event: PointerEvent) {
                     @click="uiPanel = 'base'; isConfigPanelOpen = true">
                     <div class="i-ph-sliders-horizontal text-lg md:text-xl" />
                     <span class="text-[10px] font-medium leading-none hidden md:block">{{ t('imageEditor.adjust')
-                    }}</span>
+                      }}</span>
                   </button>
                 </template>
                 {{ t('imageEditor.adjust') }}
@@ -397,7 +462,7 @@ function onNavigatorPointerUp(event: PointerEvent) {
                     @click="uiPanel = 'tool'; isConfigPanelOpen = true">
                     <div class="i-ph-toolbox text-lg md:text-xl" />
                     <span class="text-[10px] font-medium leading-none hidden md:block">{{ t('imageEditor.toolConfig')
-                    }}</span>
+                      }}</span>
                   </button>
                 </template>
                 {{ t('imageEditor.toolConfig') }}
@@ -643,7 +708,20 @@ function onNavigatorPointerUp(event: PointerEvent) {
                   <template v-else-if="editingTool === 'shape'">
                     <div class="form-item">
                       <label>{{ t('imageEditor.type') }}</label>
-                      <n-select v-model:value="shapeType" :options="shapeOptions" :to="rootRef" />
+                      <div class="grid grid-cols-3 gap-2">
+                        <button v-for="opt in shapeOptions" :key="opt.value"
+                          class="p-2 border rounded-lg flex flex-col items-center justify-center gap-1 transition-all h-14"
+                          :class="shapeType === opt.value ? 'bg-primary/10 border-primary text-primary' : 'border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800'"
+                          @click="shapeType = opt.value as any">
+                          <svg viewBox="0 0 24 24" class="w-6 h-6 text-current fill-none stroke-current"
+                            stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <rect v-if="opt.value === 'rect'" x="3" y="3" width="18" height="18" rx="2" ry="2" />
+                            <circle v-if="opt.value === 'ellipse'" cx="12" cy="12" r="9" />
+                            <line v-if="opt.value === 'line'" x1="4" y1="20" x2="20" y2="4" />
+                          </svg>
+                          <span class="text-[10px]">{{ opt.label }}</span>
+                        </button>
+                      </div>
                     </div>
                     <div class="form-item">
                       <label>{{ t('imageEditor.stroke') }}</label>
@@ -663,30 +741,108 @@ function onNavigatorPointerUp(event: PointerEvent) {
                     </div>
                     <div class="form-item">
                       <label>{{ t('imageEditor.strokePattern') }}</label>
-                      <n-select v-model:value="shapeStrokePattern" :options="strokePatternOptions" :to="rootRef" />
+                      <div class="flex gap-2">
+                        <button v-for="opt in strokePatternOptions" :key="opt.value"
+                          class="flex-1 p-2 border rounded-lg flex flex-col items-center justify-center gap-1 transition-all h-14"
+                          :class="shapeStrokePattern === opt.value ? 'bg-primary/10 border-primary text-primary' : 'border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800'"
+                          @click="shapeStrokePattern = opt.value as any">
+                          <svg viewBox="0 0 40 10" class="w-full h-4 text-current stroke-current" stroke-width="3"
+                            stroke-linecap="round">
+                            <line x1="2" y1="5" x2="38" y2="5"
+                              :stroke-dasharray="opt.value === 'dashed' ? '6,5' : '0'" />
+                          </svg>
+                          <span class="text-xs">{{ opt.label }}</span>
+                        </button>
+                      </div>
                     </div>
                   </template>
 
                   <template v-else-if="editingTool === 'arrow'">
+                    <div class="form-item">
+                      <label>{{ t('imageEditor.style') }}</label>
+                      <div class="grid grid-cols-2 gap-2">
+                        <button v-for="opt in arrowStyleOptions" :key="opt.value"
+                          class="p-2 border rounded-lg flex flex-col items-center justify-center gap-1 transition-all h-14"
+                          :class="arrowStyle === opt.value ? 'bg-primary/10 border-primary text-primary' : 'border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800'"
+                          @click="arrowStyle = opt.value as any">
+                          <!-- Visual representation using SVG for accuracy -->
+                          <svg viewBox="0 0 40 20" class="w-full h-full text-current fill-current">
+                            <!-- Classic: Line + V-shape head (stroked) -->
+                            <g v-if="opt.value === 'classic'" stroke="currentColor" stroke-width="2" fill="none">
+                              <line x1="0" y1="10" x2="35" y2="10" />
+                              <polyline points="28,3 38,10 28,17" />
+                            </g>
+
+                            <!-- Modern: Line + Barbed head (filled) -->
+                            <g v-if="opt.value === 'modern'">
+                              <line x1="0" y1="10" x2="28" y2="10" stroke="currentColor" stroke-width="2" />
+                              <path d="M25,3 L38,10 L25,17 L28,10 Z" stroke="none" />
+                            </g>
+
+                            <!-- Bold: Thick shaft + Flat base head (filled) -->
+                            <g v-if="opt.value === 'bold'">
+                              <!-- Shaft -->
+                              <rect x="0" y="8" width="28" height="4" fill="currentColor" />
+                              <!-- Head: Flat base triangle -->
+                              <path d="M26,3 L38,10 L26,17 Z" stroke="none" />
+                            </g>
+
+                            <!-- Tapered: Tapered shaft + Flat base head (filled) -->
+                            <g v-if="opt.value === 'tapered'">
+                              <!-- Tapered Shaft -->
+                              <path d="M0,9 L27,8 L27,12 L0,11 Z" fill="currentColor" />
+                              <!-- Head -->
+                              <path d="M26,3 L38,10 L26,17 Z" stroke="none" />
+                            </g>
+                          </svg>
+                          <span class="text-[10px]">{{ opt.label }}</span>
+                        </button>
+                      </div>
+                    </div>
                     <div class="form-item">
                       <label>{{ t('imageEditor.color') }}</label>
                       <n-color-picker v-model:value="arrowColor" :show-alpha="false" :to="rootRef" />
                     </div>
                     <div class="form-item">
                       <label>{{ t('imageEditor.width') }}</label>
-                      <n-slider v-model:value="arrowWidth" :min="1" :max="30" />
+                      <n-slider v-model:value="arrowWidth" :min="2" :max="40" />
                     </div>
                     <div class="form-item">
                       <label>{{ t('imageEditor.headSize') }}</label>
-                      <n-slider v-model:value="arrowHeadSize" :min="6" :max="40" />
+                      <n-slider v-model:value="arrowHeadSize" :min="10" :max="100" />
                     </div>
                     <div class="form-item">
                       <label>{{ t('imageEditor.direction') }}</label>
-                      <n-select v-model:value="arrowDirection" :options="arrowDirectionOptions" :to="rootRef" />
+                      <div class="flex gap-2">
+                        <button v-for="opt in arrowDirectionOptions" :key="opt.value"
+                          class="flex-1 p-2 border rounded-lg flex flex-col items-center justify-center gap-1 transition-all h-14"
+                          :class="arrowDirection === opt.value ? 'bg-primary/10 border-primary text-primary' : 'border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800'"
+                          @click="arrowDirection = opt.value as any">
+                          <svg viewBox="0 0 24 24" class="w-6 h-6 text-current fill-current">
+                            <path v-if="opt.value === 'single'"
+                              d="M5 11h11.17l-3.59-3.59L14 6l6 6-6 6-1.41-1.41L16.17 13H5v-2z" />
+                            <path v-else
+                              d="M6.99 11L10.58 7.41L9.17 6L3.17 12L9.17 18L10.58 16.59L6.99 13H17.01L13.42 16.59L14.83 18L20.83 12L14.83 6L13.42 7.41L17.01 11H6.99z" />
+                          </svg>
+                          <span class="text-xs">{{ opt.label }}</span>
+                        </button>
+                      </div>
                     </div>
                     <div class="form-item">
                       <label>{{ t('imageEditor.lineStyle') }}</label>
-                      <n-select v-model:value="arrowPattern" :options="strokePatternOptions" :to="rootRef" />
+                      <div class="flex gap-2">
+                        <button v-for="opt in strokePatternOptions" :key="opt.value"
+                          class="flex-1 p-2 border rounded-lg flex flex-col items-center justify-center gap-1 transition-all h-14"
+                          :class="arrowPattern === opt.value ? 'bg-primary/10 border-primary text-primary' : 'border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800'"
+                          @click="arrowPattern = opt.value as any">
+                          <svg viewBox="0 0 40 10" class="w-full h-4 text-current stroke-current" stroke-width="3"
+                            stroke-linecap="round">
+                            <line x1="2" y1="5" x2="38" y2="5"
+                              :stroke-dasharray="opt.value === 'dashed' ? '6,5' : '0'" />
+                          </svg>
+                          <span class="text-xs">{{ opt.label }}</span>
+                        </button>
+                      </div>
                     </div>
                   </template>
 
@@ -696,30 +852,72 @@ function onNavigatorPointerUp(event: PointerEvent) {
                       <n-input type="textarea" v-model:value="textInput" round :rows="3" />
                     </div>
                     <div class="form-item">
-                      <label>{{ t('imageEditor.color') }}</label>
+                      <label>{{ t('imageEditor.fontColor') }}</label>
                       <n-color-picker v-model:value="textColor" :show-alpha="false" :to="rootRef" />
+                    </div>
+                    <div class="form-item" v-if="textStyle !== 'fill'">
+                      <label>{{
+                        textStyle === 'background' ? t('imageEditor.bgColor') :
+                          textStyle === 'stroke' ? t('imageEditor.strokeColor') :
+                            t('imageEditor.shadowColor')
+                      }}</label>
+                      <n-color-picker v-model:value="textSecondaryColor" :show-alpha="true" :to="rootRef" />
                     </div>
                     <div class="form-item">
                       <label>{{ t('imageEditor.font') }}</label>
                       <n-select v-model:value="textFontFamily" :options="fontOptions" :to="rootRef" />
                     </div>
                     <div class="form-item">
+                      <label>{{ t('imageEditor.style') }}</label>
+                      <div class="grid grid-cols-2 gap-2">
+                        <button v-for="opt in textStyleOptions" :key="opt.value"
+                          class="p-2 border rounded-lg flex flex-col items-center justify-center gap-1 transition-all h-12"
+                          :class="textStyle === opt.value ? 'bg-primary/10 border-primary text-primary' : 'border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800'"
+                          @click="textStyle = opt.value as any">
+                          <span :class="{
+                            'font-bold': opt.value === 'fill',
+                            'line-through opacity-50': opt.value === 'stroke',
+                            'drop-shadow-md': opt.value === 'shadow',
+                            'bg-primary text-white px-1 rounded': opt.value === 'background'
+                          }" class="text-xs">Abc</span>
+                          <span class="text-[10px]">{{ opt.label }}</span>
+                        </button>
+                      </div>
+                    </div>
+                    <div class="form-item">
                       <label>{{ t('imageEditor.size') }}</label>
-                      <n-slider v-model:value="textFontSize" :min="10" :max="80" />
+                      <n-slider v-model:value="textFontSize" :min="10" :max="120" />
+                    </div>
+                    <div class="form-item">
+                      <label>{{ t('imageEditor.letterSpacing') }}</label>
+                      <n-slider v-model:value="textLetterSpacing" :min="-5" :max="20" />
                     </div>
                     <div class="flex items-center gap-2">
                       <n-button size="small" :type="textBold ? 'primary' : 'default'" @click="textBold = !textBold"
                         class="flex-1">
+                        <template #icon>
+                          <div class="i-ph-text-b-bold" />
+                        </template>
                         {{ t('imageEditor.bold') }}
                       </n-button>
                       <n-button size="small" :type="textItalic ? 'primary' : 'default'"
                         @click="textItalic = !textItalic" class="flex-1">
+                        <template #icon>
+                          <div class="i-ph-text-italic-bold" />
+                        </template>
                         {{ t('imageEditor.italic') }}
                       </n-button>
                     </div>
                     <div class="form-item">
                       <label>{{ t('imageEditor.align') }}</label>
-                      <n-select v-model:value="textAlign" :options="textAlignOptions" :to="rootRef" />
+                      <div class="flex gap-2">
+                        <button v-for="opt in textAlignOptions" :key="opt.value"
+                          class="flex-1 p-2 border rounded-lg flex items-center justify-center gap-2 transition-all"
+                          :class="textAlign === opt.value ? 'bg-primary/10 border-primary text-primary' : 'border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800'"
+                          @click="textAlign = opt.value as any">
+                          <div :class="opt.icon" class="text-lg" />
+                        </button>
+                      </div>
                     </div>
 
                   </template>
@@ -771,37 +969,58 @@ function onNavigatorPointerUp(event: PointerEvent) {
                       class="bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-300 px-1.5 py-0.5 rounded text-[10px]">{{
                         annotations.length }}</span>
                   </div>
+
+                  <div
+                    class="px-4 py-1 flex items-center justify-between border-b border-gray-100 dark:border-gray-800 mb-1">
+                    <span class="text-[10px] font-bold opacity-50">{{ t('imageEditor.layer') }}</span>
+                    <div class="flex gap-1">
+                      <n-button quaternary circle size="tiny" :disabled="selectedIds.size < 2" @click="groupSelected"
+                        :title="t('imageEditor.group')">
+                        <template #icon>
+                          <div class="i-ph-shapes-bold text-xs" />
+                        </template>
+                      </n-button>
+                      <n-button quaternary circle size="tiny" :disabled="!isGroupSelected" @click="ungroupSelected"
+                        :title="t('imageEditor.ungroup')">
+                        <template #icon>
+                          <div class="i-ph-polygon-bold text-xs" />
+                        </template>
+                      </n-button>
+                      <n-button quaternary circle size="tiny" :disabled="selectedIds.size === 0" @click="removeSelected"
+                        :title="t('imageEditor.removeSelected')">
+                        <template #icon>
+                          <div class="i-ph-trash-bold text-xs text-red-500" />
+                        </template>
+                      </n-button>
+                    </div>
+                  </div>
+
                   <div class="flex-1 overflow-y-auto px-2 pb-2 space-y-1 custom-scrollbar">
-                    <div v-if="annotations.length === 0" class="text-center py-6 text-xs text-gray-400">
-                      {{ t('imageEditor.noLayers') }}
+                    <div v-if="annotations.length === 0" class="text-center py-10 opacity-30 select-none">
+                      <div class="i-ph-layers text-4xl mb-2 mx-auto" />
+                      <p class="text-xs">{{ t('imageEditor.noLayers') }}</p>
                     </div>
                     <div v-for="(item, index) in [...annotations].reverse()" :key="item.id"
-                      class="group flex items-center gap-2 p-2 rounded-lg cursor-pointer transition-colors border border-transparent hover:bg-white dark:hover:bg-gray-800 hover:shadow-sm"
-                      :class="{
-                        'bg-primary/10 border-primary/20 ring-1 ring-primary/20': selectedId === item.id,
-                        'border-t-2 border-t-primary': dragOverIndex === (annotations.length - 1 - index)
-                      }" draggable="true" @click="selectedId = item.id"
-                      @dragstart="onDragStart($event, annotations.length - 1 - index)"
+                      class="flex items-center gap-2 p-1.5 rounded-lg cursor-pointer transition-all border border-transparent"
+                      :class="selectedIds.has(item.id) ? 'bg-primary/10 border-primary/20 text-primary' : 'hover:bg-gray-100 dark:hover:bg-gray-800'"
+                      draggable="true" @dragstart="onDragStart($event, annotations.length - 1 - index)"
                       @dragover="onDragOver($event, annotations.length - 1 - index)"
-                      @drop="onDrop($event, annotations.length - 1 - index)">
-                      <div
-                        class="w-6 h-6 flex items-center justify-center rounded bg-gray-200/50 dark:bg-gray-700/50 text-gray-500">
-                        <div v-if="item.kind === 'text'" class="i-ph-text-t" />
-                        <div v-else-if="item.kind === 'brush'" class="i-ph-paint-brush" />
-                        <div v-else-if="item.kind === 'shape'" class="i-ph-square" />
-                        <div v-else-if="item.kind === 'arrow'" class="i-ph-arrow-up-right" />
-                        <div v-else-if="item.kind === 'mosaic'" class="i-ph-squares-four" />
-                        <div v-else-if="item.kind === 'number'" class="i-ph-number-circle-one" />
+                      @drop="onDrop($event, annotations.length - 1 - index)" @click="onLayerItemClick($event, item.id)">
+                      <div class="w-6 h-6 flex items-center justify-center rounded bg-gray-200/50 dark:bg-gray-700/50">
+                        <div v-if="item.kind === 'brush'" class="i-ph-paint-brush text-xs" />
+                        <div v-else-if="item.kind === 'shape'" class="i-ph-shapes text-xs" />
+                        <div v-else-if="item.kind === 'arrow'" class="i-ph-arrow-up-right text-xs" />
+                        <div v-else-if="item.kind === 'text'" class="i-ph-text-t text-xs" />
+                        <div v-else-if="item.kind === 'mosaic'" class="i-ph-squares-four text-xs" />
+                        <div v-else-if="item.kind === 'number'" class="i-ph-number-circle-one text-xs" />
+                        <div v-else-if="item.kind === 'group'" class="i-ph-folders text-xs" />
                       </div>
-                      <span class="flex-1 text-xs truncate font-medium">
-                        {{ item.kind === 'text' ? (item.text || t('imageEditor.tools.text')) :
-                          item.kind === 'number' ? `#${item.value}` : t(`imageEditor.tools.${item.kind}`) }}
+                      <span v-if="renamingId !== item.id" class="text-[10px] truncate flex-1 font-medium"
+                        @dblclick="startRename(item)">
+                        {{ getAnnotationLabel(item) }}
                       </span>
-                      <button
-                        class="p-1 rounded text-red-500 opacity-0 group-hover:opacity-100 hover:bg-red-50 dark:hover:bg-red-900/20 transition-all"
-                        @click.stop="selectedId = item.id; removeSelected()">
-                        <div class="i-ph-trash" />
-                      </button>
+                      <n-input v-else v-model:value="renamingValue" size="tiny" class="flex-1 !text-[10px]"
+                        @blur="finishRename" @keydown.enter="finishRename" @click.stop autofocus />
                     </div>
                   </div>
                 </div>

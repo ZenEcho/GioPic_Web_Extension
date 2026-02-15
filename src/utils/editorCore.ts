@@ -20,7 +20,7 @@ export type AnnotationTool =
     | 'mosaic'
     | 'number'
 
-export type AnnotationKind = 'brush' | 'shape' | 'arrow' | 'text' | 'mosaic' | 'number'
+export type AnnotationKind = 'brush' | 'shape' | 'arrow' | 'text' | 'mosaic' | 'number' | 'group'
 
 export type ShapeType = 'rect' | 'ellipse' | 'line'
 
@@ -31,6 +31,7 @@ export interface BrushAnnotation {
     color: string
     size: number
     opacity: number
+    groupId?: string
 }
 
 export interface ShapeAnnotation {
@@ -44,7 +45,10 @@ export interface ShapeAnnotation {
     fillColor: string
     fillOpacity: number
     strokePattern: StrokePattern
+    groupId?: string
 }
+
+export type ArrowStyle = 'classic' | 'modern' | 'bold' | 'tapered'
 
 export interface ArrowAnnotation {
     id: string
@@ -56,7 +60,11 @@ export interface ArrowAnnotation {
     direction: ArrowDirection
     pattern: StrokePattern
     headSize: number
+    style: ArrowStyle
+    groupId?: string
 }
+
+export type TextStyle = 'fill' | 'stroke' | 'shadow' | 'background'
 
 export interface TextAnnotation {
     id: string
@@ -70,6 +78,18 @@ export interface TextAnnotation {
     bold: boolean
     italic: boolean
     align: CanvasTextAlign
+    textStyle?: TextStyle
+    secondaryColor?: string
+    letterSpacing?: number
+    groupId?: string
+}
+
+export interface GroupAnnotation {
+    id: string
+    kind: 'group'
+    children: Annotation[]
+    name?: string
+    groupId?: string
 }
 
 export interface MosaicAnnotation {
@@ -80,6 +100,7 @@ export interface MosaicAnnotation {
     pixelSize: number
     points: Point[]
     area?: Rect
+    groupId?: string
 }
 
 export interface NumberAnnotation {
@@ -90,6 +111,7 @@ export interface NumberAnnotation {
     y: number
     color: string
     size: number
+    groupId?: string
 }
 
 export type Annotation =
@@ -99,6 +121,7 @@ export type Annotation =
     | TextAnnotation
     | MosaicAnnotation
     | NumberAnnotation
+    | GroupAnnotation
 
 export interface HistoryState<T> {
     past: T[]
@@ -197,17 +220,22 @@ export function nextSequenceValue(annotations: Annotation[], start = 1): number 
     return maxValue + 1
 }
 
-export function buildArrowHead(from: Point, to: Point, size: number): [Point, Point] {
+export function buildArrowHead(from: Point, to: Point, size: number): [Point, Point, Point] {
     const angle = Math.atan2(to.y - from.y, to.x - from.x)
+    const spread = Math.PI / 6 // 30 degrees
     const left = {
-        x: to.x - size * Math.cos(angle - Math.PI / 6),
-        y: to.y - size * Math.sin(angle - Math.PI / 6),
+        x: to.x - size * Math.cos(angle - spread),
+        y: to.y - size * Math.sin(angle - spread),
     }
     const right = {
-        x: to.x - size * Math.cos(angle + Math.PI / 6),
-        y: to.y - size * Math.sin(angle + Math.PI / 6),
+        x: to.x - size * Math.cos(angle + spread),
+        y: to.y - size * Math.sin(angle + spread),
     }
-    return [left, right]
+    const base = {
+        x: to.x - (size * 0.75) * Math.cos(angle),
+        y: to.y - (size * 0.75) * Math.sin(angle),
+    }
+    return [left, right, base]
 }
 
 export function createId(prefix: string): string {

@@ -2,7 +2,6 @@ import { computed, nextTick, onMounted, onUnmounted, ref, watch, type Ref } from
 import { useI18n } from 'vue-i18n'
 import { useMessage } from 'naive-ui'
 import {
-    buildArrowHead,
     buildHistory,
     clamp,
     clampPoint,
@@ -19,6 +18,7 @@ import {
     type AnnotationTool,
     type ArrowAnnotation,
     type ArrowDirection,
+    type ArrowStyle,
     type BrushAnnotation,
     type MosaicAnnotation,
     type NumberAnnotation,
@@ -28,6 +28,9 @@ import {
     type ShapeType,
     type StrokePattern,
     type TextAnnotation,
+    type TextStyle,
+    type GroupAnnotation,
+    buildArrowHead,
 } from '@/utils/editorCore'
 import {
     buildFilterString,
@@ -80,7 +83,13 @@ export function useImageEditor(props: ImageEditorProps, emit: ImageEditorEmit) {
     const activeFilter = ref<FilterPreset>('none')
 
     const activeTool = ref<AnnotationTool>('select')
-    const selectedId = ref<string | null>(null)
+    const selectedId = computed({
+        get: () => Array.from(selectedIds.value)[0] || null,
+        set: (id) => {
+            if (id) selectedIds.value = new Set([id])
+            else selectedIds.value.clear()
+        }
+    })
     const history = ref(buildHistory<Annotation[]>([]))
     const draftAnnotation = ref<Annotation | null>(null)
 
@@ -104,10 +113,11 @@ export function useImageEditor(props: ImageEditorProps, emit: ImageEditorEmit) {
     const shapeStrokePattern = ref<StrokePattern>('solid')
 
     const arrowColor = ref('#3b82f6')
-    const arrowWidth = ref(4)
+    const arrowWidth = ref(6)
     const arrowDirection = ref<ArrowDirection>('single')
     const arrowPattern = ref<StrokePattern>('solid')
-    const arrowHeadSize = ref(16)
+    const arrowHeadSize = ref(24)
+    const arrowStyle = ref<ArrowStyle>('bold')
 
     const textInput = ref(t('imageEditor.tools.text'))
     const textColor = ref('#ffffff')
@@ -116,6 +126,11 @@ export function useImageEditor(props: ImageEditorProps, emit: ImageEditorEmit) {
     const textBold = ref(true)
     const textItalic = ref(false)
     const textAlign = ref<CanvasTextAlign>('left')
+    const textStyle = ref<TextStyle>('fill')
+    const textSecondaryColor = ref('#3b82f6')
+    const textLetterSpacing = ref(0)
+
+    const selectedIds = ref(new Set<string>())
 
     const mosaicMode = ref<'brush' | 'area'>('brush')
     const mosaicShape = ref<'rect' | 'circle'>('rect')
@@ -135,8 +150,7 @@ export function useImageEditor(props: ImageEditorProps, emit: ImageEditorEmit) {
     const viewZoom = ref(1)
     const viewOffset = ref({ x: 0, y: 0 })
     const isPanning = ref(false)
-    // We'll track the Space key state globally or via event
-    // but better to have a ref for UI feedback (cursor)
+
     const isSpacePressed = ref(false)
     const isCropping = ref(false)
     const cropRect = ref<Rect | null>(null)
@@ -232,24 +246,6 @@ export function useImageEditor(props: ImageEditorProps, emit: ImageEditorEmit) {
         }
     }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
     function renderCanvas() {
         const canvas = canvasRef.value
         const container = containerRef.value
@@ -324,7 +320,7 @@ export function useImageEditor(props: ImageEditorProps, emit: ImageEditorEmit) {
         // Select Indicator
         if (activeTool.value === 'select') {
             annotations.value.forEach(item => {
-                drawAnnotationIndicator(ctx, item, selectedId.value === item.id)
+                drawAnnotationIndicator(ctx, item, selectedIds.value.has(item.id))
             })
         }
 
@@ -336,9 +332,9 @@ export function useImageEditor(props: ImageEditorProps, emit: ImageEditorEmit) {
             }
         }
 
-        if (selectedAnnotation.value) {
-            drawSelectionOutline(ctx, selectedAnnotation.value)
-        }
+        annotations.value.filter(a => selectedIds.value.has(a.id)).forEach(item => {
+            drawSelectionOutline(ctx, item)
+        })
 
         if (isCropping.value && cropRect.value) {
             const rect = clampRect(cropRect.value, baseContentW, baseContentH)
@@ -451,10 +447,28 @@ export function useImageEditor(props: ImageEditorProps, emit: ImageEditorEmit) {
         scheduleRender()
     }
 
+    function renameAnnotation(id: string, name: string) {
+        pushAnnotations(withUpdatedAnnotation(id, item => {
+            if (item.kind === 'group') return { ...item, name }
+            // Optionally support renaming other types too
+            return { ...item, name } as any
+        }))
+        scheduleRender()
+    }
+
+    function getAnnotationLabel(item: Annotation): string {
+        if (item.kind === 'text') return item.text || t('imageEditor.tools.text')
+        if (item.kind === 'number') return `#${item.value}`
+        if (item.kind === 'group') {
+            return item.name || t('imageEditor.groupWithCount', { count: item.children.length })
+        }
+        return t(`imageEditor.tools.${item.kind}`)
+    }
+
     function removeSelected() {
-        if (!selectedId.value) return
-        pushAnnotations(annotations.value.filter(item => item.id !== selectedId.value))
-        selectedId.value = null
+        if (selectedIds.value.size === 0) return
+        pushAnnotations(annotations.value.filter(item => !selectedIds.value.has(item.id)))
+        selectedIds.value.clear()
         scheduleRender()
     }
 
@@ -840,6 +854,7 @@ export function useImageEditor(props: ImageEditorProps, emit: ImageEditorEmit) {
                 direction: arrowDirection.value,
                 pattern: arrowPattern.value,
                 headSize: arrowHeadSize.value,
+                style: arrowStyle.value,
             }
         }
 
@@ -890,14 +905,8 @@ export function useImageEditor(props: ImageEditorProps, emit: ImageEditorEmit) {
             const bbox = getAnnotationBBox(selectedAnnotation.value, ctx)
             const padding = 6
             const hs = 12 / viewZoom.value // Scale handle hit area by zoom?
-            // Actually, getCanvasPoint returns content-space coords.
-            // visual size of handle is constant on screen? No, drawn with ctx.
-            // drawSelectionOutline draws handles with constant size?
-            // It uses `hs=6`. If zoom is 0.5, handle is small. If zoom 2, handle big.
-            // So hit area in content space is constant (6px).
-            // Let's stick to constant hit radius in Content Space for now, 
-            // or better, adjust based on zoom to make it easier to click when zoomed out.
-            // For now keep standard logic.
+
+
             const x = bbox.x - padding
             const y = bbox.y - padding
             const w = bbox.w + padding * 2
@@ -912,10 +921,7 @@ export function useImageEditor(props: ImageEditorProps, emit: ImageEditorEmit) {
 
             let handleHit = null
             let minDist = Infinity
-            // Adjust hit radius based on zoom? 
-            // If viewZoom is 0.1 (tiny), 12px content distance is huge.
-            // We want screen distance approx 12px. 
-            // ContentDist = ScreenDist / Zoom.
+
             const hitRadius = 12 / viewZoom.value
 
             handleCoords.forEach(c => {
@@ -939,19 +945,31 @@ export function useImageEditor(props: ImageEditorProps, emit: ImageEditorEmit) {
         }
 
         // General Rule: If we click on ANY item, select it and initiate a move.
-        // This avoids the "Create -> Select -> Cannot Move" frustration.
-        const hit = hitTest(point)
-        if (hit) {
-            selectedId.value = hit.id
-            dragOrigin.value = point
-            dragSourceAnnotations.value = annotations.value
-            draggingSelection.value = false
-            scheduleRender()
-            return
-        }
-
+        // We only do this if "select" tool is active.
+        // If a drawing tool is active, we prioritized handles above, and will prioritize drawing below.
         if (activeTool.value === 'select') {
-            selectedId.value = null
+            const hit = hitTest(point)
+            if (hit) {
+                if (event.shiftKey) {
+                    selectedIds.value.add(hit.id)
+                } else if (event.ctrlKey || event.metaKey) {
+                    if (selectedIds.value.has(hit.id)) selectedIds.value.delete(hit.id)
+                    else selectedIds.value.add(hit.id)
+                } else {
+                    if (!selectedIds.value.has(hit.id)) {
+                        selectedIds.value = new Set([hit.id])
+                    }
+                }
+                dragOrigin.value = point
+                dragSourceAnnotations.value = annotations.value
+                draggingSelection.value = false
+                scheduleRender()
+                return
+            }
+            // If click empty space with select tool, clear selection
+            if (!event.shiftKey && !event.ctrlKey && !event.metaKey) {
+                selectedIds.value.clear()
+            }
             dragOrigin.value = point
             dragSourceAnnotations.value = null
             draggingSelection.value = false
@@ -960,7 +978,8 @@ export function useImageEditor(props: ImageEditorProps, emit: ImageEditorEmit) {
         }
 
         if (activeTool.value === 'text') {
-            const textValue = textInput.value.trim() || t('imageEditor.tools.text')
+            // Use default text if an item is selected (avoid inheriting its text), otherwise use input value
+            const textValue = (selectedId.value ? '' : textInput.value.trim()) || t('imageEditor.tools.text')
             const annotation: TextAnnotation = {
                 id: createId('text'),
                 kind: 'text',
@@ -973,6 +992,9 @@ export function useImageEditor(props: ImageEditorProps, emit: ImageEditorEmit) {
                 bold: textBold.value,
                 italic: textItalic.value,
                 align: 'center', // Center text at mouse position
+                textStyle: textStyle.value,
+                secondaryColor: textSecondaryColor.value,
+                letterSpacing: textLetterSpacing.value,
             }
             pushAnnotations([...annotations.value, annotation])
             selectedId.value = annotation.id
@@ -1036,6 +1058,7 @@ export function useImageEditor(props: ImageEditorProps, emit: ImageEditorEmit) {
                         next.strokeWidth = Math.max(1, next.strokeWidth + delta * 0.5 * step) // Slower for stroke width
                     } else if (next.kind === 'arrow') {
                         next.width = Math.max(1, next.width + delta * 0.5 * step)
+                        next.headSize = Math.max(6, next.headSize + delta * step)
                     } else if (next.kind === 'mosaic') {
                         next.pixelSize = Math.max(2, next.pixelSize + delta * step)
                     }
@@ -1178,55 +1201,19 @@ export function useImageEditor(props: ImageEditorProps, emit: ImageEditorEmit) {
             return
         }
 
-        // 2. Dragging Item
-        if (dragSourceAnnotations.value && selectedId.value && dragOrigin.value) {
+        // 2. Dragging Items (Supports Group Move)
+        if (dragSourceAnnotations.value && selectedIds.value.size > 0 && dragOrigin.value) {
             const dx = point.x - dragOrigin.value.x
             const dy = point.y - dragOrigin.value.y
             const width = displayInfo.value.canvasW
             const height = displayInfo.value.canvasH
+            const ids = Array.from(selectedIds.value)
 
             history.value = {
                 ...history.value,
-                present: withUpdatedAnnotation(selectedId.value, item => {
-                    if (item.kind === 'text') {
-                        return { ...item, ...translateInBounds({ x: item.x, y: item.y }, dx, dy, width, height) }
-                    }
-                    if (item.kind === 'number') {
-                        return { ...item, ...translateInBounds({ x: item.x, y: item.y }, dx, dy, width, height) }
-                    }
-                    if (item.kind === 'shape') {
-                        return {
-                            ...item,
-                            start: translateInBounds(item.start, dx, dy, width, height),
-                            end: translateInBounds(item.end, dx, dy, width, height),
-                        }
-                    }
-                    if (item.kind === 'arrow') {
-                        return {
-                            ...item,
-                            start: translateInBounds(item.start, dx, dy, width, height),
-                            end: translateInBounds(item.end, dx, dy, width, height),
-                        }
-                    }
-                    if (item.kind === 'mosaic') {
-                        return {
-                            ...item,
-                            points: item.points.map(p => translateInBounds(p, dx, dy, width, height)),
-                            area: item.area
-                                ? {
-                                    x: clamp(item.area.x + dx, 0, width),
-                                    y: clamp(item.area.y + dy, 0, height),
-                                    w: item.area.w,
-                                    h: item.area.h,
-                                }
-                                : undefined,
-                        }
-                    }
-                    if (item.kind === 'brush') {
-                        return {
-                            ...item,
-                            points: item.points.map(p => ({ ...translateInBounds(p, dx, dy, width, height), pressure: p.pressure })),
-                        }
+                present: history.value.present.map(item => {
+                    if (ids.includes(item.id)) {
+                        return translateAnnotation(item, dx, dy, width, height)
                     }
                     return item
                 }),
@@ -1361,6 +1348,74 @@ export function useImageEditor(props: ImageEditorProps, emit: ImageEditorEmit) {
 
     // 双击编辑已移除，文本可通过侧边栏直接编辑
 
+    function groupSelected() {
+        const ids = Array.from(selectedIds.value)
+        if (ids.length < 2) return
+
+        const children = annotations.value.filter(a => ids.includes(a.id))
+        const remaining = annotations.value.filter(a => !ids.includes(a.id))
+
+        const group: GroupAnnotation = {
+            id: createId('group'),
+            kind: 'group',
+            children: children
+        }
+
+        pushAnnotations([...remaining, group])
+        selectedId.value = group.id
+        scheduleRender()
+    }
+
+    function ungroupSelected() {
+        if (selectedIds.value.size !== 1) return
+        const id = Array.from(selectedIds.value)[0]
+        const groupIdx = annotations.value.findIndex(a => a.id === id)
+        const group = annotations.value[groupIdx]
+
+        if (group?.kind !== 'group') return
+
+        const children = group.children
+        const nextAnnotations = [...annotations.value]
+        nextAnnotations.splice(groupIdx, 1, ...children)
+
+        pushAnnotations(nextAnnotations)
+        selectedIds.value = new Set(children.map(c => c.id))
+        scheduleRender()
+    }
+
+    // Helper to translate any annotation by dx, dy
+    function translateAnnotation(item: Annotation, dx: number, dy: number, width: number, height: number): Annotation {
+        if (item.kind === 'text' || item.kind === 'number') {
+            return { ...item, ...translateInBounds({ x: (item as any).x, y: (item as any).y }, dx, dy, width, height) }
+        }
+        if (item.kind === 'shape' || item.kind === 'arrow') {
+            return {
+                ...item,
+                start: translateInBounds(item.start, dx, dy, width, height),
+                end: translateInBounds(item.end, dx, dy, width, height),
+            }
+        }
+        if (item.kind === 'mosaic' || item.kind === 'brush') {
+            return {
+                ...item,
+                points: item.points.map(p => {
+                    const np = translateInBounds(p, dx, dy, width, height)
+                    return (item.kind === 'brush') ? { ...np, pressure: (p as any).pressure } : np
+                }),
+                area: (item.kind === 'mosaic' && item.area)
+                    ? { ...item.area, x: clamp(item.area.x + dx, 0, width), y: clamp(item.area.y + dy, 0, height) }
+                    : undefined
+            } as any
+        }
+        if (item.kind === 'group') {
+            return {
+                ...item,
+                children: item.children.map(child => translateAnnotation(child, dx, dy, width, height))
+            }
+        }
+        return item
+    }
+
     function confirmTextEdit() {
         if (!selectedId.value) return
         const nextText = editingText.value
@@ -1447,17 +1502,8 @@ export function useImageEditor(props: ImageEditorProps, emit: ImageEditorEmit) {
                 uiPanel.value = 'tool'
                 selectedId.value = null
                 draftAnnotation.value = null
-                // If switching away from crop, ensure crop is cancelled?
-                // startCrop logic handles setting activeTool='select'.
                 if (isCropping.value) {
-                    // If we switch tool, should we cancel crop?
-                    // Yes, probably. Or apply it?
-                    // Let's cancel it for now to be safe.
                     cancelCrop()
-                    // Re-set active tool because cancelCrop might not reset it?
-                    // cancelCrop just sets isCropping=false.
-                    // activeTool was 'select' during crop.
-                    // Now we set it to new tool.
                     activeTool.value = nextTool
                 }
             }
@@ -1580,10 +1626,14 @@ export function useImageEditor(props: ImageEditorProps, emit: ImageEditorEmit) {
         }
     })
 
-    // Two-way sync: Update refs when selection changes
-    // Two-way sync: Update refs when selection changes or content changes
     watch(selectedAnnotation, (item, oldItem) => {
-        if (!item || isSyncing) return
+        if (isSyncing) return
+
+        if (!item) {
+            // Reset text input on deselect so new text starts fresh
+            textInput.value = ''
+            return
+        }
 
         // Only switch tool/panel if it's a new selection (ID changed)
         const isNewSelection = !oldItem || item.id !== oldItem.id
@@ -1615,6 +1665,7 @@ export function useImageEditor(props: ImageEditorProps, emit: ImageEditorEmit) {
             arrowDirection.value = item.direction
             arrowPattern.value = item.pattern
             arrowHeadSize.value = item.headSize
+            arrowStyle.value = item.style || 'modern'
         } else if (item.kind === 'text') {
             textInput.value = item.text
             textColor.value = item.color
@@ -1623,6 +1674,9 @@ export function useImageEditor(props: ImageEditorProps, emit: ImageEditorEmit) {
             textBold.value = item.bold
             textItalic.value = item.italic
             textAlign.value = item.align
+            textStyle.value = item.textStyle || 'fill'
+            textSecondaryColor.value = item.secondaryColor || '#3b82f6'
+            textLetterSpacing.value = item.letterSpacing || 0
         } else if (item.kind === 'mosaic') {
             mosaicMode.value = item.mode
             mosaicShape.value = item.shape
@@ -1638,18 +1692,32 @@ export function useImageEditor(props: ImageEditorProps, emit: ImageEditorEmit) {
 
     // Sync back: Update selected annotation when refs change
     const syncToSelected = (updater: (item: any) => any) => {
-        if (!selectedId.value || isSyncing) return
+        if (selectedIds.value.size === 0 || isSyncing) return
+        const ids = Array.from(selectedIds.value)
         history.value = {
             ...history.value,
-            present: withUpdatedAnnotation(selectedId.value, updater)
+            present: annotations.value.map(item => ids.includes(item.id) ? updater(item) : item)
         }
         scheduleRender()
     }
 
     watch([brushColor, brushSize, brushOpacity], () => syncToSelected(i => i.kind === 'brush' ? { ...i, color: brushColor.value, size: brushSize.value, opacity: brushOpacity.value } : i))
     watch([shapeType, shapeStrokeColor, shapeStrokeWidth, shapeFillColor, shapeFillOpacity, shapeStrokePattern], () => syncToSelected(i => i.kind === 'shape' ? { ...i, shape: shapeType.value, strokeColor: shapeStrokeColor.value, strokeWidth: shapeStrokeWidth.value, fillColor: shapeFillColor.value, fillOpacity: shapeFillOpacity.value, strokePattern: shapeStrokePattern.value } : i))
-    watch([arrowColor, arrowWidth, arrowDirection, arrowPattern, arrowHeadSize], () => syncToSelected(i => i.kind === 'arrow' ? { ...i, color: arrowColor.value, width: arrowWidth.value, direction: arrowDirection.value, pattern: arrowPattern.value, headSize: arrowHeadSize.value } : i))
-    watch([textInput, textColor, textFontSize, textFontFamily, textBold, textItalic, textAlign], () => syncToSelected(i => i.kind === 'text' ? { ...i, text: textInput.value, color: textColor.value, fontSize: textFontSize.value, fontFamily: textFontFamily.value, bold: textBold.value, italic: textItalic.value, align: textAlign.value } : i))
+    watch([arrowColor, arrowWidth, arrowDirection, arrowPattern, arrowHeadSize, arrowStyle], () => syncToSelected(i => i.kind === 'arrow' ? { ...i, color: arrowColor.value, width: arrowWidth.value, direction: arrowDirection.value, pattern: arrowPattern.value, headSize: arrowHeadSize.value, style: arrowStyle.value } : i))
+    // Special case for Text: don't sync text content if multiple items selected to avoid overwriting different texts
+    watch([textInput, textColor, textFontSize, textFontFamily, textBold, textItalic, textAlign, textStyle, textSecondaryColor, textLetterSpacing], () => syncToSelected(i => i.kind === 'text' ? {
+        ...i,
+        text: (selectedIds.value.size > 1 ? i.text : textInput.value),
+        color: textColor.value,
+        fontSize: textFontSize.value,
+        fontFamily: textFontFamily.value,
+        bold: textBold.value,
+        italic: textItalic.value,
+        align: textAlign.value,
+        textStyle: textStyle.value,
+        secondaryColor: textSecondaryColor.value,
+        letterSpacing: textLetterSpacing.value
+    } : i))
     watch([mosaicMode, mosaicShape, mosaicPixelSize], () => syncToSelected(i => i.kind === 'mosaic' ? { ...i, mode: mosaicMode.value, shape: mosaicShape.value, pixelSize: mosaicPixelSize.value } : i))
     watch([numberColor, numberSize], () => syncToSelected(i => i.kind === 'number' ? { ...i, color: numberColor.value, size: numberSize.value } : i))
     watch(numberValue, () => syncToSelected(i => i.kind === 'number' ? { ...i, value: numberValue.value } : i))
@@ -1725,6 +1793,7 @@ export function useImageEditor(props: ImageEditorProps, emit: ImageEditorEmit) {
         arrowDirection,
         arrowPattern,
         arrowHeadSize,
+        arrowStyle,
         textInput,
         textColor,
         textFontSize,
@@ -1732,6 +1801,10 @@ export function useImageEditor(props: ImageEditorProps, emit: ImageEditorEmit) {
         textBold,
         textItalic,
         textAlign,
+        textStyle,
+        textSecondaryColor,
+        textLetterSpacing,
+        selectedIds,
         mosaicMode,
         mosaicShape,
         mosaicPixelSize,
@@ -1778,8 +1851,12 @@ export function useImageEditor(props: ImageEditorProps, emit: ImageEditorEmit) {
         onCanvasPointerDown,
         onCanvasPointerMove,
         onCanvasPointerUp,
-
         onCanvasWheel,
+        onGlobalKeydown,
+        groupSelected,
+        ungroupSelected,
+        renameAnnotation,
+        getAnnotationLabel,
         reorderAnnotations,
         confirmTextEdit,
         onSpaceDown,
