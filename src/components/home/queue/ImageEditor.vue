@@ -448,7 +448,7 @@ function onNavigatorPointerUp(event: PointerEvent) {
                     @click="uiPanel = 'base'; isConfigPanelOpen = true">
                     <div class="i-ph-sliders-horizontal text-lg md:text-xl" />
                     <span class="text-[10px] font-medium leading-none hidden md:block">{{ t('imageEditor.adjust')
-                      }}</span>
+                    }}</span>
                   </button>
                 </template>
                 {{ t('imageEditor.adjust') }}
@@ -462,7 +462,7 @@ function onNavigatorPointerUp(event: PointerEvent) {
                     @click="uiPanel = 'tool'; isConfigPanelOpen = true">
                     <div class="i-ph-toolbox text-lg md:text-xl" />
                     <span class="text-[10px] font-medium leading-none hidden md:block">{{ t('imageEditor.toolConfig')
-                      }}</span>
+                    }}</span>
                   </button>
                 </template>
                 {{ t('imageEditor.toolConfig') }}
@@ -630,7 +630,10 @@ function onNavigatorPointerUp(event: PointerEvent) {
                     <div class="space-y-1">
                       <div class="flex justify-between text-xs mb-1">
                         <span>{{ t('imageEditor.scale') }}</span>
-                        <span class="font-mono text-primary">{{ scale }}%</span>
+                        <div class="flex gap-2">
+                          <span v-if="dimensionText" class="font-mono text-xs opacity-50">{{ dimensionText }}</span>
+                          <span class="font-mono text-primary">{{ scale }}%</span>
+                        </div>
                       </div>
                       <n-slider v-model:value="scale" :min="20" :max="300" :step="5" />
                     </div>
