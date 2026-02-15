@@ -26,6 +26,16 @@ const configStore = useConfigStore()
 const { onFilesDropped } = useUploadInput((files) => {
     emit('filesDropped', files)
 })
+
+/** 处理图片编辑事件：替换队列中的文件和预览 */
+function handleEditItem(id: string, payload: { file: File; preview: string }) {
+    const item = props.fileQueue.items.find((i: any) => i.id === id)
+    if (item && (item.status === 'pending' || item.status === 'paused')) {
+        if (item.preview) globalThis.URL.revokeObjectURL(item.preview)
+        item.file = payload.file
+        item.preview = payload.preview
+    }
+}
 </script>
 
 <template>
@@ -38,10 +48,9 @@ const { onFilesDropped } = useUploadInput((files) => {
         <UploadZone @filesDropped="onFilesDropped" />
 
         <!-- 右侧：历史/结果 -->
-        <UploadQueue class="m-4 md:m-6 mb-[86px]  md:w-[320px] "
-            :uploadQueue="fileQueue.items" @upload-all="fileQueue.start()"
-            @upload-item="(id: string) => fileQueue.trigger(id)" @retry-item="(id: string) => fileQueue.retry(id)"
-            @remove-item="(id: string): void => fileQueue.remove(id)" @clear-all="fileQueue.clear()"
-            @open-history="router.push('/history')" />
+        <UploadQueue class="m-4 md:m-6 mb-[86px]  md:w-[320px] " :uploadQueue="fileQueue.items"
+            @upload-all="fileQueue.start()" @upload-item="(id: string) => fileQueue.trigger(id)"
+            @retry-item="(id: string) => fileQueue.retry(id)" @remove-item="(id: string): void => fileQueue.remove(id)"
+            @clear-all="fileQueue.clear()" @open-history="router.push('/history')" @edit-item="handleEditItem" />
     </div>
 </template>

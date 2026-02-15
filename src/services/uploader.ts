@@ -91,16 +91,16 @@ export async function uploadImage(
     case 'test':
       return uploadTest(file, config as TestConfig, onProgress)
     default:
-        // 尝试作为插件运行
-        try {
-            const url = await runPlugin(config as PluginDriveConfig, file, onProgress);
-            return { url };
-        } catch (e: any) {
-            if (e.message?.includes('not found')) {
-                throw new Error('Unknown config type');
-            }
-            throw e;
+      // 尝试作为插件运行
+      try {
+        const url = await runPlugin(config as PluginDriveConfig, file, onProgress);
+        return { url };
+      } catch (e: any) {
+        if (e.message?.includes('not found')) {
+          throw new Error('Unknown config type');
         }
+        throw e;
+      }
   }
 }
 
@@ -413,7 +413,7 @@ async function uploadCustom(file: File, config: CustomConfig, onProgress: Progre
         // 处理手动前缀拼接
         if (urlPrefix) {
           const prefix = urlPrefix.endsWith('/') ? urlPrefix : urlPrefix + '/'
-          
+
           // 逻辑: 只有当 URL 不包含前缀时才拼接
           if (!finalUrl.startsWith(urlPrefix)) {
             const path = finalUrl.startsWith('/') ? finalUrl.slice(1) : finalUrl
@@ -630,7 +630,7 @@ async function uploadTest(file: File, config: TestConfig, onProgress: ProgressCa
   // 格式: mock_img_seed_{seed}.jpg
   const match = file.name.match(/mock_img_seed_(.+)\./)
   let url = 'https://picsum.photos/800/600'
-  
+
   if (match && match[1]) {
     url = `https://picsum.photos/seed/${match[1]}/800/600`
   }
@@ -806,9 +806,9 @@ async function uploadOneImg(file: File, config: WebUploaderConfig, onProgress: P
   }
 
   const res = await fetchUpload(url, formData, headers, onProgress, { withCredentials: true })
-  
+
   if (res.code !== 200) throw new Error(res.msg || res.message || 'OneImg upload failed')
-  
+
   let fileUrl = res.data.files[0].url
   if (!fileUrl.startsWith('http')) {
     try {

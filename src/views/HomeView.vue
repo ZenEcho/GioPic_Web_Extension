@@ -38,7 +38,7 @@ const importJson = ref('')
 const isConfiguring = ref(false)
 
 // --- 组合式函数 ---
-const { fileQueue, addFileToQueue } = useUploadQueue()
+const { fileQueue, addFileToQueue, editQueueItem } = useUploadQueue()
 
 // --- Event Handlers ---
 function handleFilesDropped(files: File[]) {
@@ -155,4 +155,3 @@ onMounted(async () => {
             @create-node="handleOnboardingCreateNode" @import-node="handleOnboardingImportNode" />
     </div>
 </template>
-

@@ -161,8 +161,28 @@ export function useUploadQueue() {
         fileQueue.add(newItem)
     }
 
+    /**
+     * 编辑队列中的文件（替换为编辑后的文件和预览）
+     *
+     * @param id - 队列项 ID
+     * @param payload - 编辑后的文件和预览 URL
+     */
+    function editQueueItem(id: string, payload: { file: File; preview: string }) {
+        const item = fileQueue.items.find((i: QueueItem) => i.id === id)
+        if (item && (item.status === 'pending' || item.status === 'paused')) {
+            // 释放旧的 preview URL
+            if (item.preview) {
+                URL.revokeObjectURL(item.preview)
+            }
+            // 替换文件和预览
+            item.file = payload.file
+            item.preview = payload.preview
+        }
+    }
+
     return {
         fileQueue,
-        addFileToQueue
+        addFileToQueue,
+        editQueueItem,
     }
 }

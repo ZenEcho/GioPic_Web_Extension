@@ -39,6 +39,16 @@ const { onFilesDropped } = useUploadInput((files) => {
     }
 })
 
+/** 处理图片编辑事件：替换队列中的文件和预览 */
+function handleEditItem(id: string, payload: { file: File; preview: string }) {
+    const item = props.fileQueue.items.find((i: any) => i.id === id)
+    if (item && (item.status === 'pending' || item.status === 'paused')) {
+        if (item.preview) globalThis.URL.revokeObjectURL(item.preview)
+        item.file = payload.file
+        item.preview = payload.preview
+    }
+}
+
 </script>
 
 
@@ -99,7 +109,7 @@ const { onFilesDropped } = useUploadInput((files) => {
                             @upload-item="(id: string) => fileQueue.trigger(id)"
                             @retry-item="(id: string) => fileQueue.retry(id)"
                             @remove-item="(id: string): void => fileQueue.remove(id)" @clear-all="fileQueue.clear()"
-                            @open-history="currentView = 'history'"
+                            @open-history="currentView = 'history'" @edit-item="handleEditItem"
                             class="!m-0 !w-full !max-w-none !h-full !border-none !shadow-none !bg-transparent" />
                     </div>
                 </div>

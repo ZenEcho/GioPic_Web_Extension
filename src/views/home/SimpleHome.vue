@@ -59,6 +59,16 @@ const { onFilesDropped } = useUploadInput((files) => {
     emit('filesDropped', files)
 })
 
+/** 处理图片编辑事件：替换队列中的文件和预览 */
+function handleEditItem(id: string, payload: { file: File; preview: string }) {
+    const item = props.fileQueue.items.find((i: any) => i.id === id)
+    if (item && (item.status === 'pending' || item.status === 'paused')) {
+        if (item.preview) globalThis.URL.revokeObjectURL(item.preview)
+        item.file = payload.file
+        item.preview = payload.preview
+    }
+}
+
 const clickTimer = ref<ReturnType<typeof setTimeout> | null>(null)
 
 const handleNodeClick = (config: DriveConfig) => {
@@ -121,9 +131,9 @@ const handleNodeDblClick = (config: DriveConfig) => {
                     class="px-3 py-1 rounded-full text-xs font-medium transition-all border"
                     :class="configStore.selectedIds.includes(config.id)
                         ? 'bg-primary text-white border-primary shadow-sm shadow-primary/30'
-                        : 'bg-white dark:bg-gray-800 text-gray-500 dark:text-gray-400 border-gray-200 dark:border-gray-700 hover:border-primary/30'"
-                    :title="t('home.nodeTip')" @click="handleNodeClick(config)"
-                    @contextmenu.prevent="emit('editConfig', config)" @dblclick="handleNodeDblClick(config)">
+                        : 'bg-white dark:bg-gray-800 text-gray-500 dark:text-gray-400 border-gray-200 dark:border-gray-700 hover:border-primary/30'" :title="t('home.nodeTip')"
+                    @click="handleNodeClick(config)" @contextmenu.prevent="emit('editConfig', config)"
+                    @dblclick="handleNodeDblClick(config)">
                     {{ config.name }}
                 </button>
                 <div class="flex items-center gap-2 ml-1">
@@ -175,7 +185,7 @@ const handleNodeDblClick = (config: DriveConfig) => {
                         @upload-item="(id: string) => fileQueue.trigger(id)"
                         @retry-item="(id: string) => fileQueue.retry(id)"
                         @remove-item="(id: string): void => fileQueue.remove(id)" @clear-all="fileQueue.clear()"
-                        @open-history="router.push('/history')"
+                        @open-history="router.push('/history')" @edit-item="handleEditItem"
                         class="!m-0 !w-full !max-w-none !h-auto !border-none !shadow-none !bg-transparent" />
                 </div>
             </div>
