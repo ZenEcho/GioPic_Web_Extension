@@ -11,12 +11,8 @@
 -->
 
 <template>
-    <div v-if="isVisible" ref="ballRef" class="giopic-floating-ball" :style="ballStyle"
-        @click.stop="onClick"
-        @mousedown.stop
-        @pointerdown.stop
-        @mouseenter="onMouseEnter"
-        @mouseleave="onMouseLeave">
+    <div v-if="isVisible" ref="ballRef" class="giopic-floating-ball" :style="ballStyle" @click.stop="onClick"
+        @mousedown.stop @pointerdown.stop @mouseenter="onMouseEnter" @mouseleave="onMouseLeave">
 
         <!-- Logo Icon -->
         <div class="giopic-ball-content">
@@ -36,19 +32,15 @@
     </div>
 
     <!-- Iframe Overlay -->
-    <div v-if="isVisible" class="giopic-web-overlay" :style="overlayStyle"
-        @click.stop="hideIframe"
-        @mousedown.stop
+    <div v-if="isVisible" class="giopic-web-overlay" :style="overlayStyle" @click.stop="hideIframe" @mousedown.stop
         @pointerdown.stop>
     </div>
 
-    <iframe v-if="isVisible" ref="iframeRef" :src="iframeSrc" :style="iframeStyle" allow="clipboard-write"
-        @click.stop @load="() => { }"></iframe>
+    <iframe v-if="isVisible" ref="iframeRef" :src="iframeSrc" :style="iframeStyle" allow="clipboard-write" @click.stop
+        @load="() => { }"></iframe>
 
     <!-- Close Confirmation Dialog -->
-    <div v-if="showCloseDialog" class="giopic-dialog-overlay"
-        @click.stop="showCloseDialog = false"
-        @mousedown.stop
+    <div v-if="showCloseDialog" class="giopic-dialog-overlay" @click.stop="showCloseDialog = false" @mousedown.stop
         @pointerdown.stop>
         <div class="giopic-dialog" ref="dialogRef" @click.stop :style="dialogStyle">
             <div class="giopic-dialog-header">
@@ -140,6 +132,7 @@ const closeOption = ref<'close' | 'session' | 'site' | 'permanent'>('close')
 const iframeShow = ref(false)
 const iframeSrc = ref('')
 const dialogStyle = ref<any>({})
+const isReady = ref(false)
 
 // Settings & State
 const defaultPosition = () => ({
@@ -165,10 +158,10 @@ const isPageClosed = ref(false)
 const draggableOptions = {
     padding: { top: 10, bottom: 10, left: 10, right: 10 }
 }
-const { isDragging, position, isStuckToLeft, isStuckToRight } = useDraggable(ballRef, ballRef, settings.value.position, draggableOptions)
+const { isDragging, position, isStuckToLeft, isStuckToRight, ensureInViewport } = useDraggable(ballRef, ballRef, settings.value.position, draggableOptions)
 
 // Idle State for auto-hide
-const isIdle = ref(false)
+const isIdle = ref(true)
 let idleTimer: any = null
 
 const onMouseEnter = () => {
@@ -183,7 +176,7 @@ const onMouseEnter = () => {
 const onMouseLeave = () => {
     isHovering.value = false
     if (idleTimer) clearTimeout(idleTimer)
-    
+
     // Check if auto-hide is enabled
     if (settings.value.autoHide?.enabled !== false) {
         const defaultDelay = getDefaultSettings().sidebarSettings.autoHide.delay
@@ -223,7 +216,7 @@ const isVisible = computed(() => {
     // Removed: if (settings.value.mode === 'native') return false
     if (isSessionClosed.value) return false
     if (isPageClosed.value) return false
-    
+
     const currentUrl = window.location.href
     const currentHostname = window.location.hostname
     const isDisabled = disabledSites.value.some(site => {
@@ -246,10 +239,10 @@ const isVisible = computed(() => {
             const currentNoProto = currentNorm.replace(/^https?:\/\//, '')
             return currentNoProto.startsWith(siteNorm)
         }
-        
+
         return false
     })
-    
+
     if (isDisabled) return false
     return true
 })
@@ -258,10 +251,10 @@ const logoUrl = browser.runtime.getURL('assets/icons/logo64.png')
 
 const ballStyle = computed<CSSProperties>(() => {
     const showBall = !iframeShow.value
-    
+
     let transform = showBall ? (isHovering.value ? 'scale(1.1)' : 'scale(1)') : 'scale(0)'
     let opacity = showBall ? (isHovering.value || isDragging.value ? 1 : settings.value.opacity / 100) : 0
-    
+
     // Auto-hide when idle and stuck to edge
     if (showBall && !isHovering.value && !isDragging.value && isIdle.value && settings.value.autoHide?.enabled !== false) {
         const autoHide = settings.value.autoHide || getDefaultSettings().sidebarSettings.autoHide
@@ -287,7 +280,7 @@ const ballStyle = computed<CSSProperties>(() => {
         transform,
         cursor: isDragging.value ? 'grabbing' : 'pointer',
         pointerEvents: showBall ? 'auto' : 'none',
-        transition: isDragging.value ? 'none' : 'all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1)'
+        transition: (isDragging.value || !isReady.value) ? 'none' : 'all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1)'
     }
 })
 
@@ -377,7 +370,7 @@ const handleConfirmClose = async () => {
             const hostname = window.location.hostname
             // Check if not already disabled
             const isDisabled = disabledSites.value.some(site => site === hostname)
-            
+
             if (!isDisabled) {
                 // create new array ref to ensure reactivity triggers
                 const newSites = [...disabledSites.value, hostname]
@@ -524,22 +517,6 @@ onMounted(async () => {
         }
         // Sync position ref immediately
         position.value = settings.value.position
-
-        // Ensure position is valid after render
-        nextTick(() => {
-            // 如果加载的位置超出当前屏幕，手动触发一次边界校正
-            // 由于 useDraggable 内部已做越界处理，仅需触发一次微小位移即可
-            const { innerWidth, innerHeight } = window
-            const { x, y } = position.value
-            // 水平方向：若超出右边界，则贴右；若超出左边界，则贴左
-            const clampedX = Math.max(0, Math.min(x, innerWidth - 44))
-            // 垂直方向：若超出下边界，则贴底；若超出上边界，则贴顶
-            const clampedY = Math.max(0, Math.min(y, innerHeight - 44))
-            // 只有真正越界时才更新，避免无意义刷新
-            if (clampedX !== x || clampedY !== y) {
-              position.value = { x: clampedX, y: clampedY }
-            }
-        })
     }
 
     disabledSites.value = Array.isArray(oldStorage.sidebar_disabled_sites) ? oldStorage.sidebar_disabled_sites : []
@@ -585,6 +562,11 @@ onMounted(async () => {
 
     // Start idle timer immediately
     onMouseLeave()
+
+    // Ensure initial layout is correct (stickiness) and prevent animation flash
+    await nextTick()
+    ensureInViewport()
+    isReady.value = true
 })
 
 </script>
