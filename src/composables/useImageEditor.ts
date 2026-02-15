@@ -207,10 +207,10 @@ export function useImageEditor(props: ImageEditorProps, emit: ImageEditorEmit) {
         return activeTool.value
     })
 
-    function getRotatedDimensions() {
+    function getRotatedDimensions(useOriginalSize = false) {
         const img = originalImage.value
         if (!img) return { w: 0, h: 0 }
-        const s = scale.value / 100
+        const s = useOriginalSize ? 1 : scale.value / 100
         const width = Math.round(img.naturalWidth * s)
         const height = Math.round(img.naturalHeight * s)
         if (rotation.value === 90 || rotation.value === 270) {
@@ -252,7 +252,8 @@ export function useImageEditor(props: ImageEditorProps, emit: ImageEditorEmit) {
         const img = originalImage.value
         if (!canvas || !container || !img) return
 
-        const { w: exportW, h: exportH } = getRotatedDimensions()
+        const { w: exportW, h: exportH } = getRotatedDimensions(false)
+        const { w: origW, h: origH } = getRotatedDimensions(true)
         if (!exportW || !exportH) return
 
         // 1. Set Canvas Setup (Viewport Size)
@@ -268,10 +269,13 @@ export function useImageEditor(props: ImageEditorProps, emit: ImageEditorEmit) {
         // Clear Viewport
         ctx.clearRect(0, 0, viewportW, viewportH)
 
-        // 2. Calculate Base Dimensions (Fit to Screen)
-        const fitScale = Math.min(viewportW / exportW, viewportH / exportH, 1)
-        const baseContentW = Math.max(1, Math.round(exportW * fitScale))
-        const baseContentH = Math.max(1, Math.round(exportH * fitScale))
+        // 2. Calculate Base Dimensions (Fit Original to Screen, then Scale it)
+        const baseFitScale = Math.min(viewportW / origW, viewportH / origH, 1)
+        const resScale = scale.value / 100
+
+        // baseContentW/H should represent the ACTIVE WORKSPACE area (unzoomed by viewZoom)
+        const baseContentW = Math.max(1, Math.round(exportW * baseFitScale))
+        const baseContentH = Math.max(1, Math.round(exportH * baseFitScale))
 
         // 3. Apply View Transform
         ctx.save()
@@ -304,7 +308,7 @@ export function useImageEditor(props: ImageEditorProps, emit: ImageEditorEmit) {
             img,
             baseContentW,
             baseContentH,
-            fitScale,
+            baseFitScale,
             scale.value, // Resolution scale
             rotation.value,
             flipH.value,
@@ -360,7 +364,7 @@ export function useImageEditor(props: ImageEditorProps, emit: ImageEditorEmit) {
             canvasH: baseContentH,
             exportW,
             exportH,
-            fitScale,
+            fitScale: baseFitScale,
             viewportW,
             viewportH
         }

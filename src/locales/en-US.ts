@@ -596,6 +596,7 @@ export default {
     ungroup: 'Ungroup',
     groupWithCount: 'Group ({count})',
     layer: 'Layer',
+    layers: 'Layers',
     layerManagement: 'Layer Management',
     noLayers: 'No Layers',
     moveToTop: 'Bring to Front',

@@ -630,9 +630,10 @@ function onNavigatorPointerUp(event: PointerEvent) {
                     <div class="space-y-1">
                       <div class="flex justify-between text-xs mb-1">
                         <span>{{ t('imageEditor.scale') }}</span>
-                        <div class="flex gap-2">
-                          <span v-if="dimensionText" class="font-mono text-xs opacity-50">{{ dimensionText }}</span>
-                          <span class="font-mono text-primary">{{ scale }}%</span>
+                        <div class="flex flex-col items-end">
+                          <span class="font-mono text-primary font-bold">{{ scale }}%</span>
+                          <span v-if="dimensionText" class="font-mono text-[10px] opacity-70 text-gray-400">{{
+                            dimensionText }}</span>
                         </div>
                       </div>
                       <n-slider v-model:value="scale" :min="20" :max="300" :step="5" />
@@ -1000,7 +1001,7 @@ function onNavigatorPointerUp(event: PointerEvent) {
 
                   <div class="flex-1 overflow-y-auto px-2 pb-2 space-y-1 custom-scrollbar">
                     <div v-if="annotations.length === 0" class="text-center py-10 opacity-30 select-none">
-                      <div class="i-ph-layers text-4xl mb-2 mx-auto" />
+                      <div class="i-ph-stack text-4xl mb-2 mx-auto" />
                       <p class="text-xs">{{ t('imageEditor.noLayers') }}</p>
                     </div>
                     <div v-for="(item, index) in [...annotations].reverse()" :key="item.id"
@@ -1018,12 +1019,17 @@ function onNavigatorPointerUp(event: PointerEvent) {
                         <div v-else-if="item.kind === 'number'" class="i-ph-number-circle-one text-xs" />
                         <div v-else-if="item.kind === 'group'" class="i-ph-folders text-xs" />
                       </div>
-                      <span v-if="renamingId !== item.id" class="text-[10px] truncate flex-1 font-medium"
-                        @dblclick="startRename(item)">
-                        {{ getAnnotationLabel(item) }}
-                      </span>
-                      <n-input v-else v-model:value="renamingValue" size="tiny" class="flex-1 !text-[10px]"
-                        @blur="finishRename" @keydown.enter="finishRename" @click.stop autofocus />
+                      <div class="flex-1 min-w-0 flex items-center gap-1 group/item">
+                        <span v-if="renamingId !== item.id" class="text-[10px] truncate font-medium"
+                          @dblclick="startRename(item)">
+                          {{ getAnnotationLabel(item) }}
+                        </span>
+                        <div v-if="renamingId !== item.id"
+                          class="i-ph-pencil-simple text-[10px] opacity-0 group-hover/item:opacity-40 cursor-pointer"
+                          @click.stop="startRename(item)" />
+                        <n-input v-else v-model:value="renamingValue" size="tiny" class="flex-1 !text-[10px]"
+                          @blur="finishRename" @keydown.enter="finishRename" @click.stop autofocus />
+                      </div>
                     </div>
                   </div>
                 </div>

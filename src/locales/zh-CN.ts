@@ -596,6 +596,7 @@ export default {
     ungroup: '取消组合',
     groupWithCount: '组合 ({count})',
     layer: '图层',
+    layers: '图层',
     layerManagement: '图层管理',
     noLayers: '暂无图层',
     moveToTop: '置顶',
