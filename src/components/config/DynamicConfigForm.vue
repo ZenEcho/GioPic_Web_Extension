@@ -209,60 +209,63 @@ function updateField(key: string, value: any) {
         <template v-for="field in schema" :key="field.key">
             <n-form-item :label="getLabel(field.label)" :path="field.key"
                 :class="{ 'md:col-span-2': field.type === 'textarea' || field.type === 'kv-pairs' }">
-                
-                <!-- 文本/密码输入框 -->
-                <n-input v-if="field.type === 'text' || field.type === 'password'" :value="modelValue[field.key]"
-                    @update:value="(val: string | number) => updateField(field.key, val)"
-                    :type="field.type === 'password' ? 'password' : 'text'"
-                    :show-password-on="field.type === 'password' ? 'click' : undefined"
-                    :placeholder="getPlaceholder(field.placeholder)" />
-                
-                <!-- 下拉选择框 (通用) -->
-                <n-select
-                    v-else-if="field.type === 'select' && field.key !== 'strategyId' && !(field.key === 'albumId' && modelValue.type === 'lsky')"
-                    :value="modelValue[field.key] || field.defaultValue"
-                    @update:value="(val: string | number) => updateField(field.key, val)" :options="getOptions(field.options)" />
+                <div class="w-full space-y-1">
+                    <!-- 文本/密码输入框 -->
+                    <n-input v-if="field.type === 'text' || field.type === 'password'" :value="modelValue[field.key]"
+                        @update:value="(val: string | number) => updateField(field.key, val)"
+                        :type="field.type === 'password' ? 'password' : 'text'"
+                        :show-password-on="field.type === 'password' ? 'click' : undefined"
+                        :placeholder="getPlaceholder(field.placeholder)" />
+                    
+                    <!-- 下拉选择框 (通用) -->
+                    <n-select
+                        v-else-if="field.type === 'select' && field.key !== 'strategyId' && !(field.key === 'albumId' && modelValue.type === 'lsky')"
+                        :value="modelValue[field.key] || field.defaultValue"
+                        @update:value="(val: string | number) => updateField(field.key, val)" :options="getOptions(field.options)" />
 
-                <!-- 特殊处理：Lsky Pro 策略 ID 选择 -->
-                <n-select v-else-if="field.key === 'strategyId' && modelValue.type === 'lsky'"
-                    :value="modelValue[field.key]" @update:value="(val: string | number) => updateField(field.key, val)"
-                    :options="strategyOptions" :loading="loadingStrategies"
-                    :placeholder="t('config.form.strategyIdPlaceholder')" filterable tag />
+                    <!-- 特殊处理：Lsky Pro 策略 ID 选择 -->
+                    <n-select v-else-if="field.key === 'strategyId' && modelValue.type === 'lsky'"
+                        :value="modelValue[field.key]" @update:value="(val: string | number) => updateField(field.key, val)"
+                        :options="strategyOptions" :loading="loadingStrategies"
+                        :placeholder="t('config.form.strategyIdPlaceholder')" filterable tag />
 
-                <!-- 特殊处理：Lsky Pro 相册 ID 选择 -->
-                <n-select v-else-if="field.key === 'albumId' && modelValue.type === 'lsky'"
-                    :value="modelValue[field.key]" @update:value="(val: string | number) => updateField(field.key, val)"
-                    :options="albumOptions" :loading="loadingAlbums"
-                    :placeholder="getPlaceholder(field.placeholder)"
-                    filterable clearable tag />
+                    <!-- 特殊处理：Lsky Pro 相册 ID 选择 -->
+                    <n-select v-else-if="field.key === 'albumId' && modelValue.type === 'lsky'"
+                        :value="modelValue[field.key]" @update:value="(val: string | number) => updateField(field.key, val)"
+                        :options="albumOptions" :loading="loadingAlbums"
+                        :placeholder="getPlaceholder(field.placeholder)"
+                        filterable clearable tag />
 
-                <!-- 策略 ID 输入 (非 Lsky Pro) -->
-                <n-input v-else-if="field.key === 'strategyId' && modelValue.type !== 'lsky'"
-                    :value="modelValue[field.key]" @update:value="(val: string | number) => updateField(field.key, val)"
-                    :placeholder="getPlaceholder(field.placeholder)" />
+                    <!-- 策略 ID 输入 (非 Lsky Pro) -->
+                    <n-input v-else-if="field.key === 'strategyId' && modelValue.type !== 'lsky'"
+                        :value="modelValue[field.key]" @update:value="(val: string | number) => updateField(field.key, val)"
+                        :placeholder="getPlaceholder(field.placeholder)" />
 
-                <!-- 多行文本框 -->
-                <n-input v-else-if="field.type === 'textarea'" :value="modelValue[field.key]"
-                    @update:value="(val: string | number) => updateField(field.key, val)" type="textarea"
-                    :placeholder="getPlaceholder(field.placeholder)"
-                    :autosize="{ minRows: 3, maxRows: 6 }" />
+                    <!-- 多行文本框 -->
+                    <n-input v-else-if="field.type === 'textarea'" :value="modelValue[field.key]"
+                        @update:value="(val: string | number) => updateField(field.key, val)" type="textarea"
+                        :placeholder="getPlaceholder(field.placeholder)"
+                        :autosize="{ minRows: 3, maxRows: 6 }" />
 
-                <!-- 键值对输入框 (自定义请求头/参数) -->
-                <KvInput v-else-if="field.type === 'kv-pairs'" :value="modelValue[field.key]"
-                    @update:value="(val: string) => updateField(field.key, val)" />
+                    <!-- 键值对输入框 (自定义请求头/参数) -->
+                    <KvInput v-else-if="field.type === 'kv-pairs'" :value="modelValue[field.key]"
+                        @update:value="(val: string) => updateField(field.key, val)" />
 
-                <!-- 开关 -->
-                <n-switch v-else-if="field.type === 'checkbox' || field.type === 'switch'"
-                    :value="modelValue[field.key] !== undefined ? modelValue[field.key] : field.defaultValue"
-                    @update:value="(val: boolean) => updateField(field.key, val)">
-                    <template #checked>
-                        {{ t('common.yes') }}
-                    </template>
-                    <template #unchecked>
-                        {{ t('common.no') }}
-                    </template>
-                </n-switch>
+                    <!-- 开关 -->
+                    <n-switch v-else-if="field.type === 'checkbox' || field.type === 'switch'"
+                        :value="modelValue[field.key] !== undefined ? modelValue[field.key] : field.defaultValue"
+                        @update:value="(val: boolean) => updateField(field.key, val)">
+                        <template #checked>
+                            {{ t('common.yes') }}
+                        </template>
+                        <template #unchecked>
+                            {{ t('common.no') }}
+                        </template>
+                    </n-switch>
 
+                    <!-- 帮助文本 -->
+                    <div v-if="field.help" class="text-xs text-gray-500 whitespace-pre-wrap break-words leading-snug">{{ field.help }}</div>
+                </div>
             </n-form-item>
         </template>
     </div>

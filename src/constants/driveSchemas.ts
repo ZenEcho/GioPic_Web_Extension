@@ -6,6 +6,7 @@ export interface FieldSchema {
   required?: boolean
   defaultValue?: any
   options?: { label: string; value: string }[]
+  help?: string
 }
 
 export const COMMON_FIELDS: FieldSchema[] = [

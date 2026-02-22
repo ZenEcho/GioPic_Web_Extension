@@ -1,0 +1,29 @@
+{
+  "id": "tg.telegram.imagebed",
+  "name": "Telegram ImageBed",
+  "version": "1.0.0",
+  "author": "xiyan520",
+  "authorUrl": "https://github.com/xiyan520/tg-telegram-imagebed",
+  "description": "使用Telegram 云图床 Pro 上传。",
+  "homepage": "https://img.jivon.de/",
+  "icon": "https://img.jivon.de/image/a3035efaca4b1b98894f25ebe81c2c16",
+  "inputs": [
+    {
+      "name": "apiUrl",
+      "label": "API URL",
+      "type": "text",
+      "required": true,
+      "placeholder": "https://img.jivon.de/api/auth/upload",
+      "help": "参考url：https://img.jivon.de/api/auth/upload"
+    },
+    {
+      "name": "apiKey",
+      "label": "Token",
+      "type": "password",
+      "required": true,
+      "placeholder": "在F12/控制台获取:localStorage.getItem('token_vault_v1')",
+      "help": "选择token模式后，f12/控制台，输入获取：\nJSON.parse(localStorage.getItem('token_vault_v1')).items[0].token"
+    }
+  ],
+  "script": "return async function (config, file, ctx) {\n    const blob = await (await fetch(file.data)).blob();\n    const fd = new FormData();\n    fd.append('file', blob, file.name);\n    const res = await ctx.fetch(config.apiUrl,\n        {\n            method: 'POST', headers: {\n                'Authorization': 'Bearer ' + config.apiKey\n            }, body: fd\n        });\n    const json = res.body;\n    if (json.success !== true) throw new Error(json.message || 'Upload failed');\n    return json.data.url;\n}"
+}

@@ -43,8 +43,9 @@ export function useDriveRegistry() {
            required: input.required,
            defaultValue: input.default,
            options: input.options,
-           placeholder: input.placeholder
-       }));
+           help: input.help,
+          placeholder: input.placeholder
+        }))
        
        // 构建插件驱动的注册项
        combined[plugin.id] = {

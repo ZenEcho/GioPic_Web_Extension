@@ -132,7 +132,7 @@ const handleDelete = (plugin: PluginMeta) => {
                                     class="px-2 py-0.5 text-xs font-medium rounded-full bg-gray-100 dark:bg-gray-700 text-gray-500">v{{
                                     plugin.version }}</span>
                             </div>
-                            <p class="text-sm text-gray-500 dark:text-gray-400 truncate mb-2">{{ plugin.description }}
+                            <p class="text-sm text-gray-500 dark:text-gray-400 whitespace-pre-wrap mb-2">{{ plugin.description }}
                             </p>
                             <div class="flex items-center gap-3 text-xs text-gray-400 font-mono flex-wrap">
                                 <span class="flex items-center gap-1">
