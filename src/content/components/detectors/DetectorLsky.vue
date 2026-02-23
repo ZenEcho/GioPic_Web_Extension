@@ -51,6 +51,7 @@ const listenForXsrfToken = () => {
               'user:token:read',
               'user:capacity:read',
               'user:group:read',
+              'user:album:read',
             ],
           }
           : {

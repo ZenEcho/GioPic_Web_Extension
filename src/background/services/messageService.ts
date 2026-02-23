@@ -419,34 +419,59 @@ async function relayUploadSuccess(message: any, sender: Runtime.MessageSender) {
 }
 
 /**
- * 获取 Cookie 中的 XSRF-TOKEN
- * @returns Token 字符串或 undefined
+ * 获取 Cookie 中的 XSRF-TOKEN 和缓存的 Authorization，并发送回 Content Script
+ * DetectorLsky 通过 browser.runtime.onMessage 监听 { XSRF_TOKEN, Authorization } 消息
  */
 async function handleGetXsrfToken(message: any, sender: Runtime.MessageSender) {
-    // 简单实现：尝试从 Cookie 中获取 XSRF-TOKEN
-    // 注意：需要 'cookies' 权限和 host 权限
-    if (!sender.tab?.url) return
+    if (!sender.tab?.url || !sender.tab?.id) return
     try {
         const url = new URL(sender.tab.url)
-        const cookie = await browser.cookies.get({
-            url: sender.tab.url,
-            name: 'XSRF-TOKEN'
-        })
-        return cookie?.value
-    } catch { return null }
+        const origin = url.origin
+
+        // 1. 从 Cookie 获取 XSRF-TOKEN
+        let xsrfToken: string | undefined
+        try {
+            const cookie = await browser.cookies.get({
+                url: sender.tab.url,
+                name: 'XSRF-TOKEN'
+            })
+            if (cookie?.value) {
+                xsrfToken = decodeURIComponent(cookie.value)
+            }
+        } catch { }
+
+        // 2. 从 authTokenCache 获取 Authorization
+        const authorization = authTokenCache[origin]
+
+        // 3. 如果获取到了任一 Token，发送消息到 Content Script
+        if (xsrfToken || authorization) {
+            const payload: Record<string, string> = {}
+            if (xsrfToken) payload.XSRF_TOKEN = xsrfToken
+            if (authorization) payload.Authorization = authorization
+
+            await browser.tabs.sendMessage(sender.tab.id, payload)
+        }
+    } catch (e) {
+        console.error('GioPic: handleGetXsrfToken failed', e)
+    }
 }
 
 /**
  * 添加图床配置
  * 用于一键配置功能
+ * 
+ * 注意：存储 key 必须与 stores/config.ts 中的 STORAGE_KEY ('giopic-configs') 保持一致
  */
+const CONFIG_STORAGE_KEY = 'giopic-configs'
+
 async function handleAddConfig(message: any, sender: Runtime.MessageSender) {
     // 处理一键配置
-    const { config } = message
+    // 兼容 payload 和 config 两种字段名
+    const config = message.payload || message.config
     if (!config || !config.type) return { success: false, error: 'Invalid config' }
 
     try {
-        const drives = await db.get<DriveConfig[]>('drives') || []
+        const drives = await db.get<DriveConfig[]>(CONFIG_STORAGE_KEY) || []
         // Check duplicate
         const exists = drives.some(d =>
             d.type === config.type &&
@@ -456,8 +481,13 @@ async function handleAddConfig(message: any, sender: Runtime.MessageSender) {
 
         if (exists) return { success: true, exists: true }
 
+        // 确保配置有唯一 id（BaseConfig 要求 id 字段）
+        if (!config.id) {
+            config.id = crypto.randomUUID()
+        }
+
         drives.push(config)
-        await db.set('drives', drives)
+        await db.set(CONFIG_STORAGE_KEY, drives)
         return { success: true }
     } catch (e: any) {
         return { success: false, error: e.message }
