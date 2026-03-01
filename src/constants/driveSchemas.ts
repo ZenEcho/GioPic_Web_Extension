@@ -1,7 +1,7 @@
 export interface FieldSchema {
   key: string
   label: string // i18n key or raw string
-  type: 'text' | 'password' | 'number' | 'switch' | 'select' | 'textarea' | 'kv-pairs' | 'checkbox' 
+  type: 'text' | 'password' | 'number' | 'switch' | 'select' | 'textarea' | 'kv-pairs' | 'checkbox'
   placeholder?: string
   required?: boolean
   defaultValue?: any
@@ -36,7 +36,7 @@ export const DRIVE_REGISTRY: Record<string, DriveRegistryItem> = {
     category: 'self-hosted',
     fields: [
       { key: 'version', label: 'config.form.version', type: 'select', options: [{ label: 'V1', value: 'v1' }, { label: 'V2', value: 'v2' }], defaultValue: 'v1' },
-      { key: 'apiUrl', label: 'config.form.apiUrl', type: 'text', required: true, placeholder: 'https://example.com/api/v1/upload' },
+      { key: 'apiUrl', label: 'config.form.apiUrl', type: 'text', required: true, placeholder: 'config.form.placeholder.lskyApiUrl' },
       { key: 'token', label: 'config.form.token', type: 'password', required: true },
       { key: 'strategyId', label: 'config.form.strategyId', type: 'select', placeholder: 'config.form.placeholder.strategyId' },
       { key: 'albumId', label: 'config.form.albumId', type: 'select', placeholder: 'config.form.placeholder.albumId' },
@@ -60,7 +60,7 @@ export const DRIVE_REGISTRY: Record<string, DriveRegistryItem> = {
     darkColor: 'dark:text-green-300 dark:bg-green-900/30',
     category: 'self-hosted',
     fields: [
-      { key: 'apiUrl', label: 'config.form.apiUrl', type: 'text', required: true, placeholder: 'https://example.com/api/index.php' },
+      { key: 'apiUrl', label: 'config.form.apiUrl', type: 'text', required: true, placeholder: 'config.form.placeholder.easyimagesApiUrl' },
       { key: 'token', label: 'config.form.token', type: 'password', required: true },
     ]
   },
@@ -72,7 +72,7 @@ export const DRIVE_REGISTRY: Record<string, DriveRegistryItem> = {
     darkColor: 'dark:text-orange-300 dark:bg-orange-900/30',
     category: 'self-hosted',
     fields: [
-      { key: 'apiUrl', label: 'config.form.apiUrl', type: 'text', required: true, placeholder: 'https://example.com/api/1/upload' },
+      { key: 'apiUrl', label: 'config.form.apiUrl', type: 'text', required: true, placeholder: 'config.form.placeholder.cheveretoApiUrl' },
       { key: 'token', label: 'config.form.token', type: 'password', required: true },
       { key: 'albumId', label: 'config.form.albumId', type: 'text', placeholder: 'config.form.placeholder.albumId' },
       {
@@ -127,7 +127,7 @@ export const DRIVE_REGISTRY: Record<string, DriveRegistryItem> = {
     darkColor: 'dark:text-purple-300 dark:bg-purple-900/30',
     category: 'self-hosted',
     fields: [
-      { key: 'apiUrl', label: 'config.form.apiUrl', type: 'text', required: true, placeholder: 'https://imgurl.org' },
+      { key: 'apiUrl', label: 'config.form.apiUrl', type: 'text', required: true, placeholder: 'config.form.placeholder.imgurlApiUrl' },
       { key: 'uid', label: 'config.form.uid', type: 'text', required: true },
       { key: 'token', label: 'config.form.token', type: 'password', required: true },
     ]
@@ -140,7 +140,7 @@ export const DRIVE_REGISTRY: Record<string, DriveRegistryItem> = {
     darkColor: 'dark:text-pink-300 dark:bg-pink-900/30',
     category: 'self-hosted',
     fields: [
-      { key: 'apiUrl', label: 'config.form.apiUrl', type: 'text', required: true, placeholder: 'https://example.com' },
+      { key: 'apiUrl', label: 'config.form.apiUrl', type: 'text', required: true, placeholder: 'config.form.placeholder.zpicApiUrl' },
       { key: 'token', label: 'config.form.token', type: 'password', required: true },
       { key: 'dedup', label: 'config.form.dedup', type: 'select', defaultValue: 'true', options: [{ value: 'true', label: 'config.form.yes' }, { value: 'false', label: 'config.form.no' }] },
       { key: 'albumId', label: 'config.form.albumId', type: 'text', placeholder: 'config.form.placeholder.albumId' },
@@ -156,21 +156,33 @@ export const DRIVE_REGISTRY: Record<string, DriveRegistryItem> = {
     darkColor: 'dark:text-indigo-300 dark:bg-indigo-900/30',
     category: 'self-hosted',
     fields: [
-      { key: 'apiUrl', label: 'config.form.apiUrl', type: 'text', required: true, placeholder: 'https://example.com' },
+      { key: 'apiUrl', label: 'config.form.apiUrl', type: 'text', required: true, placeholder: 'config.form.placeholder.hellohaoApiUrl' },
       { key: 'token', label: 'config.form.token', type: 'password', required: true },
       { key: 'source', label: 'config.form.source', type: 'text', required: true, placeholder: 'config.form.placeholder.sourceId' },
     ]
   },
-  smms: {
-    key: 'smms',
-    label: 'SM.MS',
+  // smms: {
+  //   key: 'smms',
+  //   label: 'SM.MS',
+  //   icon: 'i-ph-image-duotone',
+  //   color: 'text-blue-500 bg-blue-50',
+  //   darkColor: 'dark:text-blue-300 dark:bg-blue-900/30',
+  //   category: 'public',
+  //   fields: [
+  //     { key: 'apiUrl', label: 'config.form.apiUrl', type: 'text', placeholder: 'https://sm.ms (默认为官方)', defaultValue: 'https://sm.ms/' },
+  //     { key: 'token', label: 'config.form.token', type: 'password', required: true },
+  //   ]
+  // },
+  see: {
+    key: 'see',
+    label: 'See',
     icon: 'i-ph-image-duotone',
-    color: 'text-blue-500 bg-blue-50',
-    darkColor: 'dark:text-blue-300 dark:bg-blue-900/30',
+    color: 'text-yellow-500 bg-yellow-50',
+    darkColor: 'dark:text-yellow-300 dark:bg-yellow-900/30',
     category: 'public',
     fields: [
-      { key: 'apiUrl', label: 'config.form.apiUrl', type: 'text', placeholder: 'https://sm.ms (默认为官方)', defaultValue: 'https://sm.ms/' },
-      { key: 'token', label: 'config.form.token', type: 'password', required: true },
+      { key: 'apiUrl', label: 'config.form.apiUrl', type: 'text', placeholder: 'config.form.placeholder.seeApiUrl', defaultValue: 'https://s.ee/' },
+      { key: 'token', label: 'config.form.token', type: 'password', required: true},
     ]
   },
   imgur: {
@@ -181,7 +193,7 @@ export const DRIVE_REGISTRY: Record<string, DriveRegistryItem> = {
     darkColor: 'dark:text-green-300 dark:bg-green-900/30',
     category: 'public',
     fields: [
-      { key: 'apiUrl', label: 'config.form.apiUrl', type: 'text', placeholder: 'https://api.imgur.com/3/upload (默认为官方)', defaultValue: 'https://api.imgur.com/3/upload/' },
+      { key: 'apiUrl', label: 'config.form.apiUrl', type: 'text', placeholder: 'config.form.placeholder.imgurApiUrl', defaultValue: 'https://api.imgur.com/3/upload/' },
       { key: 'token', label: 'Client ID', type: 'password', required: true },
     ]
   },
@@ -193,7 +205,7 @@ export const DRIVE_REGISTRY: Record<string, DriveRegistryItem> = {
     darkColor: 'dark:text-red-300 dark:bg-red-900/30',
     category: 'public',
     fields: [
-      { key: 'apiUrl', label: 'config.form.apiUrl', type: 'text', placeholder: 'https://imgdd.com/api/v1/upload', defaultValue: 'https://imgdd.com/upload', required: true },
+      { key: 'apiUrl', label: 'config.form.apiUrl', type: 'text', placeholder: 'config.form.placeholder.imgddApiUrl', defaultValue: 'https://imgdd.com/upload', required: true },
     ]
   },
   oneimg: {
@@ -204,7 +216,7 @@ export const DRIVE_REGISTRY: Record<string, DriveRegistryItem> = {
     darkColor: 'dark:text-red-300 dark:bg-red-900/30',
     category: 'self-hosted',
     fields: [
-      { key: 'apiUrl', label: 'config.form.apiUrl', type: 'text', required: true, placeholder: 'https://example.com/api/v1/upload' },
+      { key: 'apiUrl', label: 'config.form.apiUrl', type: 'text', required: true, placeholder: 'config.form.placeholder.oneimgApiUrl' },
       { key: 'token', label: 'config.form.token', type: 'password' },
       { key: 'strategyId', label: 'config.form.strategyId', type: 'text', required: true },
     ]
@@ -217,7 +229,7 @@ export const DRIVE_REGISTRY: Record<string, DriveRegistryItem> = {
     darkColor: 'dark:text-orange-300 dark:bg-orange-900/30',
     category: 'cloud',
     fields: [
-      { key: 'endpoint', label: 'config.form.endpoint', type: 'text', required: true, placeholder: 'oss-cn-hangzhou.aliyuncs.com' },
+      { key: 'endpoint', label: 'config.form.endpoint', type: 'text', required: true, placeholder: 'config.form.placeholder.aliyunEndpoint' },
       { key: 'bucket', label: 'config.form.bucket', type: 'text', required: true },
       { key: 'accessKeyId', label: 'config.form.accessKey', type: 'text', required: true },
       { key: 'accessKeySecret', label: 'config.form.secretKey', type: 'password', required: true },
@@ -232,8 +244,8 @@ export const DRIVE_REGISTRY: Record<string, DriveRegistryItem> = {
     darkColor: 'dark:text-yellow-300 dark:bg-yellow-900/30',
     category: 'cloud',
     fields: [
-      { key: 'endpoint', label: 'config.form.endpoint', type: 'text', placeholder: 's3.us-west-1.amazonaws.com' },
-      { key: 'region', label: 'config.form.region', type: 'text', required: true, placeholder: 'us-west-1' },
+      { key: 'endpoint', label: 'config.form.endpoint', type: 'text', placeholder: 'config.form.placeholder.awsEndpoint' },
+      { key: 'region', label: 'config.form.region', type: 'text', required: true, placeholder: 'config.form.placeholder.awsRegion' },
       { key: 'bucket', label: 'config.form.bucket', type: 'text', required: true },
       { key: 'accessKeyId', label: 'config.form.accessKey', type: 'text', required: true },
       { key: 'secretAccessKey', label: 'config.form.secretKey', type: 'password', required: true },
@@ -249,7 +261,7 @@ export const DRIVE_REGISTRY: Record<string, DriveRegistryItem> = {
     category: 'cloud',
     fields: [
       { key: 'endpoint', label: 'config.form.endpoint', type: 'text', placeholder: 'config.form.placeholder.endpoint' },
-      { key: 'region', label: 'config.form.region', type: 'text', required: true, placeholder: 'ap-guangzhou' },
+      { key: 'region', label: 'config.form.region', type: 'text', required: true, placeholder: 'config.form.placeholder.tencentRegion' },
       { key: 'bucket', label: 'config.form.bucket', type: 'text', required: true },
       { key: 'secretId', label: 'config.form.secretId', type: 'text', required: true },
       { key: 'secretKey', label: 'config.form.secretKey', type: 'password', required: true },
@@ -264,8 +276,8 @@ export const DRIVE_REGISTRY: Record<string, DriveRegistryItem> = {
     darkColor: 'dark:text-gray-300 dark:bg-gray-700',
     category: 'public',
     fields: [
-      { key: 'repo', label: 'config.form.repo', type: 'text', required: true, placeholder: 'username/repo' },
-      { key: 'branch', label: 'config.form.branch', type: 'text', required: true, defaultValue: 'main', placeholder: 'main' },
+      { key: 'repo', label: 'config.form.repo', type: 'text', required: true, placeholder: 'config.form.placeholder.githubRepo' },
+      { key: 'branch', label: 'config.form.branch', type: 'text', required: true, defaultValue: 'main', placeholder: 'config.form.placeholder.githubBranch' },
       { key: 'token', label: 'config.form.token', type: 'password', required: true },
       ...COMMON_FIELDS
     ]
@@ -278,7 +290,7 @@ export const DRIVE_REGISTRY: Record<string, DriveRegistryItem> = {
     darkColor: 'dark:text-gray-300 dark:bg-gray-800',
     category: 'custom',
     fields: [
-      { key: 'apiUrl', label: 'config.form.apiUrl', type: 'text', required: true, placeholder: 'https://api.example.com/upload' },
+      { key: 'apiUrl', label: 'config.form.apiUrl', type: 'text', required: true, placeholder: 'config.form.placeholder.customApiUrl' },
       {
         key: 'method',
         label: 'config.form.method',

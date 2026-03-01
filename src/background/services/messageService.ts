@@ -499,21 +499,49 @@ async function handleAddConfig(message: any, sender: Runtime.MessageSender) {
  * 解决 Content Script 中的跨域限制
  */
 async function handleFetchImageBlob(message: any) {
-    // 代理获取图片 Blob (解决跨域和 Cookie 问题)
-    const { url } = message
-    if (!url) return { success: false, error: 'No URL' }
+    const url = message.url
+    if (!url) return null
+
+    // Add dynamic rule for Referer
+    if (url.includes('i.111666.best')) {
+        try {
+            const ruleId = 111666
+            await browser.declarativeNetRequest.updateDynamicRules({
+                removeRuleIds: [ruleId],
+                addRules: [{
+                    id: ruleId,
+                    priority: 1,
+                    action: {
+                        type: 'modifyHeaders' as any,
+                        requestHeaders: [{
+                            header: 'Referer',
+                            operation: 'set' as any,
+                            value: url
+                        }]
+                    },
+                    condition: {
+                        urlFilter: url,
+                        resourceTypes: ['xmlhttprequest', 'other', 'image'] as any
+                    }
+                }]
+            })
+        } catch (e) {
+            console.error('Failed to set DNR rules', e)
+        }
+    }
 
     try {
-        const res = await fetch(url)
-        const blob = await res.blob()
-        const base64 = await new Promise((resolve) => {
-            const reader = new FileReader()
+        const response = await fetch(url)
+        const blob = await response.blob()
+        const reader = new FileReader()
+        return new Promise((resolve, reject) => {
             reader.onloadend = () => resolve(reader.result)
+            reader.onerror = reject
             reader.readAsDataURL(blob)
         })
-        return { success: true, base64, type: blob.type }
-    } catch (e: any) {
-        return { success: false, error: e.message }
+    } catch (e) {
+        console.error('Fetch failed', e)
+        return null
     }
 }
 

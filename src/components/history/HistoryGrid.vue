@@ -101,7 +101,9 @@ const fetchImageBlob = async (url: string) => {
 
 watch(() => props.displayList, (list) => {
     list.forEach(async (record) => {
-        if (record.url && record.url.includes('i.111666.best') && !imageBlobs.value[record.id]) {
+        if (record.url && record.url.includes('111666.best') && !imageBlobs.value[record.id]) {
+            console.log(99);
+            
             try {
                 const dataUrl = await fetchImageBlob(record.url)
                 if (dataUrl) {
@@ -120,6 +122,7 @@ onUnmounted(() => {
     // No need to revoke for dataURL, but if we used createObjectURL on frontend from base64 (to save memory), we would.
     // Since we receive dataURL directly, we just let it be.
     // If memory is concern, we can nullify it.
+    imageBlobs.value = {}
 })
 
 

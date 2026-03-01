@@ -1,4 +1,4 @@
-export type DriveType = 'lsky' | 'easyimages' | 'chevereto' | 'imgurl' | 'zpic' | 'aliyun' | 'aws' | 'tencent' | 'imgurl' | 'smms' | 'hellohao' | 'imgur' | 'custom' | 'github' | 'test'|'imgdd'|'oneimg' | (string & {});
+export type DriveType = 'lsky' | 'easyimages' | 'chevereto' | 'imgurl' | 'zpic' | 'aliyun' | 'aws' | 'tencent' | 'imgurl' | 'smms' | 'hellohao' | 'imgur' | 'custom' | 'github' | 'test'|'imgdd'|'oneimg' | 'see' | (string & {});
 
 export interface PluginInputSchema {
   name: string;
@@ -38,7 +38,7 @@ export interface BaseConfig {
 }
 
 export interface WebUploaderConfig extends BaseConfig {
-  type: 'lsky' | 'easyimages' | 'chevereto' | 'imgurl' | 'zpic' | 'smms' | 'hellohao' | 'imgur' | 'imgdd' | 'oneimg';
+  type: 'lsky' | 'easyimages' | 'chevereto' | 'imgurl' | 'zpic' | 'smms' | 'hellohao' | 'imgur' | 'imgdd' | 'oneimg' | 'see';
   apiUrl: string;
   token: string;
   strategyId?: string;

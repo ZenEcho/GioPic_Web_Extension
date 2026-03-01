@@ -217,10 +217,10 @@ function copyLink(url: string, thumbUrl?: string) {
                 <!-- Tasks List Area -->
                 <div v-if="item.tasks.length > 0"
                     class="mt-4 pt-3 border-t border-gray-50 dark:border-gray-700/50 space-y-2.5">
-                    <div v-for="task in item.tasks" :key="task.id" class="flex items-center gap-3 text-xs w-full">
+                    <div v-for="task in item.tasks" :key="task.id" class="flex flex-col gap-3 text-xs w-full">
 
                         <!-- Config Name -->
-                        <div class="w-20 flex-shrink-0 flex items-center gap-1.5 min-w-0">
+                        <div class="flex-shrink-0 flex items-center gap-1.5 min-w-0">
                             <div class="w-1.5 h-1.5 rounded-full flex-shrink-0" :class="{
                                 'bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.4)]': task.status === 'success',
                                 'bg-red-500': task.status === 'error',

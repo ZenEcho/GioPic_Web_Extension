@@ -69,7 +69,10 @@ export async function uploadImage(
     case 'zpic':
       return uploadZpic(file, config as WebUploaderConfig, onProgress)
     case 'smms':
-      return uploadSMMS(file, config as WebUploaderConfig, onProgress)
+      // 2.3.4 兼容保留
+      return uploadSEE(file, config as WebUploaderConfig, onProgress)
+    case 'see':
+      return uploadSEE(file, config as WebUploaderConfig, onProgress)
     case 'hellohao':
       return uploadHellohao(file, config as WebUploaderConfig, onProgress)
     case 'imgur':
@@ -699,6 +702,52 @@ async function uploadSMMS(file: File, config: WebUploaderConfig, onProgress: Pro
       }
     }
     throw new Error(res.message || 'SM.MS upload failed')
+  }
+
+  return {
+    url: res.data.url,
+    thumbUrl: res.data.url
+  }
+}
+/**
+ * See 上传实现
+ */
+async function uploadSEE(file: File, config: WebUploaderConfig, onProgress: ProgressCallback): Promise<UploadResult> {
+  const formData = new FormData()
+  formData.append('file', file)
+
+  let url = config.apiUrl.replace(/\/$/, '')
+  if (!url.endsWith('/api/v1/file/upload')) {
+    url += '/api/v1/file/upload'
+  }
+
+  const headers = {
+    "Content-Type": "multipart/form-data",
+    'Authorization': config.token,
+  }
+
+  const res = await fetchUpload(url, formData, headers, onProgress)
+  // {
+  //   "code": 200,
+  //   "data": {
+  //     "file_id": 33255293,
+  //     "width": 825,
+  //     "height": 677,
+  //     "filename": "logo.jpg",
+  //     "storename": "logo.jpg",
+  //     "size": 54461,
+  //     "path": "/2026/03/01/xZf1/logo.jpg",
+  //     "hash": "4GrHJ2qnC61g3lnSHeT0qM3Hl2",
+  //     "url": "https://files.seeusercontent.com/2026/03/01/xZf1/logo.jpg",
+  //     "delete": "https://s.ee/api/v1/file/delete/4GrHJ2qnC61g3lnSHeT0qM3Hl2",
+  //     "page": "https://sm.ms/FkTP",
+  //     "upload_status": 2
+  //   },
+  //   "message": "success",
+  //   "success": true
+  // }
+  if (!res.success) {
+    throw new Error(res.message || 'SEE upload failed')
   }
 
   return {
