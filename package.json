@@ -1,7 +1,7 @@
 {
   "displayName": "GioPic - 图片上传",
   "name": "giopic",
-  "version": "2.3.3",
+  "version": "2.3.4",
   "description": "GioPic Web Extension,图片上传扩展程序提供lsky,EasyImages,chevereto,阿里云oss,AWS S3,等程序的上传",
   "private": true,
   "type": "module",
