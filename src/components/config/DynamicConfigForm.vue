@@ -7,9 +7,9 @@
  * Config (配置模块) - 核心表单渲染引擎
  * 
  * Key Features:
- * - 动态渲染：支持 text, password, select, textarea, kv-pairs, switch 等多种字段类型
+ * - 动态渲染：支持 text, password, number, select, textarea, kv-pairs, switch 等字段类型
+ * - 动态数据源：支持字段级联、远程拉取选项、脚本回填
  * - 魔术变量预览：实时演示 {uuid}, {year} 等变量的替换结果
- * - Lsky Pro 集成：自动获取 Lsky Pro 的存储策略和相册列表
  * - 国际化支持：自动处理标签和占位符的翻译
  * 
  * Props:
@@ -21,38 +21,356 @@
  -->
 
 <script setup lang="ts">
-import { computed, watch, ref } from 'vue'
+import { computed, reactive, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
-import type { FieldSchema } from '@/constants/driveSchemas'
-import { fetchLskyStrategies, fetchLskyAlbums } from '@/services/uploader'
+import type { BuiltinFieldLoader, FieldSchema } from '@/constants/driveSchemas'
+import { fetchLskyAlbums, fetchLskyStrategies } from '@/services/uploader'
+import { runPluginConfigScript } from '@/services/pluginRunner'
 import { replaceMagicVariables } from '@/utils/variables'
-import { useMessage, NCollapse, NCollapseItem } from 'naive-ui'
+import { hasFieldValue, isFieldDisabled as matchFieldDisabled, isFieldVisible as matchFieldVisible, normalizeDataSourceResult } from '@/utils/pluginForm'
+import { NCollapse, NCollapseItem } from 'naive-ui'
 import KvInput from './KvInput.vue'
 
-// 定义组件 Props
+interface DynamicFieldState {
+    options: { label: string, value: any }[]
+    loading: boolean
+    error: string
+    help?: string
+    placeholder?: string
+    touched: boolean
+}
+
 const props = defineProps<{
     schema: FieldSchema[]
     modelValue: Record<string, any>
 }>()
 
-// 定义组件 Events
 const emit = defineEmits<{
     (e: 'update:modelValue', value: Record<string, any>): void
 }>()
 
 const { t } = useI18n()
-const message = useMessage()
-// Lsky Pro 策略选项
-const strategyOptions = ref<{ label: string, value: string | number }[]>([])
-const loadingStrategies = ref(false)
-// Lsky Pro 相册选项
-const albumOptions = ref<{ label: string, value: string | number }[]>([])
-const loadingAlbums = ref(false)
+const dynamicFieldStates = reactive<Record<string, DynamicFieldState>>({})
+const dynamicSignatures = new Map<string, string>()
+const dynamicRequestTokens = new Map<string, number>()
+const dynamicDebounceTimers = new Map<string, ReturnType<typeof setTimeout>>()
+const FIELD_SOURCE_DEBOUNCE_MS = 400
 
-// 用于预览魔术变量的模拟文件
+const builtinLoaders: Record<BuiltinFieldLoader, (config: Record<string, any>) => Promise<unknown>> = {
+    lskyStrategies: async (config) => {
+        const strategies = await fetchLskyStrategies(config.apiUrl, config.token, config.version || 'v1')
+        return {
+            options: strategies.map(item => ({
+                label: item.name,
+                value: item.id,
+            }))
+        }
+    },
+    lskyAlbums: async (config) => {
+        const albums = await fetchLskyAlbums(config.apiUrl, config.token, config.version || 'v1')
+        return {
+            options: albums.map(item => ({
+                label: item.name,
+                value: item.id,
+            }))
+        }
+    }
+}
+
+function ensureFieldState(key: string): DynamicFieldState {
+    if (!dynamicFieldStates[key]) {
+        dynamicFieldStates[key] = {
+            options: [],
+            loading: false,
+            error: '',
+            touched: false,
+        }
+    }
+
+    return dynamicFieldStates[key]
+}
+
+function resetFieldState(key: string) {
+    const state = ensureFieldState(key)
+    state.options = []
+    state.loading = false
+    state.error = ''
+    state.help = undefined
+    state.placeholder = undefined
+    state.touched = false
+}
+
+function cleanupDynamicFieldStates(activeKeys: string[]) {
+    const activeKeySet = new Set(activeKeys)
+    Object.keys(dynamicFieldStates).forEach((key) => {
+        if (activeKeySet.has(key)) {
+            return
+        }
+
+        delete dynamicFieldStates[key]
+        dynamicSignatures.delete(key)
+        dynamicRequestTokens.delete(key)
+        const timer = dynamicDebounceTimers.get(key)
+        if (timer !== undefined) {
+            clearTimeout(timer)
+            dynamicDebounceTimers.delete(key)
+        }
+    })
+}
+
+function clearFieldSourceDebounce(key: string) {
+    const timer = dynamicDebounceTimers.get(key)
+    if (timer === undefined) {
+        return
+    }
+
+    clearTimeout(timer)
+    dynamicDebounceTimers.delete(key)
+}
+
+function normalizeDependencyKeys(rawDependencies: unknown): string[] {
+    if (Array.isArray(rawDependencies)) {
+        return Array.from(
+            new Set(
+                rawDependencies
+                    .filter((item): item is string => typeof item === 'string')
+                    .map(item => item.trim())
+                    .filter(item => item.length > 0)
+            )
+        )
+    }
+
+    if (typeof rawDependencies === 'string') {
+        return Array.from(
+            new Set(
+                rawDependencies
+                    .split(',')
+                    .map(item => item.trim())
+                    .filter(item => item.length > 0)
+            )
+        )
+    }
+
+    return []
+}
+
+function getFieldWatchDependencies(field: FieldSchema): string[] {
+    return normalizeDependencyKeys(field.dataSource?.watch)
+}
+
+function getFieldRequiredDependencies(field: FieldSchema): string[] {
+    const requiredDependencies = normalizeDependencyKeys(field.dataSource?.required)
+    if (requiredDependencies.length > 0) {
+        return requiredDependencies
+    }
+
+    return getFieldWatchDependencies(field)
+}
+
+function isFieldSourceManual(field: FieldSchema): boolean {
+    return field.dataSource?.manual === true
+}
+
+function getFieldDependencies(field: FieldSchema): string[] {
+    const watchDependencies = getFieldWatchDependencies(field)
+    if (watchDependencies.length > 0) {
+        return watchDependencies
+    }
+
+    return getFieldRequiredDependencies(field)
+}
+
+function canResolveFieldSource(field: FieldSchema): boolean {
+    if (!field.dataSource) {
+        return false
+    }
+
+    if (!isFieldVisible(field)) {
+        return false
+    }
+
+    return getFieldRequiredDependencies(field).every(key => hasFieldValue(props.modelValue[key]))
+}
+
+function getFieldSourceSignature(field: FieldSchema): string {
+    const source = field.dataSource
+    if (!source) {
+        return ''
+    }
+
+    const dependencies = getFieldDependencies(field)
+    const watchDependencies = getFieldWatchDependencies(field)
+    const requiredDependencies = getFieldRequiredDependencies(field)
+    return JSON.stringify({
+        key: field.key,
+        visible: isFieldVisible(field),
+        loader: source.loader || '',
+        script: source.script || '',
+        manual: isFieldSourceManual(field),
+        watch: watchDependencies,
+        required: requiredDependencies,
+        canResolve: canResolveFieldSource(field),
+        dependencies: dependencies.map(key => [key, props.modelValue[key]]),
+    })
+}
+
+function updateField(key: string, value: any) {
+    emit('update:modelValue', {
+        ...props.modelValue,
+        [key]: value
+    })
+}
+
+function patchModel(patch: Record<string, any>) {
+    const nextModel = { ...props.modelValue }
+    let changed = false
+
+    Object.entries(patch).forEach(([key, value]) => {
+        if (nextModel[key] === value) {
+            return
+        }
+        nextModel[key] = value
+        changed = true
+    })
+
+    if (changed) {
+        emit('update:modelValue', nextModel)
+    }
+}
+
+async function resolveFieldSource(field: FieldSchema) {
+    const source = field.dataSource
+    if (!source || !canResolveFieldSource(field)) {
+        resetFieldState(field.key)
+        return
+    }
+
+    const state = ensureFieldState(field.key)
+    const requestToken = (dynamicRequestTokens.get(field.key) || 0) + 1
+    dynamicRequestTokens.set(field.key, requestToken)
+
+    state.loading = true
+    state.error = ''
+
+    try {
+        const rawResult = source.loader
+            ? await builtinLoaders[source.loader]({ ...props.modelValue })
+            : await runPluginConfigScript(source.script || '', { ...props.modelValue })
+
+        if (dynamicRequestTokens.get(field.key) !== requestToken) {
+            return
+        }
+
+        const normalizedResult = normalizeDataSourceResult(rawResult)
+        state.options = normalizedResult.options || []
+        state.help = normalizedResult.help
+        state.placeholder = normalizedResult.placeholder
+        state.error = ''
+        state.touched = true
+
+        const patch: Record<string, any> = {
+            ...(normalizedResult.patch || {})
+        }
+        if (normalizedResult.value !== undefined) {
+            patch[field.key] = normalizedResult.value
+        }
+        if (Object.keys(patch).length > 0) {
+            patchModel(patch)
+        }
+    } catch (error: any) {
+        if (dynamicRequestTokens.get(field.key) !== requestToken) {
+            return
+        }
+
+        state.error = error?.message || 'Failed to load field data'
+        state.options = []
+        state.touched = true
+    } finally {
+        if (dynamicRequestTokens.get(field.key) === requestToken) {
+            state.loading = false
+        }
+    }
+}
+
+function scheduleResolveFieldSource(field: FieldSchema, immediate = false) {
+    clearFieldSourceDebounce(field.key)
+
+    if (immediate) {
+        void resolveFieldSource(field)
+        return
+    }
+
+    const timer = setTimeout(() => {
+        dynamicDebounceTimers.delete(field.key)
+        void resolveFieldSource(field)
+    }, FIELD_SOURCE_DEBOUNCE_MS)
+    dynamicDebounceTimers.set(field.key, timer)
+}
+
+function refreshFieldSource(field: FieldSchema) {
+    if (!field.dataSource) {
+        return
+    }
+
+    scheduleResolveFieldSource(field, true)
+}
+
+function getFieldState(key: string) {
+    return ensureFieldState(key)
+}
+
+function isFieldVisible(field: FieldSchema) {
+    return matchFieldVisible(field, props.modelValue)
+}
+
+function isFieldDisabled(field: FieldSchema) {
+    return matchFieldDisabled(field, props.modelValue)
+}
+
+function getLabel(label: string) {
+    if (label && label.includes('.')) {
+        return t(label)
+    }
+    return label
+}
+
+function getPlaceholder(placeholder: string | undefined) {
+    if (!placeholder) return ''
+    if (placeholder.includes('.')) {
+        return t(placeholder)
+    }
+    return placeholder
+}
+
+function getOptions(options: { label: string; value: any }[] | undefined) {
+    if (!options) return []
+    return options.map(opt => ({
+        ...opt,
+        label: getLabel(opt.label)
+    }))
+}
+
+function getFieldOptions(field: FieldSchema) {
+    const state = getFieldState(field.key)
+    return state.touched ? getOptions(state.options) : getOptions(field.options)
+}
+
+function getFieldHelp(field: FieldSchema) {
+    const state = getFieldState(field.key)
+    return state.help || field.help || ''
+}
+
+function getFieldPlaceholder(field: FieldSchema) {
+    const state = getFieldState(field.key)
+    return getPlaceholder(state.placeholder || field.placeholder)
+}
+
+function getFieldRefreshLabel(field: FieldSchema) {
+    return field.dataSource?.actionLabel || t('home.refresh')
+}
+
 const mockFile = new File([''], 'example.png', { type: 'image/png' })
 
-// 计算魔术变量的预览值
 const previewValues = computed(() => {
     return {
         filename: replaceMagicVariables('{filename}', mockFile),
@@ -67,102 +385,45 @@ const previewValues = computed(() => {
     }
 })
 
-// 监听 Lsky Pro 配置变化，自动加载策略和相册
-watch(() => [props.modelValue.type, props.modelValue.apiUrl, props.modelValue.token, props.modelValue.version], async ([type, apiUrl, token, version], oldValue) => {
-    const [oldType, oldApiUrl, oldToken, oldVersion] = oldValue || []
-    if (type === 'lsky' && apiUrl && token) {
-        // 仅在关键字段变化时重新加载，避免不必要的请求
-        if (apiUrl !== oldApiUrl || token !== oldToken || version !== oldVersion) {
-            await Promise.all([
-                loadStrategies(apiUrl, token, version),
-                loadAlbums(apiUrl, token, version)
-            ])
-        }
-    } else {
-        // 非 Lsky Pro 类型或配置不完整时清空选项
-        strategyOptions.value = []
-        albumOptions.value = []
-    }
-}, { immediate: true })
+watch(() => props.schema
+    .filter(field => field.dataSource)
+    .map(field => ({
+        key: field.key,
+        signature: getFieldSourceSignature(field),
+        manual: isFieldSourceManual(field),
+        canResolve: canResolveFieldSource(field),
+    })), (items) => {
+        cleanupDynamicFieldStates(items.map(item => item.key))
 
-// 加载 Lsky Pro 存储策略
-async function loadStrategies(apiUrl: string, token: string, version: any) {
-    loadingStrategies.value = true
-    try {
-        const strategies = await fetchLskyStrategies(apiUrl, token, version || 'v1')
-        strategyOptions.value = strategies.map(s => ({
-            label: s.name,
-            value: s.id
-        }))
+        items.forEach((item) => {
+            const field = props.schema.find(entry => entry.key === item.key)
+            if (!field?.dataSource) {
+                return
+            }
 
-    } catch (e) {
-        // 静默失败或仅在控制台记录错误
-        console.error(e)
-    } finally {
-        loadingStrategies.value = false
-    }
-}
+            if (dynamicSignatures.get(item.key) === item.signature) {
+                return
+            }
 
-// 加载 Lsky Pro 相册列表
-async function loadAlbums(apiUrl: string, token: string, version: any) {
-    loadingAlbums.value = true
-    try {
-        const albums = await fetchLskyAlbums(apiUrl, token, version || 'v1')
-        albumOptions.value = albums.map(a => ({
-            label: a.name,
-            value: a.id
-        }))
-    } catch (e) {
-        console.error(e)
-    } finally {
-        loadingAlbums.value = false
-    }
-}
+            dynamicSignatures.set(item.key, item.signature)
+            resetFieldState(item.key)
 
-// 辅助函数：获取翻译后的标签
-// 如果标签包含点号，尝试作为 i18n key 翻译；否则直接返回
-function getLabel(label: string) {
-    if (label && label.includes('.')) {
-        return t(label)
-    }
-    return label
-}
+            if (!item.canResolve || item.manual) {
+                clearFieldSourceDebounce(item.key)
+                return
+            }
 
-// 辅助函数：获取翻译后的占位符
-function getPlaceholder(placeholder: string | undefined) {
-    if (!placeholder) return ''
-    if (placeholder.includes('.')) {
-        return t(placeholder)
-    }
-    return placeholder
-}
-
-// 辅助函数：处理选项列表的翻译
-function getOptions(options: { label: string; value: string }[] | undefined) {
-    if (!options) return []
-    return options.map(opt => ({
-        ...opt,
-        label: getLabel(opt.label)
-    }))
-}
-
-// 更新表单字段值
-function updateField(key: string, value: any) {
-    emit('update:modelValue', {
-        ...props.modelValue,
-        [key]: value
-    })
-}
+            scheduleResolveFieldSource(field)
+        })
+    }, { immediate: true, deep: true })
 </script>
 
 <template>
     <div class="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-2">
-        <!-- 自定义图床显示魔术变量预览面板 -->
         <div v-if="modelValue.type === 'custom'" class="md:col-span-2 mb-4">
             <n-collapse>
                 <n-collapse-item :title="t('config.form.magicVariable.title')" name="1">
                     <div class="grid grid-cols-2 gap-2 text-xs text-gray-500">
-                        <!-- 变量预览列表 -->
                         <div><code>{filename}</code>: {{ t('config.form.magicVariable.filename') }}
                             <n-ellipsis class="text-gray-400" style="max-width: 128px">
                                 {{ previewValues.filename }}
@@ -205,56 +466,49 @@ function updateField(key: string, value: any) {
             </n-collapse>
         </div>
         
-        <!-- 循环渲染 Schema 定义的字段 -->
         <template v-for="field in schema" :key="field.key">
-            <n-form-item :label="getLabel(field.label)" :path="field.key"
+            <n-form-item v-if="isFieldVisible(field)" :label="getLabel(field.label)" :path="field.key"
                 :class="{ 'md:col-span-2': field.type === 'textarea' || field.type === 'kv-pairs' }">
                 <div class="w-full space-y-1">
-                    <!-- 文本/密码输入框 -->
                     <n-input v-if="field.type === 'text' || field.type === 'password'" :value="modelValue[field.key]"
                         @update:value="(val: string | number) => updateField(field.key, val)"
                         :type="field.type === 'password' ? 'password' : 'text'"
                         :show-password-on="field.type === 'password' ? 'click' : undefined"
-                        :placeholder="getPlaceholder(field.placeholder)" />
+                        :placeholder="getFieldPlaceholder(field)" :disabled="isFieldDisabled(field)" />
+
+                    <n-input-number v-else-if="field.type === 'number'" class="w-full"
+                        :value="modelValue[field.key] ?? field.defaultValue"
+                        @update:value="(val: number | null) => updateField(field.key, val)"
+                        :placeholder="getFieldPlaceholder(field)" :disabled="isFieldDisabled(field)" />
                     
-                    <!-- 下拉选择框 (通用) -->
-                    <n-select
-                        v-else-if="field.type === 'select' && field.key !== 'strategyId' && !(field.key === 'albumId' && modelValue.type === 'lsky')"
-                        :value="modelValue[field.key] || field.defaultValue"
-                        @update:value="(val: string | number) => updateField(field.key, val)" :options="getOptions(field.options)" />
+                    <n-select v-else-if="field.type === 'select'"
+                        :value="modelValue[field.key] ?? field.defaultValue"
+                        @update:value="(val: string | number | boolean | Array<string | number | boolean>) => updateField(field.key, val)"
+                        :options="getFieldOptions(field)" :loading="getFieldState(field.key).loading"
+                        :placeholder="getFieldPlaceholder(field)"
+                        :filterable="field.filterable || !!field.dataSource"
+                        :clearable="field.clearable"
+                        :tag="field.tag"
+                        :multiple="field.multiple"
+                        :disabled="isFieldDisabled(field)" />
 
-                    <!-- 特殊处理：Lsky Pro 策略 ID 选择 -->
-                    <n-select v-else-if="field.key === 'strategyId' && modelValue.type === 'lsky'"
-                        :value="modelValue[field.key]" @update:value="(val: string | number) => updateField(field.key, val)"
-                        :options="strategyOptions" :loading="loadingStrategies"
-                        :placeholder="t('config.form.strategyIdPlaceholder')" filterable tag />
-
-                    <!-- 特殊处理：Lsky Pro 相册 ID 选择 -->
-                    <n-select v-else-if="field.key === 'albumId' && modelValue.type === 'lsky'"
-                        :value="modelValue[field.key]" @update:value="(val: string | number) => updateField(field.key, val)"
-                        :options="albumOptions" :loading="loadingAlbums"
-                        :placeholder="getPlaceholder(field.placeholder)"
-                        filterable clearable tag />
-
-                    <!-- 策略 ID 输入 (非 Lsky Pro) -->
-                    <n-input v-else-if="field.key === 'strategyId' && modelValue.type !== 'lsky'"
-                        :value="modelValue[field.key]" @update:value="(val: string | number) => updateField(field.key, val)"
-                        :placeholder="getPlaceholder(field.placeholder)" />
-
-                    <!-- 多行文本框 -->
                     <n-input v-else-if="field.type === 'textarea'" :value="modelValue[field.key]"
                         @update:value="(val: string | number) => updateField(field.key, val)" type="textarea"
-                        :placeholder="getPlaceholder(field.placeholder)"
-                        :autosize="{ minRows: 3, maxRows: 6 }" />
+                        :placeholder="getFieldPlaceholder(field)"
+                        :autosize="{ minRows: 3, maxRows: 6 }" :disabled="isFieldDisabled(field)" />
 
-                    <!-- 键值对输入框 (自定义请求头/参数) -->
                     <KvInput v-else-if="field.type === 'kv-pairs'" :value="modelValue[field.key]"
-                        @update:value="(val: string) => updateField(field.key, val)" />
+                        @update:value="(val: string) => updateField(field.key, val)" :disabled="isFieldDisabled(field)" />
 
-                    <!-- 开关 -->
-                    <n-switch v-else-if="field.type === 'checkbox' || field.type === 'switch'"
+                    <n-checkbox v-else-if="field.type === 'checkbox'"
+                        :checked="modelValue[field.key] !== undefined ? modelValue[field.key] : field.defaultValue"
+                        @update:checked="(val: boolean) => updateField(field.key, val)"
+                        :disabled="isFieldDisabled(field)" />
+
+                    <n-switch v-else-if="field.type === 'switch'"
                         :value="modelValue[field.key] !== undefined ? modelValue[field.key] : field.defaultValue"
-                        @update:value="(val: boolean) => updateField(field.key, val)">
+                        @update:value="(val: boolean) => updateField(field.key, val)"
+                        :disabled="isFieldDisabled(field)">
                         <template #checked>
                             {{ t('common.yes') }}
                         </template>
@@ -263,10 +517,20 @@ function updateField(key: string, value: any) {
                         </template>
                     </n-switch>
 
-                    <!-- 帮助文本 -->
-                    <div v-if="field.help" class="text-xs text-gray-500 whitespace-pre-wrap break-words leading-snug">{{ field.help }}</div>
+                    <div v-if="field.dataSource" class="flex items-center justify-between gap-3 text-xs">
+                        <div class="min-h-[18px] text-red-500 break-words">
+                            {{ getFieldState(field.key).error }}
+                        </div>
+                        <n-button quaternary size="tiny" :loading="getFieldState(field.key).loading"
+                            :disabled="!canResolveFieldSource(field)" @click="refreshFieldSource(field)">
+                            {{ getFieldRefreshLabel(field) }}
+                        </n-button>
+                    </div>
+
+                    <div v-if="getFieldHelp(field)" class="text-xs text-gray-500 whitespace-pre-wrap break-words leading-snug">{{ getFieldHelp(field) }}</div>
                 </div>
             </n-form-item>
         </template>
     </div>
 </template>
+

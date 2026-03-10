@@ -1,0 +1,201 @@
+{
+  "id": "dev.giopic.plugin-field-regression",
+  "name": "Plugin Field Regression Test",
+  "version": "1.0.0",
+  "author": "GioPic QA",
+  "authorUrl": "https://fileup.dev/",
+  "description": "用于验证 PluginInputSchema 全字段行为（select、条件联动、dataSource、manual/watch/required）。",
+  "homepage": "https://fileup.dev/",
+  "icon": "i-ph-flask-duotone",
+  "inputs": [
+    {
+      "name": "mode",
+      "label": "运行模式",
+      "type": "select",
+      "required": true,
+      "default": "standard",
+      "options": [
+        { "label": "Standard", "value": "standard" },
+        { "label": "Readonly", "value": "readonly" },
+        { "label": "Debug", "value": "debug" }
+      ],
+      "help": "用于测试 equals / notEquals / in / notIn 条件。"
+    },
+    {
+      "name": "apiUrl",
+      "label": "API 地址",
+      "type": "text",
+      "required": true,
+      "default": "https://example.com/api",
+      "placeholder": "https://example.com/api",
+      "help": "dataSource.required 依赖字段之一。"
+    },
+    {
+      "name": "token",
+      "label": "Token",
+      "type": "password",
+      "placeholder": "输入任意值模拟已登录",
+      "help": "用于测试 exists / empty 条件。"
+    },
+    {
+      "name": "storageId",
+      "label": "存储 ID（自动）",
+      "type": "select",
+      "filterable": true,
+      "clearable": true,
+      "tag": true,
+      "placeholder": "自动拉取后可选，也可手填",
+      "help": "测试 filterable/clearable/tag + dataSource 自动触发。",
+      "dataSource": {
+        "watch": ["apiUrl", "token", "mode"],
+        "required": ["apiUrl", "token"],
+        "script": "return async function(config, ctx) {\n  const apiUrl = String(config.apiUrl || '').trim();\n  const token = String(config.token || '').trim();\n  const mode = String(config.mode || 'standard');\n\n  if (!apiUrl || !token) {\n    return {\n      options: [],\n      help: 'required 未满足：请先填写 apiUrl + token',\n      placeholder: '等待依赖字段满足后自动拉取'\n    };\n  }\n\n  const options = mode === 'debug'\n    ? [\n        { label: 'Debug-Storage-A', value: 'dbg-a' },\n        { label: 'Debug-Storage-B', value: 'dbg-b' }\n      ]\n    : [\n        { label: 'Storage-1', value: 's1' },\n        { label: 'Storage-2', value: 's2' }\n      ];\n\n  return {\n    options,\n    value: options[0].value,\n    patch: {\n      lockReason: mode === 'readonly' ? 'mode=readonly 时由 storageId.dataSource 自动回填' : ''\n    },\n    help: 'auto dataSource 已执行（watch: apiUrl, token, mode）',\n    placeholder: '存储列表已自动更新'\n  };\n}"
+      }
+    },
+    {
+      "name": "albumId",
+      "label": "相册 ID（手动）",
+      "type": "select",
+      "filterable": true,
+      "clearable": true,
+      "tag": true,
+      "multiple": true,
+      "placeholder": "仅点击按钮时拉取",
+      "help": "测试 multiple + dataSource.manual。",
+      "visibleWhen": {
+        "field": "storageId",
+        "exists": true
+      },
+      "dataSource": {
+        "manual": true,
+        "actionLabel": "手动拉取相册",
+        "watch": ["apiUrl", "storageId"],
+        "required": ["apiUrl", "storageId"],
+        "script": "return async function(config, ctx) {\n  const storageId = String(config.storageId || '').trim();\n  if (!storageId) {\n    return { options: [], help: 'required 未满足：请选择 storageId' };\n  }\n\n  return {\n    options: [\n      { label: storageId + '-album-1', value: storageId + '-a1' },\n      { label: storageId + '-album-2', value: storageId + '-a2' }\n    ],\n    help: 'manual dataSource 已执行（仅点击按钮触发）'\n  };\n}"
+      }
+    },
+    {
+      "name": "customLabels",
+      "label": "自定义标签",
+      "type": "select",
+      "filterable": true,
+      "clearable": true,
+      "tag": true,
+      "multiple": true,
+      "default": ["initial-label"],
+      "options": [
+        { "label": "frontend", "value": "frontend" },
+        { "label": "backend", "value": "backend" },
+        { "label": "ops", "value": "ops" }
+      ],
+      "help": "测试 select 的 filterable/clearable/tag/multiple。"
+    },
+    {
+      "name": "retryCount",
+      "label": "重试次数",
+      "type": "number",
+      "required": true,
+      "default": 3,
+      "placeholder": "3"
+    },
+    {
+      "name": "enableAdvanced",
+      "label": "启用高级配置",
+      "type": "switch",
+      "default": false
+    },
+    {
+      "name": "advancedNote",
+      "label": "高级说明（truthy）",
+      "type": "textarea",
+      "placeholder": "enableAdvanced=true 时显示",
+      "visibleWhen": {
+        "field": "enableAdvanced",
+        "truthy": true
+      }
+    },
+    {
+      "name": "simpleNote",
+      "label": "基础说明（falsy）",
+      "type": "textarea",
+      "placeholder": "enableAdvanced=false 时显示",
+      "visibleWhen": {
+        "field": "enableAdvanced",
+        "falsy": true
+      }
+    },
+    {
+      "name": "modeInField",
+      "label": "Mode in [standard,debug]",
+      "type": "text",
+      "visibleWhen": {
+        "field": "mode",
+        "in": ["standard", "debug"]
+      }
+    },
+    {
+      "name": "modeNotInField",
+      "label": "Mode notIn [readonly]",
+      "type": "text",
+      "visibleWhen": {
+        "field": "mode",
+        "notIn": ["readonly"]
+      }
+    },
+    {
+      "name": "lockReason",
+      "label": "锁定原因（equals + disabledWhen）",
+      "type": "text",
+      "placeholder": "mode=readonly 时应禁用",
+      "disabledWhen": {
+        "field": "mode",
+        "equals": "readonly"
+      }
+    },
+    {
+      "name": "debugOnlyField",
+      "label": "仅 Debug 可编辑（notEquals）",
+      "type": "text",
+      "disabledWhen": {
+        "field": "mode",
+        "notEquals": "debug"
+      }
+    },
+    {
+      "name": "tokenExistsField",
+      "label": "Token 已填写时显示（exists）",
+      "type": "text",
+      "visibleWhen": {
+        "field": "token",
+        "exists": true
+      }
+    },
+    {
+      "name": "tokenEmptyField",
+      "label": "Token 为空时显示（empty）",
+      "type": "text",
+      "visibleWhen": {
+        "field": "token",
+        "empty": true
+      }
+    },
+    {
+      "name": "headers",
+      "label": "自定义请求头（kv-pairs）",
+      "type": "kv-pairs",
+      "visibleWhen": {
+        "all": [
+          { "field": "enableAdvanced", "truthy": true },
+          { "field": "apiUrl", "exists": true }
+        ]
+      }
+    },
+    {
+      "name": "watermark",
+      "label": "开启水印",
+      "type": "checkbox",
+      "default": true
+    }
+  ],
+  "script": "return async function(config, file, ctx) {\n  const summary = {\n    mode: config.mode,\n    apiUrl: config.apiUrl,\n    tokenFilled: !!String(config.token || '').trim(),\n    storageId: config.storageId,\n    albumId: config.albumId,\n    customLabels: config.customLabels,\n    retryCount: config.retryCount,\n    enableAdvanced: config.enableAdvanced,\n    lockReason: config.lockReason,\n    headers: config.headers,\n    watermark: config.watermark\n  };\n\n  const fileName = file && file.name ? file.name : 'no-file';\n  return 'https://plugin-test.local/upload/' + encodeURIComponent(fileName) + '?summary=' + encodeURIComponent(JSON.stringify(summary));\n}"
+}

@@ -1,122 +1,167 @@
 # GioPic 插件系统架构解析
 
-本文档详细介绍了 GioPic 基于 Manifest V3 的安全插件执行环境架构。该架构利用 **Offscreen Document** 和 **Sandbox** 技术，实现了不可信代码的安全隔离执行与跨域请求代理。
+本文档描述 GioPic 在 Manifest V3 下的插件执行架构。当前插件系统同时支持两类任务：
+- 上传阶段脚本：处理真实文件上传
+- 配置阶段脚本：在表单填写时动态请求远端 API，生成下拉选项或回填字段
 
-## 目录结构概览
+两类任务都复用同一条安全执行链路：`UI / Background -> Offscreen Document -> Sandbox iframe`。
 
-```
+## 目录结构
+
+```text
 src/
-├── offscreen/              # 离屏文档 (中转站)
-│   ├── offscreen.html      # 承载 Offscreen 的 HTML 容器
-│   └── offscreen.ts        # 负责消息路由、Sandbox 管理、代理请求
-│
-├── sandbox/                # 安全沙箱 (执行环境)
-│   ├── index.html          # 承载 iframe 的 HTML 容器
-│   └── sandbox.ts          # 负责执行用户脚本、序列化请求
-│
+├── offscreen/
+│   ├── offscreen.html
+│   └── offscreen.ts
+├── sandbox/
+│   ├── index.html
+│   └── sandbox.ts
 └── services/
-    └── pluginRunner.ts     # 插件调度器 (入口)
+    └── pluginRunner.ts
 ```
 
----
-
-## 核心模块详解
+## 核心模块
 
 ### 1. Plugin Runner (`src/services/pluginRunner.ts`)
 
-**角色**: 调度器 (Scheduler)
+角色：调度器
 
-这是插件系统的入口点，运行在扩展的 Background Service Worker 中。
-
-*   **生命周期管理**: 负责创建和销毁 Offscreen Document。
-*   **健康检查**: 通过 `PING/PONG` 机制检测 Offscreen 环境是否就绪，并在无响应时自动重启环境。
-*   **任务分发**: 将用户上传操作封装为 `EXECUTE_PLUGIN` 消息，发送给 Offscreen。
-*   **事件驱动**: 使用 `taskId` 跟踪异步任务，监听 `PLUGIN_EXECUTION_RESULT` 和 `PLUGIN_PROGRESS` 事件。
+职责：
+- 确保 Offscreen Document 可用
+- 对沙箱做 `PING / PONG` 健康检查
+- 将上传任务和配置任务统一封装成 `EXECUTE_PLUGIN`
+- 跟踪任务结果与上传进度
 
 ### 2. Offscreen Document (`src/offscreen/`)
 
-**角色**: 中转代理 (Broker & Proxy)
+角色：中转代理
 
-由于 Manifest V3 的 Service Worker 无法直接访问 DOM (也就无法创建 iframe 沙箱)，我们需要一个 Offscreen Document 作为桥梁。
-
-#### `offscreen.html`
-一个包含 `iframe` 的简单 HTML 页面：
-```html
-<iframe id="sandbox-frame" src="../sandbox/index.html" sandbox="allow-scripts"></iframe>
-```
-它加载了沙箱环境。
-
-#### `offscreen.ts`
-运行在 Offscreen 页面中的脚本，拥有 DOM 访问权限和完整的 Chrome API 访问权限。
-
-*   **消息路由**: 接收来自 Background 的 `EXECUTE_PLUGIN` 消息，并通过 `postMessage` 转发给 Sandbox iframe。
-*   **网络代理 (Proxy Fetch)**:
-    *   Sandbox 受限于安全策略无法直接发起跨域请求。
-    *   Offscreen 接收来自 Sandbox 的 `FETCH_REQUEST`。
-    *   使用 `XMLHttpRequest` (为了支持进度条) 发起真实网络请求。
-    *   支持 `FormData` 的自动重建（解决 `postMessage` 无法传输 FormData 的问题）。
-*   **结果回传**: 将执行结果或进度信息通过 `chrome.runtime.sendMessage` 主动推送到 Background。
+职责：
+- 接收 `EXECUTE_PLUGIN`
+- 将任务转发给 Sandbox iframe
+- 代理 `ctx.fetch` 请求
+- 用 `XMLHttpRequest` 发送真实网络请求，以支持上传进度
+- 将 `PLUGIN_EXECUTION_RESULT` / `PLUGIN_PROGRESS` 回传给扩展运行时
 
 ### 3. Sandbox (`src/sandbox/`)
 
-**角色**: 执行环境 (Execution Environment)
+角色：受限执行环境
 
-这是唯一执行用户提供的不可信代码 (User Script) 的地方。
+职责：
+- 解析插件脚本
+- 注入受限的 `ctx` 能力
+- 执行配置脚本或上传脚本
+- 通过 `postMessage` 与 Offscreen 通信
 
-#### `index.html`
-一个纯净的 HTML 页面，作为沙箱容器。
+## 两类脚本的执行模型
 
-#### `sandbox.ts`
-沙箱内的宿主脚本。
+### 上传脚本
 
-*   **代码求值**: 使用 `new Function(script)` 安全地解析用户脚本。
-*   **上下文注入**: 向用户脚本注入 `ctx` 对象（包含 `fetch` 代理方法）。
-*   **请求序列化**: 拦截用户脚本发起的请求，将 `FormData` 等复杂对象序列化为可传输的格式。
-*   **通信**: 通过 `window.parent.postMessage` 与外部 (Offscreen) 通信。
+函数签名：
 
----
+```js
+return async function(config, file, ctx) {
+  // 上传逻辑
+}
+```
 
-## 数据流向图
+特点：
+- 会收到文件的序列化数据
+- 可以使用 `ctx.fileToBlob()` 或 `fetch(file.data)` 获取二进制内容
+- 支持上传进度事件
+
+### 配置脚本
+
+函数签名：
+
+```js
+return async function(config, ctx) {
+  // 动态配置逻辑
+}
+```
+
+特点：
+- 不接收文件对象
+- 主要用于拉取存储列表、相册列表、目录列表等
+- 可以返回 `options`、`value`、`patch`、`help`、`placeholder`
+
+## 数据流
+
+### 上传流程
 
 ```mermaid
 sequenceDiagram
-    participant User as 用户/UI
-    participant Runner as PluginRunner (Background)
+    participant UI as UI / Background
+    participant Runner as PluginRunner
     participant Offscreen as Offscreen Document
-    participant Sandbox as Sandbox (Iframe)
-    participant Server as 目标图床服务器
+    participant Sandbox as Sandbox
+    participant Server as Remote API
 
-    User->>Runner: 1. 上传图片 (File)
-    Runner->>Runner: 生成 TaskID
-    Runner->>Offscreen: 2. 发送 EXECUTE_PLUGIN 消息
-    
-    Offscreen->>Sandbox: 3. 转发 EXECUTE 消息 (postMessage)
-    
-    Sandbox->>Sandbox: 4. 执行用户脚本
-    Sandbox->>Sandbox: 构建 FormData
-    
-    Sandbox->>Offscreen: 5. 请求 FETCH_REQUEST (代理请求)
-    
-    Offscreen->>Server: 6. 发起 XMLHttpRequest
-    Server-->>Offscreen: 7. 返回响应 & 进度
-    
-    loop 上传进度
-        Offscreen->>Runner: 8. PLUGIN_PROGRESS 事件
-        Runner->>User: 更新进度条
-    end
-    
-    Offscreen->>Sandbox: 9. 返回 FETCH_RESULT
-    
-    Sandbox->>Sandbox: 解析响应，提取 URL
-    Sandbox->>Offscreen: 10. 返回 EXECUTE_RESULT (成功/失败)
-    
-    Offscreen->>Runner: 11. PLUGIN_EXECUTION_RESULT 事件
-    Runner->>User: 12. 上传完成，显示图片
+    UI->>Runner: 上传图片
+    Runner->>Offscreen: EXECUTE_PLUGIN(mode=upload)
+    Offscreen->>Sandbox: EXECUTE
+    Sandbox->>Offscreen: FETCH_REQUEST
+    Offscreen->>Server: XHR / Fetch Proxy
+    Server-->>Offscreen: 响应 + 进度
+    Offscreen-->>Runner: PLUGIN_PROGRESS
+    Offscreen-->>Sandbox: FETCH_RESULT
+    Sandbox-->>Offscreen: EXECUTE_RESULT
+    Offscreen-->>Runner: PLUGIN_EXECUTION_RESULT
+    Runner-->>UI: 上传完成
 ```
 
-## 安全性设计
+### 配置流程
 
-1.  **代码隔离**: 用户代码仅在 `sandbox` 属性限制的 iframe 中运行，无法访问扩展的 Cookie、Storage 或 Chrome API。
-2.  **网络隔离**: Sandbox 内部无法直接发起网络请求，必须通过 Offscreen 代理，确保请求受到扩展权限的管控。
-3.  **序列化检查**: `FormData` 的序列化机制避免了恶意代码通过构造特殊对象攻击 `postMessage` 通道。
-4.  **超时熔断**: PluginRunner 设置了 30秒 强制超时，防止恶意脚本死循环导致扩展卡死。
+```mermaid
+sequenceDiagram
+    participant UI as Config Form
+    participant Runner as PluginRunner
+    participant Offscreen as Offscreen Document
+    participant Sandbox as Sandbox
+    participant Server as Remote API
+
+    UI->>Runner: 字段依赖变化 / 点击刷新
+    Runner->>Offscreen: EXECUTE_PLUGIN(mode=config)
+    Offscreen->>Sandbox: EXECUTE
+    Sandbox->>Offscreen: FETCH_REQUEST
+    Offscreen->>Server: XHR / Fetch Proxy
+    Server-->>Offscreen: 响应
+    Offscreen-->>Sandbox: FETCH_RESULT
+    Sandbox-->>Offscreen: EXECUTE_RESULT(options/patch)
+    Offscreen-->>Runner: PLUGIN_EXECUTION_RESULT
+    Runner-->>UI: 更新 inputs / 回填字段
+```
+
+## 为什么这样设计
+
+1. 代码隔离
+   - 插件代码只在 `sandbox` iframe 中执行，无法直接访问扩展权限。
+
+2. 网络收口
+   - 所有跨域请求都走 Offscreen 代理，便于统一控制和兼容 Manifest V3。
+
+3. 表单能力泛化
+   - 不再为某一个图床在前端组件中写死“请求策略列表 / 相册列表”的逻辑。
+   - 插件自己声明 `dataSource`、`visibleWhen`、`disabledWhen` 即可。
+
+4. 单一执行通道
+   - 上传和配置都复用相同的调度器、代理层和安全边界，维护成本更低。
+
+## 安全边界
+
+- 插件无法访问 `chrome.*` / `browser.*` API。
+- 插件无法直接访问扩展存储。
+- 插件不能直接控制宿主页面 DOM。
+- 任务默认有超时保护，避免脚本长时间卡死扩展。
+
+## 当前扩展点
+
+当前推荐使用的扩展能力：
+- `inputs[].visibleWhen`
+- `inputs[].disabledWhen`
+- `inputs[].dataSource`
+- `ctx.fetch`
+- `ctx.fetchJson`
+- `ctx.fileToBlob`
+
+如果后续需要支持更复杂的场景，优先在 `ctx` 或字段 schema 上扩展，而不是继续往 UI 里加平台特判。

@@ -1,14 +1,30 @@
+export * from './pluginSchema'
+
+import type {
+  PluginDataSource,
+  PluginFieldConditionSchema,
+  PluginFieldType,
+  PluginOption,
+} from './pluginSchema'
+
 export type DriveType = 'lsky' | 'easyimages' | 'chevereto' | 'imgurl' | 'zpic' | 'aliyun' | 'aws' | 'tencent' | 'imgurl' | 'smms' | 'hellohao' | 'imgur' | 'custom' | 'github' | 'test'|'imgdd'|'oneimg' | 'see' | (string & {});
 
 export interface PluginInputSchema {
   name: string;
   label: string;
-  type: 'text' | 'password' | 'checkbox' | 'select';
+  type: PluginFieldType;
   required?: boolean;
   default?: any;
-  options?: { label: string; value: any }[];
+  options?: PluginOption[];
   placeholder?: string;
-  help?: string; // Helper text
+  help?: string;
+  filterable?: boolean;
+  clearable?: boolean;
+  tag?: boolean;
+  multiple?: boolean;
+  visibleWhen?: PluginFieldConditionSchema;
+  disabledWhen?: PluginFieldConditionSchema;
+  dataSource?: PluginDataSource;
 }
 
 export interface PluginMeta {

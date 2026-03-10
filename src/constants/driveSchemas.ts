@@ -1,14 +1,37 @@
+import type {
+  PluginFieldConditionSchema,
+  PluginFieldType,
+  PluginOption,
+} from '@/types/pluginSchema'
+
+export type BuiltinFieldLoader = 'lskyStrategies' | 'lskyAlbums'
+
+export interface FieldDataSource {
+  watch?: string[]
+  required?: string[]
+  script?: string
+  loader?: BuiltinFieldLoader
+  manual?: boolean
+  actionLabel?: string
+}
+
 export interface FieldSchema {
   key: string
   label: string // i18n key or raw string
-  type: 'text' | 'password' | 'number' | 'switch' | 'select' | 'textarea' | 'kv-pairs' | 'checkbox'
+  type: PluginFieldType
   placeholder?: string
   required?: boolean
   defaultValue?: any
-  options?: { label: string; value: string }[]
+  options?: PluginOption[]
   help?: string
+  filterable?: boolean
+  clearable?: boolean
+  tag?: boolean
+  multiple?: boolean
+  visibleWhen?: PluginFieldConditionSchema
+  disabledWhen?: PluginFieldConditionSchema
+  dataSource?: FieldDataSource
 }
-
 export const COMMON_FIELDS: FieldSchema[] = [
   { key: 'path', label: 'config.form.path', type: 'text', placeholder: 'config.form.placeholder.path' },
   { key: 'customDomain', label: 'config.form.customDomain', type: 'text', placeholder: 'config.form.placeholder.customUrlPrefix' },
@@ -38,8 +61,8 @@ export const DRIVE_REGISTRY: Record<string, DriveRegistryItem> = {
       { key: 'version', label: 'config.form.version', type: 'select', options: [{ label: 'V1', value: 'v1' }, { label: 'V2', value: 'v2' }], defaultValue: 'v1' },
       { key: 'apiUrl', label: 'config.form.apiUrl', type: 'text', required: true, placeholder: 'config.form.placeholder.lskyApiUrl' },
       { key: 'token', label: 'config.form.token', type: 'password', required: true },
-      { key: 'strategyId', label: 'config.form.strategyId', type: 'select', placeholder: 'config.form.placeholder.strategyId' },
-      { key: 'albumId', label: 'config.form.albumId', type: 'select', placeholder: 'config.form.placeholder.albumId' },
+      { key: 'strategyId', label: 'config.form.strategyId', type: 'select', placeholder: 'config.form.strategyIdPlaceholder', filterable: true, tag: true, dataSource: { loader: 'lskyStrategies', watch: ['apiUrl', 'token', 'version'], required: ['apiUrl', 'token'] } },
+      { key: 'albumId', label: 'config.form.albumId', type: 'select', placeholder: 'config.form.placeholder.albumId', filterable: true, clearable: true, tag: true, dataSource: { loader: 'lskyAlbums', watch: ['apiUrl', 'token', 'version'], required: ['apiUrl', 'token'] } },
       {
         key: 'permission',
         label: 'config.form.isPublic',
@@ -348,3 +371,4 @@ export const DRIVE_TYPE_OPTIONS = Object.values(DRIVE_REGISTRY).map(item => ({
   label: item.label,
   value: item.key
 }))
+

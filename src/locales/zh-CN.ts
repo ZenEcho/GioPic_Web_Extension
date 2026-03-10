@@ -24,6 +24,8 @@ export default {
     test: '测试图床',
   },
   common: {
+    yes: '是',
+    no: '否',
     edit: '编辑',
     delete: '删除',
     save: '保存',

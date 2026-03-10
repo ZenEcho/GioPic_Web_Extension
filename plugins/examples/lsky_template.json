@@ -1,0 +1,68 @@
+{
+  "id": "com.lsky.imagebed",
+  "name": "兰空通用插件",
+  "version": "1.1.0",
+  "author": "作者",
+  "authorUrl": "作者网站",
+  "description": "支持动态拉取存储节点和相册的兰空 / 乐塔通用插件示例。",
+  "homepage": "主页",
+  "icon": "图标",
+  "inputs": [
+    {
+      "name": "apiUrl",
+      "label": "上传接口地址",
+      "type": "text",
+      "required": true,
+      "default": "/api/v2/upload",
+      "placeholder": "/api/v2/upload",
+      "help": "常用接口为 /api/v2/upload。"
+    },
+    {
+      "name": "token",
+      "label": "Token（可选）",
+      "type": "password",
+      "required": false,
+      "placeholder": "Lsky API Token（留空则尝试匿名上传）"
+    },
+    {
+      "name": "storageId",
+      "label": "存储节点 ID（可选）",
+      "type": "select",
+      "required": false,
+      "filterable": true,
+      "tag": true,
+      "placeholder": "先填写接口地址和 Token，再刷新列表",
+      "help": "如果后台 UI 不显示存储 ID，可以直接通过 API 拉取。",
+      "dataSource": {
+        "watch": ["apiUrl", "token"],
+        "required": ["apiUrl", "token"],
+        "actionLabel": "拉取存储列表",
+        "script": "return async function(config, ctx) {\n  const uploadUrl = String(config.apiUrl || '').trim();\n  const token = String(config.token || '').trim();\n  if (!uploadUrl || !token) return { options: [] };\n\n  let baseUrl = uploadUrl.replace(/\\/$/, '');\n  if (/\\/api\\/v2\\/upload$/i.test(baseUrl)) {\n    baseUrl = baseUrl.replace(/\\/api\\/v2\\/upload$/i, '');\n  }\n\n  const res = await ctx.fetch(baseUrl + '/api/v2/group', {\n    headers: {\n      'Authorization': 'Bearer ' + token,\n      'Accept': 'application/json, text/plain, */*'\n    }\n  });\n\n  if (!res.ok) throw new Error('HTTP ' + res.status);\n  const json = res.body;\n  if (!json || (json.status !== true && json.status !== 'success')) {\n    throw new Error((json && json.message) || '获取存储列表失败');\n  }\n\n  const storages = json.data && json.data.storages ? json.data.storages : [];\n  return {\n    options: storages.map(item => ({ label: item.name, value: String(item.id) }))\n  };\n}"
+      }
+    },
+    {
+      "name": "isPublic",
+      "label": "公开图片",
+      "type": "checkbox",
+      "required": false,
+      "default": true
+    },
+    {
+      "name": "albumId",
+      "label": "相册 ID（可选）",
+      "type": "select",
+      "required": false,
+      "filterable": true,
+      "clearable": true,
+      "tag": true,
+      "placeholder": "先填写接口地址和 Token，再刷新列表",
+      "dataSource": {
+        "watch": ["apiUrl", "token"],
+        "required": ["apiUrl", "token"],
+        "actionLabel": "拉取相册列表",
+        "script": "return async function(config, ctx) {\n  const uploadUrl = String(config.apiUrl || '').trim();\n  const token = String(config.token || '').trim();\n  if (!uploadUrl || !token) return { options: [] };\n\n  let baseUrl = uploadUrl.replace(/\\/$/, '');\n  if (/\\/api\\/v2\\/upload$/i.test(baseUrl)) {\n    baseUrl = baseUrl.replace(/\\/api\\/v2\\/upload$/i, '');\n  }\n\n  const res = await ctx.fetch(baseUrl + '/api/v2/user/albums', {\n    headers: {\n      'Authorization': 'Bearer ' + token,\n      'Accept': 'application/json, text/plain, */*'\n    }\n  });\n\n  if (!res.ok) throw new Error('HTTP ' + res.status);\n  const json = res.body;\n  if (!json || (json.status !== true && json.status !== 'success')) {\n    throw new Error((json && json.message) || '获取相册列表失败');\n  }\n\n  const albums = json.data && json.data.data ? json.data.data : [];\n  return {\n    options: albums.map(item => ({ label: item.name, value: String(item.id) }))\n  };\n}"
+      }
+    }
+  ],
+  "script": "return async function (config, file, ctx) {\n    if (!config.apiUrl) throw new Error('Missing apiUrl');\n    const blob = await (await fetch(file.data)).blob();\n    const fd = new FormData();\n    fd.append('file', blob, file.name);\n    if (config.storageId) fd.append('storage_id', String(config.storageId));\n    if (config.albumId) fd.append('album_id', String(config.albumId));\n    fd.append('is_public', config.isPublic === false ? '0' : '1');\n    const headers = {\n        'Accept': 'application/json, text/plain, */*'\n    };\n    if (config.token) headers['Authorization'] = 'Bearer ' + config.token;\n    const res = await ctx.fetch(config.apiUrl, { method: 'POST', headers: headers, body: fd });\n    const json = res.body; if (!res.ok) {\n        const msg = (json && (json.message || json.msg)) || ('HTTP ' + res.status);\n        throw new Error(msg);\n    } const ok = json && (json.status === true || json.status === 'success' || json.success === true || json.code === 200);\n    if (!ok) {\n        throw new Error((json && (json.message || json.msg)) || 'Upload failed');\n\n    } const data = (json && json.data) || {};\n    const url = data.url || data.public_url || (data.links && (data.links.url || data.links.html || data.links.markdown));\n    if (!url) throw new Error('Upload succeeded but no URL found in response');\n    return url;\n}"
+}

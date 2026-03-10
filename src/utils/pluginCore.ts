@@ -16,6 +16,17 @@ import { db } from '@/utils/storage'
 import type { PluginMeta } from '@/types'
 import browser from 'webextension-polyfill'
 
+const ALLOWED_PLUGIN_FIELD_TYPES = new Set([
+    'text',
+    'password',
+    'checkbox',
+    'select',
+    'textarea',
+    'number',
+    'switch',
+    'kv-pairs'
+])
+
 /**
  * 验证插件对象的必要字段
  * 
@@ -28,6 +39,25 @@ export function validatePlugin(plugin: any): { valid: boolean; error?: string } 
     if (!plugin.name) return { valid: false, error: 'Missing plugin name' }
     if (!plugin.version) return { valid: false, error: 'Missing plugin version' }
     if (!plugin.script) return { valid: false, error: 'Missing plugin script' }
+    if (!Array.isArray(plugin.inputs)) return { valid: false, error: 'Plugin inputs must be an array' }
+
+    for (const input of plugin.inputs) {
+        if (!input?.name) return { valid: false, error: 'Plugin input is missing name' }
+        if (!input?.label) return { valid: false, error: `Plugin input "${input.name}" is missing label` }
+        if (!input?.type || !ALLOWED_PLUGIN_FIELD_TYPES.has(input.type)) {
+            return { valid: false, error: `Plugin input "${input?.name || 'unknown'}" has unsupported type` }
+        }
+
+        if (input.dataSource) {
+            if (typeof input.dataSource !== 'object') {
+                return { valid: false, error: `Plugin input "${input.name}" has invalid dataSource` }
+            }
+            if (typeof input.dataSource.script !== 'string' || !input.dataSource.script.trim()) {
+                return { valid: false, error: `Plugin input "${input.name}" dataSource must provide a script` }
+            }
+        }
+    }
+
     return { valid: true }
 }
 

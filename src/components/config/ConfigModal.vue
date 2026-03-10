@@ -33,6 +33,7 @@ import type { DriveConfig } from '@/types'
 import DynamicConfigForm from './DynamicConfigForm.vue'
 import CorsConfig from './CorsConfig.vue'
 import AclConfig from './AclConfig.vue'
+import { hasFieldValue, isFieldDisabled, isFieldVisible } from '@/utils/pluginForm'
 
 // 定义组件 Props
 const props = defineProps<{
@@ -72,21 +73,48 @@ const currentSchema = computed(() => {
     return getDriveSchema(formModel.value.type)
 })
 
+function buildRequiredRule() {
+    return {
+        validator: (_rule: any, value: any, callback: (error?: Error) => void) => {
+            if (hasFieldValue(value)) {
+                callback()
+                return
+            }
+
+            callback(new Error(t('config.validation.required')))
+        },
+        trigger: ['blur', 'change']
+    }
+}
+
 // 基于 Schema 动态生成表单验证规则
 const rules = computed(() => {
     const baseRules: any = {
-        name: { required: true, message: () => t('config.validation.required'), trigger: 'blur' },
-        type: { required: true, message: () => t('config.validation.required'), trigger: 'blur' },
+        name: buildRequiredRule(),
+        type: buildRequiredRule(),
     }
     
     // 添加 Schema 中定义的必填规则
     currentSchema.value.forEach(field => {
-        if (field.required) {
-            baseRules[field.key] = {
-                required: true,
-                message: () => t('config.validation.required'),
-                trigger: 'blur'
-            }
+        if (!field.required) {
+            return
+        }
+
+        baseRules[field.key] = {
+            validator: (_rule: any, value: any, callback: (error?: Error) => void) => {
+                if (!isFieldVisible(field, formModel.value) || isFieldDisabled(field, formModel.value)) {
+                    callback()
+                    return
+                }
+
+                if (hasFieldValue(value)) {
+                    callback()
+                    return
+                }
+
+                callback(new Error(t('config.validation.required')))
+            },
+            trigger: ['blur', 'change']
         }
     })
     
@@ -266,3 +294,5 @@ function getDriveLabel(value: string) {
       </template>
     </n-modal>
 </template>
+
+

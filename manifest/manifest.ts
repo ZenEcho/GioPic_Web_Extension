@@ -78,12 +78,11 @@ export async function getManifest() {
         ],
         content_security_policy: {
             extension_pages: isDev
-                ? `script-src \'self\' http://localhost:${port}; object-src \'self\'`
-                : 'script-src \'self\'; object-src \'self\'',
+                ? `script-src 'self' http://localhost:${port}; object-src 'self'`
+                : "script-src 'self'; object-src 'self'",
         },
     }
 
-    // 添加火狐浏览器特定设置
     if (isFirefox) {
         manifest.sidebar_action = {
             default_panel: "index.html",

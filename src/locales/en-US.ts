@@ -24,6 +24,8 @@ export default {
     test: 'Test Drive',
   },
   common: {
+    yes: 'Yes',
+    no: 'No',
     edit: 'Edit',
     delete: 'Delete',
     save: 'Save',

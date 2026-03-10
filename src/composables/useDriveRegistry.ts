@@ -33,18 +33,25 @@ export function useDriveRegistry() {
     
     // Merge plugins
     pluginStore.plugins.forEach(plugin => {
-       if (plugin.enabled === false) return; // Skip disabled plugins
+       if (plugin.enabled === false) return // Skip disabled plugins
 
        // 将插件的输入配置转换为 FieldSchema 格式
        const fields: FieldSchema[] = plugin.inputs.map(input => ({
            key: input.name,
-           label: input.label, 
-           type: input.type as any,
+           label: input.label,
+           type: input.type,
            required: input.required,
            defaultValue: input.default,
            options: input.options,
            help: input.help,
-          placeholder: input.placeholder
+           placeholder: input.placeholder,
+           filterable: input.filterable,
+           clearable: input.clearable,
+           tag: input.tag,
+           multiple: input.multiple,
+           visibleWhen: input.visibleWhen,
+           disabledWhen: input.disabledWhen,
+           dataSource: input.dataSource,
         }))
        
        // 构建插件驱动的注册项
@@ -56,10 +63,10 @@ export function useDriveRegistry() {
            darkColor: 'dark:text-purple-300 dark:bg-purple-900/30',
            category: 'plugin', 
            fields: fields
-       };
-    });
+       }
+    })
     
-    return combined;
+    return combined
   })
 
   /**

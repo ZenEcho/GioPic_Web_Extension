@@ -1,0 +1,87 @@
+{
+  "id": "dev.fileup.lsky-universal",
+  "name": "Lsky Pro 通用插件",
+  "version": "1.0.0",
+  "author": "GioPic",
+  "authorUrl": "https://fileup.dev/",
+  "description": "兼容 Lsky Pro v1/v2，支持动态拉取存储/策略列表和相册列表。",
+  "homepage": "https://fileup.dev/",
+  "icon": "i-ph-cloud-arrow-up-duotone",
+  "inputs": [
+    {
+      "name": "baseUrl",
+      "label": "站点地址",
+      "type": "text",
+      "required": true,
+      "placeholder": "https://image.example.com",
+      "help": "填写站点根地址，不是上传接口地址。插件会根据 API 版本自动拼接上传、存储和相册接口。"
+    },
+    {
+      "name": "version",
+      "label": "API 版本",
+      "type": "select",
+      "required": true,
+      "default": "v2",
+      "options": [
+        {
+          "label": "Lsky Pro V2",
+          "value": "v2"
+        },
+        {
+          "label": "Lsky Pro V1",
+          "value": "v1"
+        }
+      ],
+      "help": "新版本通常选择 V2；旧站点可切换到 V1。"
+    },
+    {
+      "name": "token",
+      "label": "Token（可选）",
+      "type": "password",
+      "required": false,
+      "placeholder": "Bearer Token",
+      "help": "如果站点要求登录上传，或需要动态读取存储 / 相册列表，则必须填写。"
+    },
+    {
+      "name": "storageId",
+      "label": "存储 / 策略 ID（可选）",
+      "type": "select",
+      "required": false,
+      "filterable": true,
+      "tag": true,
+      "placeholder": "可手输，也可动态拉取",
+      "help": "V1 对应 strategy_id，V2 对应 storage_id。",
+      "dataSource": {
+        "watch": ["baseUrl", "token", "version"],
+        "required": ["baseUrl", "token", "version"],
+        "actionLabel": "拉取存储列表",
+        "script": "return async function(config, ctx) {\n  const baseUrl = String(config.baseUrl || '').trim().replace(/\\/$/, '');\n  const token = String(config.token || '').trim();\n  const version = config.version === 'v1' ? 'v1' : 'v2';\n  if (!baseUrl || !token) {\n    return { options: [], help: '请先填写站点地址和 Token' };\n  }\n\n  const url = version === 'v1' ? baseUrl + '/api/v1/strategies' : baseUrl + '/api/v2/group';\n  const res = await ctx.fetch(url, {\n    headers: {\n      'Authorization': 'Bearer ' + token,\n      'Accept': 'application/json, text/plain, */*'\n    }\n  });\n\n  if (!res.ok) throw new Error('HTTP ' + res.status);\n  const json = res.body;\n\n  let items = [];\n  if (version === 'v1') {\n    if (!json || !json.status) throw new Error((json && (json.message || json.msg)) || '获取策略列表失败');\n    items = Array.isArray(json.data) ? json.data : ((json.data && json.data.strategies) || []);\n  } else {\n    if (!json || (json.status !== true && json.status !== 'success')) throw new Error((json && (json.message || json.msg)) || '获取存储列表失败');\n    items = (json.data && json.data.storages) || [];\n  }\n\n  const options = items.map(item => ({\n    label: item.name || ('ID ' + item.id),\n    value: String(item.id)\n  }));\n\n  const result = {\n    options,\n    help: version === 'v1' ? '已从 API 拉取策略列表' : '已从 API 拉取存储列表'\n  };\n\n  if (options.length === 1) {\n    result.value = options[0].value;\n  }\n\n  return result;\n}"
+      }
+    },
+    {
+      "name": "albumId",
+      "label": "相册 ID（可选）",
+      "type": "select",
+      "required": false,
+      "filterable": true,
+      "clearable": true,
+      "tag": true,
+      "placeholder": "可手输，也可动态拉取",
+      "dataSource": {
+        "watch": ["baseUrl", "token", "version"],
+        "required": ["baseUrl", "token", "version"],
+        "actionLabel": "拉取相册列表",
+        "script": "return async function(config, ctx) {\n  const baseUrl = String(config.baseUrl || '').trim().replace(/\\/$/, '');\n  const token = String(config.token || '').trim();\n  const version = config.version === 'v1' ? 'v1' : 'v2';\n  if (!baseUrl || !token) {\n    return { options: [], help: '请先填写站点地址和 Token' };\n  }\n\n  const url = version === 'v1' ? baseUrl + '/api/v1/albums' : baseUrl + '/api/v2/user/albums';\n  const res = await ctx.fetch(url, {\n    headers: {\n      'Authorization': 'Bearer ' + token,\n      'Accept': 'application/json, text/plain, */*'\n    }\n  });\n\n  if (!res.ok) throw new Error('HTTP ' + res.status);\n  const json = res.body;\n\n  if (version === 'v1') {\n    if (!json || !json.status) throw new Error((json && (json.message || json.msg)) || '获取相册列表失败');\n  } else {\n    if (!json || (json.status !== true && json.status !== 'success')) throw new Error((json && (json.message || json.msg)) || '获取相册列表失败');\n  }\n\n  const items = version === 'v1'\n    ? (((json.data && json.data.data) || []))\n    : (((json.data && json.data.data) || []));\n\n  const options = items.map(item => ({\n    label: item.name || ('ID ' + item.id),\n    value: String(item.id)\n  }));\n\n  return {\n    options,\n    help: '已从 API 拉取相册列表'\n  };\n}"
+      }
+    },
+    {
+      "name": "isPublic",
+      "label": "公开图片",
+      "type": "switch",
+      "required": false,
+      "default": true,
+      "help": "V1 会映射为 permission，V2 会映射为 is_public。"
+    }
+  ],
+  "script": "return async function(config, file, ctx) {\n  const baseUrl = String(config.baseUrl || '').trim().replace(/\\/$/, '');\n  const version = config.version === 'v1' ? 'v1' : 'v2';\n  const token = String(config.token || '').trim();\n  if (!baseUrl) throw new Error('Missing baseUrl');\n\n  const uploadUrl = version === 'v1' ? baseUrl + '/api/v1/upload' : baseUrl + '/api/v2/upload';\n  const blob = ctx.fileToBlob ? ctx.fileToBlob() : await (await fetch(file.data)).blob();\n  const fd = new FormData();\n  fd.append('file', blob, file.name);\n\n  if (config.storageId) {\n    fd.append(version === 'v1' ? 'strategy_id' : 'storage_id', String(config.storageId));\n  }\n  if (config.albumId) {\n    fd.append('album_id', String(config.albumId));\n  }\n\n  const isPublic = config.isPublic === false ? '0' : '1';\n  if (version === 'v1') {\n    fd.append('permission', isPublic);\n  } else {\n    fd.append('is_public', isPublic);\n  }\n\n  const headers = {\n    'Accept': 'application/json, text/plain, */*'\n  };\n  if (token) {\n    headers['Authorization'] = 'Bearer ' + token;\n  }\n\n  const res = await ctx.fetch(uploadUrl, {\n    method: 'POST',\n    headers,\n    body: fd\n  });\n\n  const json = res.body;\n  if (!res.ok) {\n    throw new Error((json && (json.message || json.msg)) || ('HTTP ' + res.status));\n  }\n\n  const success = version === 'v1'\n    ? !!(json && json.status)\n    : !!(json && (json.status === true || json.status === 'success'));\n\n  if (!success) {\n    throw new Error((json && (json.message || json.msg)) || 'Upload failed');\n  }\n\n  const data = (json && json.data) || {};\n  let url = data.url || data.public_url || (data.links && (data.links.url || data.links.html || data.links.markdown));\n  if (!url) throw new Error('Upload succeeded but no URL found in response');\n\n  try {\n    url = new URL(String(url), baseUrl + '/').href;\n  } catch (_) {}\n\n  return url;\n}"
+}
