@@ -4,7 +4,7 @@
   "version": "1.1.0",
   "author": "作者",
   "authorUrl": "作者网站",
-  "description": "支持动态拉取存储节点和相册的兰空 / 乐塔通用插件示例。",
+  "description": "支持动态拉取存储节点和相册的兰空通用插件示例。",
   "homepage": "主页",
   "icon": "图标",
   "inputs": [
@@ -34,8 +34,14 @@
       "placeholder": "先填写接口地址和 Token，再刷新列表",
       "help": "如果后台 UI 不显示存储 ID，可以直接通过 API 拉取。",
       "dataSource": {
-        "watch": ["apiUrl", "token"],
-        "required": ["apiUrl", "token"],
+        "watch": [
+          "apiUrl",
+          "token"
+        ],
+        "required": [
+          "apiUrl",
+          "token"
+        ],
         "actionLabel": "拉取存储列表",
         "script": "return async function(config, ctx) {\n  const uploadUrl = String(config.apiUrl || '').trim();\n  const token = String(config.token || '').trim();\n  if (!uploadUrl || !token) return { options: [] };\n\n  let baseUrl = uploadUrl.replace(/\\/$/, '');\n  if (/\\/api\\/v2\\/upload$/i.test(baseUrl)) {\n    baseUrl = baseUrl.replace(/\\/api\\/v2\\/upload$/i, '');\n  }\n\n  const res = await ctx.fetch(baseUrl + '/api/v2/group', {\n    headers: {\n      'Authorization': 'Bearer ' + token,\n      'Accept': 'application/json, text/plain, */*'\n    }\n  });\n\n  if (!res.ok) throw new Error('HTTP ' + res.status);\n  const json = res.body;\n  if (!json || (json.status !== true && json.status !== 'success')) {\n    throw new Error((json && json.message) || '获取存储列表失败');\n  }\n\n  const storages = json.data && json.data.storages ? json.data.storages : [];\n  return {\n    options: storages.map(item => ({ label: item.name, value: String(item.id) }))\n  };\n}"
       }
@@ -57,8 +63,14 @@
       "tag": true,
       "placeholder": "先填写接口地址和 Token，再刷新列表",
       "dataSource": {
-        "watch": ["apiUrl", "token"],
-        "required": ["apiUrl", "token"],
+        "watch": [
+          "apiUrl",
+          "token"
+        ],
+        "required": [
+          "apiUrl",
+          "token"
+        ],
         "actionLabel": "拉取相册列表",
         "script": "return async function(config, ctx) {\n  const uploadUrl = String(config.apiUrl || '').trim();\n  const token = String(config.token || '').trim();\n  if (!uploadUrl || !token) return { options: [] };\n\n  let baseUrl = uploadUrl.replace(/\\/$/, '');\n  if (/\\/api\\/v2\\/upload$/i.test(baseUrl)) {\n    baseUrl = baseUrl.replace(/\\/api\\/v2\\/upload$/i, '');\n  }\n\n  const res = await ctx.fetch(baseUrl + '/api/v2/user/albums', {\n    headers: {\n      'Authorization': 'Bearer ' + token,\n      'Accept': 'application/json, text/plain, */*'\n    }\n  });\n\n  if (!res.ok) throw new Error('HTTP ' + res.status);\n  const json = res.body;\n  if (!json || (json.status !== true && json.status !== 'success')) {\n    throw new Error((json && json.message) || '获取相册列表失败');\n  }\n\n  const albums = json.data && json.data.data ? json.data.data : [];\n  return {\n    options: albums.map(item => ({ label: item.name, value: String(item.id) }))\n  };\n}"
       }
