@@ -3,7 +3,7 @@
  * @description 插件核心逻辑处理工具
  *
  * 职责：
- * 1. 验证 uploader / site-detector 两类插件的 schema 合法性
+ * 1. 验证 uploader / site-detector / editor-adapter 三类插件的 schema 合法性
  * 2. 安装、卸载、启停插件并持久化到 IndexedDB
  * 3. 对旧版未声明 kind 的 uploader 做兼容归一化
  * 4. 广播插件更新消息给扩展和内容脚本
@@ -11,6 +11,7 @@
 
 import { db } from '@/utils/storage'
 import type {
+  EditorAdapterPlugin,
   DetectorActionFieldSchema,
   PluginFieldCondition,
   PluginFieldConditionGroup,
@@ -412,6 +413,24 @@ function normalizeSiteDetectorPlugin(plugin: Record<string, any>): SiteDetectorP
   } as SiteDetectorPlugin
 }
 
+function normalizeEditorAdapterPlugin(plugin: Record<string, any>): EditorAdapterPlugin | null {
+  if (!isRecord(plugin.editorAdapter)) {
+    return null
+  }
+
+  const editorAdapter = plugin.editorAdapter
+  return {
+    ...pickBasePluginFields(plugin, 'editor-adapter'),
+    kind: 'editor-adapter',
+    editorAdapter: {
+      editorType: editorAdapter.editorType,
+      displayName: editorAdapter.displayName,
+      detectScript: editorAdapter.detectScript,
+      injectScript: editorAdapter.injectScript,
+    },
+  } as EditorAdapterPlugin
+}
+
 export function normalizePlugin(plugin: unknown): PluginMeta | null {
   if (!isRecord(plugin)) {
     return null
@@ -422,9 +441,15 @@ export function normalizePlugin(plugin: unknown): PluginMeta | null {
   }
 
   const kind = normalizePluginKind(plugin.kind)
-  return kind === 'site-detector'
-    ? normalizeSiteDetectorPlugin(plugin)
-    : normalizeUploaderPlugin(plugin)
+  if (kind === 'site-detector') {
+    return normalizeSiteDetectorPlugin(plugin)
+  }
+
+  if (kind === 'editor-adapter') {
+    return normalizeEditorAdapterPlugin(plugin)
+  }
+
+  return normalizeUploaderPlugin(plugin)
 }
 
 function validateUploaderPlugin(plugin: UploaderPlugin): string | undefined {
@@ -497,6 +522,30 @@ function validateSiteDetectorPlugin(plugin: SiteDetectorPlugin): string | undefi
   return undefined
 }
 
+function validateEditorAdapterPlugin(plugin: EditorAdapterPlugin): string | undefined {
+  if (!isRecord(plugin.editorAdapter)) {
+    return 'Editor adapter editorAdapter is required and must be an object'
+  }
+
+  if (!isNonEmptyString(plugin.editorAdapter.editorType)) {
+    return 'Editor adapter editorAdapter.editorType is required'
+  }
+
+  if (!isNonEmptyString(plugin.editorAdapter.displayName)) {
+    return 'Editor adapter editorAdapter.displayName is required'
+  }
+
+  if (!isString(plugin.editorAdapter.detectScript)) {
+    return 'Editor adapter editorAdapter.detectScript is required and must be a string'
+  }
+
+  if (!isString(plugin.editorAdapter.injectScript)) {
+    return 'Editor adapter editorAdapter.injectScript is required and must be a string'
+  }
+
+  return undefined
+}
+
 /**
  * 验证插件对象的必要字段
  */
@@ -526,7 +575,9 @@ export function validatePlugin(plugin: unknown): { valid: boolean; error?: strin
   const kind: PluginKind = normalized.kind
   const detailError = kind === 'site-detector'
     ? validateSiteDetectorPlugin(normalized as SiteDetectorPlugin)
-    : validateUploaderPlugin(normalized as UploaderPlugin)
+    : kind === 'editor-adapter'
+      ? validateEditorAdapterPlugin(normalized as EditorAdapterPlugin)
+      : validateUploaderPlugin(normalized as UploaderPlugin)
 
   if (detailError) {
     return { valid: false, error: detailError }

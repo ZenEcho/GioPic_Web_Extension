@@ -1,0 +1,15 @@
+{
+  "id": "builtin.editor-adapter.CodeMirror6",
+  "kind": "editor-adapter",
+  "name": "CodeMirror 6",
+  "version": "1.0.0",
+  "author": "GioPic",
+  "description": "Built-in editor adapter for CodeMirror 6.",
+  "enabled": true,
+  "editorAdapter": {
+    "editorType": "CodeMirror6",
+    "displayName": "CodeMirror 6",
+    "detectScript": "()=>detectBySelector(\".cm-editor\",\"CodeMirror6\")",
+    "injectScript": "url=>{let cm=document.querySelector(\".cm-content\");if(cm){let item=document.createElement(\"div\");item.className=\"cm-line\";item.dir=\"auto\";item.innerText=\"![image](\"+url+\")\";cm.appendChild(item);return true}return false}"
+  }
+}

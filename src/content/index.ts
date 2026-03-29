@@ -19,7 +19,7 @@ import ContentOverlay from './components/ContentOverlay.vue'
 import browser from 'webextension-polyfill'
 import { broadcastInjectMessage } from './utils/injector'
 import { PLUGIN_MARKET_PERMISSION_DENIED_ERROR } from '@/constants/pluginMarketAccess'
-import type { PluginMeta } from '@/types'
+import { isEditorAdapterPlugin, type EditorAdapterPlugin, type PluginMeta } from '@/types'
 import {
     getPluginMarketAllowAllSites,
     getPluginMarketAuthorizedSites,
@@ -29,6 +29,30 @@ import {
 import pkg from '../../package.json'
 import 'virtual:uno.css'
 import './style.css'
+
+async function fetchInstalledEditorAdapterPlugins(): Promise<EditorAdapterPlugin[]> {
+    try {
+        const response = await browser.runtime.sendMessage({
+            type: 'GET_INSTALLED_PLUGINS'
+        }) as { success?: boolean; plugins?: PluginMeta[]; error?: string }
+
+        if (response?.success === false) {
+            throw new Error(response.error || 'Failed to load installed plugins')
+        }
+
+        return Array.isArray(response?.plugins)
+            ? response.plugins.filter(isEditorAdapterPlugin).filter(plugin => plugin.enabled !== false)
+            : []
+    } catch (error) {
+        console.warn('[GioPic] Failed to fetch editor adapter plugins:', error)
+        return []
+    }
+}
+
+async function syncEditorAdapterPluginsToPage(targetOrigin: string = '*') {
+    const plugins = await fetchInstalledEditorAdapterPlugins()
+    postPageMessage('GIOPIC_SYNC_EDITOR_PLUGINS', { plugins }, targetOrigin)
+}
 
 /**
  * 注入页面级资源包（JS/CSS）
@@ -40,7 +64,10 @@ function injectPageBundle() {
     const doc = document
     const root = doc.documentElement
     if (!root) return
-    if (root.hasAttribute('data-giopic-page-bundle')) return // 已注入则不重复
+    if (root.hasAttribute('data-giopic-page-bundle')) {
+        void syncEditorAdapterPluginsToPage()
+        return
+    }
     root.setAttribute('data-giopic-page-bundle', 'true') // 标记页面已注入
 
     // 同步 hover preview 设置
@@ -125,6 +152,9 @@ function injectPageBundle() {
     script.type = 'text/javascript'
     script.src = scriptSrc
     script.setAttribute('data-giopic-page-script', 'true')
+    script.addEventListener('load', () => {
+        void syncEditorAdapterPluginsToPage()
+    }, { once: true })
     headOrRoot.appendChild(script)
 }
 
@@ -195,6 +225,7 @@ browser.runtime.onMessage.addListener(async (message: any) => {
         window.postMessage({
             type: 'GIOPIC_PLUGINS_UPDATED'
         }, '*');
+        await syncEditorAdapterPluginsToPage()
     }
 })
 
@@ -204,8 +235,11 @@ window.addEventListener('message', async (event) => {
 
     const data = event.data;
     if (!data) return;
+    if (data.type === 'GIOPIC_PAGE_READY') {
+        await syncEditorAdapterPluginsToPage(getPageMessageTargetOrigin(getPageMessageOrigin(event)))
+    }
     //监听来自网页的编辑器状态更新消息 (Editor Binding)
-    if (data.type === 'GIOPIC_EDITOR_SUCCESS') {
+    else if (data.type === 'GIOPIC_EDITOR_SUCCESS') {
         const { hostname, editorType } = data;
         if (hostname && editorType) {
             const res = await browser.storage.local.get('siteEditorConfig');

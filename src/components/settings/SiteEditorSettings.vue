@@ -161,11 +161,11 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, computed } from "vue";
+import { computed, onMounted, onUnmounted, ref } from "vue";
 import browser from "webextension-polyfill";
 import { useI18n } from "vue-i18n";
 import { useMessage } from "naive-ui";
-import { EDITOR_META } from "@/content/page/EditorInjector/meta";
+import { usePluginStore } from "@/stores/plugin";
 
 const props = defineProps<{
     show: boolean
@@ -177,6 +177,7 @@ const emit = defineEmits<{
 
 const { t } = useI18n();
 const message = useMessage();
+const pluginStore = usePluginStore();
 
 // 状态定义
 const siteEditorConfig = ref<Record<string, string>>({});
@@ -189,7 +190,27 @@ const newEnableFloatingBall = ref(true);
 const newEnablePreview = ref(true);
 const searchText = ref('');
 
-const editorOptions = EDITOR_META.map(meta => ({ label: meta.name, value: meta.id }));
+const editorOptions = computed(() => {
+    const enabledEditorPlugins = pluginStore.editorAdapterPlugins.filter(plugin => plugin.enabled !== false);
+    const options = new Map(
+        enabledEditorPlugins.map(plugin => [
+            plugin.editorAdapter.editorType,
+            {
+                label: plugin.editorAdapter.displayName || plugin.name || plugin.editorAdapter.editorType,
+                value: plugin.editorAdapter.editorType,
+            },
+        ]),
+    );
+
+
+    Object.values(siteEditorConfig.value).forEach((editorType) => {
+        if (editorType && !options.has(editorType)) {
+            options.set(editorType, { label: editorType, value: editorType });
+        }
+    });
+
+    return Array.from(options.values());
+});
 
 // 计算属性
 // 合并所有配置来源（编辑器绑定、禁用悬浮球列表、禁用预览列表）以生成完整域名列表
@@ -229,27 +250,30 @@ const loadConfig = async () => {
     disabledPreviewSites.value = Array.isArray(res.preview_disabled_sites) ? res.preview_disabled_sites : [];
 };
 
-onMounted(() => {
-    loadConfig();
-    
-    // 监听 localStorage 变化，实时更新配置状态
-    const handleStorageChange = (changes: any, area: string) => {
-        if (area === 'local') {
-            if (changes.siteEditorConfig) {
-                siteEditorConfig.value = (changes.siteEditorConfig.newValue as Record<string, string>) || {};
-            }
-            if (changes.sidebar_disabled_sites) {
-                const newVal = changes.sidebar_disabled_sites.newValue;
-                disabledBallSites.value = Array.isArray(newVal) ? newVal : [];
-            }
-            if (changes.preview_disabled_sites) {
-                const newVal = changes.preview_disabled_sites.newValue;
-                disabledPreviewSites.value = Array.isArray(newVal) ? newVal : [];
-            }
+const handleStorageChange = (changes: any, area: string) => {
+    if (area === 'local') {
+        if (changes.siteEditorConfig) {
+            siteEditorConfig.value = (changes.siteEditorConfig.newValue as Record<string, string>) || {};
         }
-    };
-    
+        if (changes.sidebar_disabled_sites) {
+            const newVal = changes.sidebar_disabled_sites.newValue;
+            disabledBallSites.value = Array.isArray(newVal) ? newVal : [];
+        }
+        if (changes.preview_disabled_sites) {
+            const newVal = changes.preview_disabled_sites.newValue;
+            disabledPreviewSites.value = Array.isArray(newVal) ? newVal : [];
+        }
+    }
+};
+
+onMounted(() => {
+    void pluginStore.loadPlugins();
+    void loadConfig();
     browser.storage.onChanged.addListener(handleStorageChange);
+});
+
+onUnmounted(() => {
+    browser.storage.onChanged.removeListener(handleStorageChange);
 });
 
 // 操作方法

@@ -1,0 +1,15 @@
+{
+  "id": "builtin.editor-adapter.Tiptap",
+  "kind": "editor-adapter",
+  "name": "Tiptap",
+  "version": "1.0.0",
+  "author": "GioPic",
+  "description": "Built-in editor adapter for Tiptap.",
+  "enabled": true,
+  "editorAdapter": {
+    "editorType": "Tiptap",
+    "displayName": "Tiptap",
+    "detectScript": "()=>detectBySelector(\".tiptap.ProseMirror\",\"Tiptap\",.9)",
+    "injectScript": "url=>{const container=document.querySelector(\".tiptap.ProseMirror\");const editor=window.editor||container?.__tiptapEditor||container?.editor;if(!editor){console.error(\"\\u672A\\u627E\\u5230\\u7F16\\u8F91\\u5668\\u5B9E\\u4F8B\");return false}try{if(typeof editor.commands.setImage===\"function\"){editor.chain().focus().setImage({src:url}).run();return true}editor.commands.insertContent(`<img src=\"${url}\" />`);editor.commands.focus();return true}catch(err){console.error(\"\\u63D2\\u5165\\u56FE\\u7247\\u5931\\u8D25:\",err);return false}}"
+  }
+}

@@ -1,0 +1,15 @@
+{
+  "id": "org.example.editor-adapter.contenteditable-template",
+  "kind": "editor-adapter",
+  "name": "Example Contenteditable Editor Adapter",
+  "version": "1.0.0",
+  "author": "GioPic",
+  "description": "Template for a custom page editor that uses a contenteditable root. Update the hostname, selector, and insertion logic before using it on a real site.",
+  "icon": "i-ph-pencil-simple-line-duotone",
+  "editorAdapter": {
+    "editorType": "ExampleContentEditable",
+    "displayName": "Example ContentEditable",
+    "detectScript": "function() {\n  // Keep the match narrow so the template does not accidentally claim unrelated pages.\n  if (window.location.hostname !== 'example.com') {\n    return null;\n  }\n\n  const root = document.querySelector('#your-editor-root[contenteditable=\"true\"]');\n  if (!root) {\n    return null;\n  }\n\n  return {\n    type: 'ExampleContentEditable',\n    certainty: 1,\n    source: 'selector: #your-editor-root[contenteditable=\"true\"]'\n  };\n}",
+    "injectScript": "function(url) {\n  const root = document.querySelector('#your-editor-root[contenteditable=\"true\"]');\n  if (!root) {\n    return false;\n  }\n\n  root.focus();\n\n  const imgHtml = '<img src=\"' + url + '\" alt=\"image\" />';\n\n  // First try the simple browser insertion path. Many legacy editors still support it.\n  if (typeof document.execCommand === 'function') {\n    const success = document.execCommand('insertHTML', false, imgHtml);\n    if (success) {\n      root.dispatchEvent(new Event('input', { bubbles: true }));\n      root.dispatchEvent(new Event('change', { bubbles: true }));\n      return true;\n    }\n  }\n\n  // Fallback: insert into the current selection manually.\n  const selection = window.getSelection();\n  if (!selection || selection.rangeCount === 0) {\n    root.insertAdjacentHTML('beforeend', imgHtml);\n    root.dispatchEvent(new Event('input', { bubbles: true }));\n    root.dispatchEvent(new Event('change', { bubbles: true }));\n    return true;\n  }\n\n  const range = selection.getRangeAt(0);\n  range.deleteContents();\n  const wrapper = document.createElement('div');\n  wrapper.innerHTML = imgHtml;\n  const imageNode = wrapper.firstChild;\n  if (!imageNode) {\n    return false;\n  }\n\n  range.insertNode(imageNode);\n  range.setStartAfter(imageNode);\n  range.collapse(true);\n  selection.removeAllRanges();\n  selection.addRange(range);\n\n  root.dispatchEvent(new Event('input', { bubbles: true }));\n  root.dispatchEvent(new Event('change', { bubbles: true }));\n  return true;\n}"
+  }
+}

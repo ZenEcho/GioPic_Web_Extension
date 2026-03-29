@@ -1,0 +1,15 @@
+{
+  "id": "builtin.editor-adapter.milkdown",
+  "kind": "editor-adapter",
+  "name": "Milkdown",
+  "version": "1.0.0",
+  "author": "GioPic",
+  "description": "Built-in editor adapter for Milkdown.",
+  "enabled": true,
+  "editorAdapter": {
+    "editorType": "milkdown",
+    "displayName": "Milkdown",
+    "detectScript": "()=>detectBySelector(\".milkdown\",\"milkdown\",.9)",
+    "injectScript": "url=>{try{const editor=document.querySelector(\".milkdown .ProseMirror\")||document.querySelector(\".milkdown\");if(editor){editor.focus();const text=`![](${url})`;const dataTransfer=new DataTransfer;dataTransfer.setData(\"text/plain\",text);const event=new ClipboardEvent(\"paste\",{clipboardData:dataTransfer,bubbles:true,cancelable:true});editor.dispatchEvent(event);return true}return false}catch{return false}}"
+  }
+}

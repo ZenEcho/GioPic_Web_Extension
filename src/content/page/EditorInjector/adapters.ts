@@ -29,7 +29,7 @@ import type {
  * @param id 编辑器 ID
  * @param certainty 置信度 (默认为 0.8)
  */
-function detectBySelector(selector: string, id: any, certainty: number = 0.8): DetectionResult | null {
+export function detectBySelector(selector: string, id: any, certainty: number = 0.8): DetectionResult | null {
     return document.querySelector(selector) ? { type: id, certainty, source: `selector: ${selector}` } : null;;
 }
 
@@ -39,7 +39,7 @@ function detectBySelector(selector: string, id: any, certainty: number = 0.8): D
  * @param id 编辑器 ID
  * @param certainty 置信度 (默认为 0.9)
  */
-function detectById(elementId: string, id: any, certainty: number = 0.9): DetectionResult | null {
+export function detectById(elementId: string, id: any, certainty: number = 0.9): DetectionResult | null {
     return document.getElementById(elementId) ? { type: id, certainty, source: `id: ${elementId}` } : null;
 }
 
@@ -49,7 +49,7 @@ function detectById(elementId: string, id: any, certainty: number = 0.9): Detect
  * @param id 编辑器 ID
  * @param certainty 置信度 (默认为 1.0)
  */
-function detectByDomain(domain: string, id: any, certainty: number = 1.0): DetectionResult | null {
+export function detectByDomain(domain: string, id: any, certainty: number = 1.0): DetectionResult | null {
     return window.location.hostname.includes(domain) ? { type: id, certainty, source: `domain: ${domain}` } : null;
 }
 
@@ -57,7 +57,7 @@ function detectByDomain(domain: string, id: any, certainty: number = 1.0): Detec
  * CodeMirror 5 的通用注入实现
  * @param url 图片 URL
  */
-function handleCodeMirror5Impl(url: string): boolean {
+export function handleCodeMirror5Impl(url: string): boolean {
     let editorElement = document.querySelector(".CodeMirror") as CodeMirrorElementType | null;
     if (editorElement && editorElement.CodeMirror) {
         const content = editorElement.CodeMirror.getValue();

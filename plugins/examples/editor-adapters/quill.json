@@ -1,0 +1,15 @@
+{
+  "id": "builtin.editor-adapter.Quill",
+  "kind": "editor-adapter",
+  "name": "Quill",
+  "version": "1.0.0",
+  "author": "GioPic",
+  "description": "Built-in editor adapter for Quill.",
+  "enabled": true,
+  "editorAdapter": {
+    "editorType": "Quill",
+    "displayName": "Quill",
+    "detectScript": "()=>detectBySelector(\".ql-editor\",\"Quill\",.9)",
+    "injectScript": "url=>{const container=document.querySelector(\".ql-container\");const win=container?.ownerDocument?.defaultView||window;const quill=win.myQuill||container?.__quill||container?._quill||container?.quill;try{if(quill){const range=quill.getSelection(true);const index=range?range.index:quill.getLength();quill.insertEmbed(index,\"image\",url,\"user\");quill.setSelection(index+1,\"user\");return true}if(container){container.focus();const imgHtml=`<img src=\"${url}\" />`;const success=document.execCommand(\"insertHTML\",false,imgHtml);return success}return false}catch(error){console.error(\"Quill \\u6CE8\\u5165\\u5931\\u8D25:\",error);return false}}"
+  }
+}

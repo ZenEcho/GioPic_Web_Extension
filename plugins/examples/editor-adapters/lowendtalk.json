@@ -1,0 +1,15 @@
+{
+  "id": "builtin.editor-adapter.lowendtalk",
+  "kind": "editor-adapter",
+  "name": "LowEndTalk",
+  "version": "1.0.0",
+  "author": "GioPic",
+  "description": "Built-in editor adapter for LowEndTalk.",
+  "enabled": true,
+  "editorAdapter": {
+    "editorType": "lowendtalk",
+    "displayName": "LowEndTalk",
+    "detectScript": "()=>detectByDomain(\"lowendtalk.com\",\"lowendtalk\")",
+    "injectScript": "url=>{const editor=document.getElementById(\"Form_Body\");if(editor){editor.value+=\"![image](\"+url+\")\";return true}return false}"
+  }
+}

@@ -3,12 +3,13 @@
 本文档描述 GioPic 扩展与外部网页（如插件市场）之间的通讯协议。
 
 这次插件系统升级后，**网页与扩展之间的消息类型没有变**，但 `plugin` / `PluginMeta` 的载荷结构已经扩展为：
-- 新增顶层 `kind`（`uploader | site-detector`）
+- 新增顶层 `kind`（`uploader | site-detector | editor-adapter`）
 - 支持更丰富的输入类型
 - 支持字段级条件显示 / 禁用
 - 支持配置阶段动态数据源 `dataSource`
 - 支持配置脚本 `uploader.inputs[].dataSource.script`
 - 支持 detector 脚本 `detector.detectScript` / `detector.extractScript`
+- 支持 editor-adapter 脚本 `editorAdapter.detectScript` / `editorAdapter.injectScript`
 
 因此，市场代码现在最重要的约束不是“消息怎么发”，而是“**安装时必须把完整插件 JSON 原样发给扩展**”。
 
@@ -64,7 +65,7 @@ POST /plugins/:id/download
 非授权站点的行为：
 
 - `GIOPIC_GET_INSTALLED_PLUGINS` 仍可调用
-- 但只会返回**基础摘要**，不会暴露 `uploader.script`、`detector.detectScript`、`detector.extractScript` 等完整运行时代码
+- 但只会返回**基础摘要**，不会暴露 `uploader.script`、`detector.detectScript`、`detector.extractScript`、`editorAdapter.detectScript`、`editorAdapter.injectScript` 等完整运行时代码
 - `GIOPIC_INSTALL_PLUGIN`、`GIOPIC_TOGGLE_PLUGIN`、`GIOPIC_UNINSTALL_PLUGIN` 都会被拒绝
 - 拒绝时返回：
 
@@ -152,7 +153,7 @@ window.postMessage({
 | 字段 | 必填 | 说明 |
 | --- | --- | --- |
 | `id` | 是 | 插件唯一 ID |
-| `kind` | 建议必填 | `uploader` 或 `site-detector`；历史缺失值按 `uploader` 兼容 |
+| `kind` | 建议必填 | `uploader`、`site-detector` 或 `editor-adapter`；历史缺失值按 `uploader` 兼容 |
 | `name` | 是 | 插件名 |
 | `version` | 是 | 版本号 |
 
@@ -172,6 +173,16 @@ window.postMessage({
 | `detector.targetDriveType` | 是 | 最终要写入 GioPic 的图床类型 |
 | `detector.detectScript` | 是 | 检测脚本，签名 `async function(ctx)` |
 | `detector.extractScript` | 是 | 提取脚本，签名 `async function(ctx, form, state)` |
+
+`editor-adapter` 必填字段：
+
+| 字段 | 必填 | 说明 |
+| --- | --- | --- |
+| `editorAdapter` | 是 | 必须是对象 |
+| `editorAdapter.editorType` | 是 | 编辑器类型 ID |
+| `editorAdapter.displayName` | 是 | 编辑器显示名称 |
+| `editorAdapter.detectScript` | 是 | 检测脚本字符串，字段值本身必须是函数源码 |
+| `editorAdapter.injectScript` | 是 | 注入脚本字符串，字段值本身必须是函数源码 |
 
 ### 2.3 `uploader.inputs` 扩展能力
 
@@ -267,7 +278,10 @@ interface SiteDetectorPlugin {
 - `detector.extractScript`：可返回配置对象，或 `{ config, successText }`。
 - 同分决策：总分相同场景下保留先遍历到的插件。
 
-如需完整字段说明与示例，见 [plugins/plugin_dev_guide.md](./plugin_dev_guide.md) 第 11.5 节。
+如需完整字段说明与示例，见：
+
+- [插件开发总览](./plugin_dev_guide.md)
+- [Site Detector 插件开发指南](./site_detector_plugin_dev_guide.md)
 
 ### 2.5 市场侧必须保留的“可执行字符串”
 
@@ -276,6 +290,8 @@ interface SiteDetectorPlugin {
 - `plugin.uploader.inputs[].dataSource.script`
 - `plugin.detector.detectScript`
 - `plugin.detector.extractScript`
+- `plugin.editorAdapter.detectScript`
+- `plugin.editorAdapter.injectScript`
 
 市场代码必须：
 - 原样保留字符串内容
@@ -446,6 +462,7 @@ window.addEventListener('message', (event) => {
 - `kind`
 - `uploader`：`uploader.inputs`、`dataSource`、`visibleWhen` / `disabledWhen`、`uploader.script`
 - `site-detector`：`detector.targetDriveType`、`detector.match`、`detector.presentation`、`detector.actionForm`、`detector.detectScript`、`detector.extractScript`
+- `editor-adapter`：`editorAdapter.editorType`、`editorAdapter.displayName`、`editorAdapter.detectScript`、`editorAdapter.injectScript`
 
 否则审核人员会看到“这个插件只有几个字段”，但实际运行时还有可执行脚本，判断会失真。
 
@@ -455,9 +472,10 @@ window.addEventListener('message', (event) => {
 - 新输入类型：`textarea` / `number` / `switch` / `kv-pairs`
 - 联动规则：`visibleWhen` / `disabledWhen`
 - 动态数据源：`dataSource`
-- `kind` 分流：`uploader` / `site-detector`
-- 多脚本模型：`uploader.script`、`uploader.inputs[].dataSource.script`、`detector.detectScript`、`detector.extractScript`
+- `kind` 分流：`uploader` / `site-detector` / `editor-adapter`
+- 多脚本模型：`uploader.script`、`uploader.inputs[].dataSource.script`、`detector.detectScript`、`detector.extractScript`、`editorAdapter.detectScript`、`editorAdapter.injectScript`
 - detector 专属字段：`detector.targetDriveType`、`detector.match`、`detector.presentation`、`detector.actionForm`
+- editor-adapter 专属字段：`editorAdapter.editorType`、`editorAdapter.displayName`、`editorAdapter.detectScript`、`editorAdapter.injectScript`
 
 如果暂时不做可视化编辑，至少要保留一个“完整 JSON 编辑器”。
 
@@ -517,8 +535,8 @@ window.addEventListener('message', (event) => {
 你接下来改插件市场代码时，至少要同步这几件事：
 
 1. 安装载荷不要再自己拼，直接发完整 `content`。
-2. 校验逻辑改为按 `kind` 分流：`uploader` 校验 `uploader.script/uploader.inputs`，`site-detector` 校验 `detector.targetDriveType/detector.detectScript/detector.extractScript`。
-3. 详情页 / 审核页需要能区分两类插件字段，不再只展示 uploader 字段。
-4. 可执行字符串统一按“原样透传”处理：`uploader.script`、`uploader.inputs[].dataSource.script`、`detector.detectScript`、`detector.extractScript`。
+2. 校验逻辑改为按 `kind` 分流：`uploader` 校验 `uploader.script/uploader.inputs`，`site-detector` 校验 `detector.targetDriveType/detector.detectScript/detector.extractScript`，`editor-adapter` 校验 `editorAdapter.editorType/editorAdapter.displayName/editorAdapter.detectScript/editorAdapter.injectScript`。
+3. 详情页 / 审核页需要能区分三类插件字段，不再只展示 uploader 字段。
+4. 可执行字符串统一按“原样透传”处理：`uploader.script`、`uploader.inputs[].dataSource.script`、`detector.detectScript`、`detector.extractScript`、`editorAdapter.detectScript`、`editorAdapter.injectScript`。
 5. 如果有在线编辑器，至少要支持 `kind` 切换和对应 schema 的可视化/JSON 编辑。
 

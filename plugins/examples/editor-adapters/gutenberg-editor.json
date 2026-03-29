@@ -1,0 +1,15 @@
+{
+  "id": "builtin.editor-adapter.GutenbergEditor",
+  "kind": "editor-adapter",
+  "name": "WordPress Gutenberg",
+  "version": "1.0.0",
+  "author": "GioPic",
+  "description": "Built-in editor adapter for WordPress Gutenberg.",
+  "enabled": true,
+  "editorAdapter": {
+    "editorType": "GutenbergEditor",
+    "displayName": "WordPress Gutenberg",
+    "detectScript": "()=>{const gutenberg=document.getElementById(\"wpbody-content\");const footer=document.getElementsByClassName(\"interface-interface-skeleton__footer\");return gutenberg&&footer.length?{type:\"GutenbergEditor\",certainty:.9,source:\"id: wpbody-content\"}:null}",
+    "injectScript": "url=>{try{const dispatch=window.wp?.data.dispatch(\"core/block-editor\");if(dispatch){const imageBlock=window.wp?.blocks.createBlock(\"core/image\",{url});dispatch.insertBlock(imageBlock);return true}return false}catch{return false}}"
+  }
+}

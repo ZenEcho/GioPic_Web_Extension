@@ -1,0 +1,15 @@
+{
+  "id": "builtin.editor-adapter.Slatejs",
+  "kind": "editor-adapter",
+  "name": "Slatejs",
+  "version": "1.0.0",
+  "author": "GioPic",
+  "description": "Built-in editor adapter for Slatejs.",
+  "enabled": true,
+  "editorAdapter": {
+    "editorType": "Slatejs",
+    "displayName": "Slatejs",
+    "detectScript": "()=>{const editor=findSlateEditor();return editor?{type:\"Slatejs\",certainty:.95,source:\"Slatejs \\u7F16\\u8F91\\u5668\\u5B9E\\u4F8B\"}:null}",
+    "injectScript": "url=>{try{const editor=findSlateEditor();if(!editor)return false;const imageNode={type:\"image\",url,children:[{text:\"\"}]};editor.apply({type:\"insert_node\",path:[editor.children.length],node:imageNode});return true}catch(err){console.error(\"Slatejs \\u6CE8\\u5165\\u5931\\u8D25:\",err);return false}}"
+  }
+}

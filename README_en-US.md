@@ -96,15 +96,17 @@ After installing the matching `site-detector` plugin, the detector can recognize
 ### Plugin Management & Marketplace
 
 1. Open the main UI, go to `Settings`, then enter the plugin manager page.
-2. In "Installed Plugins", you can filter `uploader / site-detector`, toggle plugins, inspect config fields, and view full JSON payloads.
+2. In "Installed Plugins", you can filter `uploader / site-detector / editor-adapter`, toggle plugins, inspect config fields, and view full JSON payloads.
 3. In "Online Marketplace", you can review versions, authors, download counts, then install or update plugins directly.
 4. For local detector testing, you can import files from `plugins/examples/site-detectors/*.json`.
 
 ## 📚 Docs Index
 
 - [Unified Plugin Architecture](./plugins/plugin_architecture.md)
-- [Site Detector Architecture](./plugins/site_detector_plugin_architecture.md)
-- [Plugin Development Guide](./plugins/plugin_dev_guide.md)
+- [Plugin Development Overview](./plugins/plugin_dev_guide.md)
+- [Uploader Plugin Development Guide](./plugins/uploader_plugin_dev_guide.md)
+- [Site Detector Plugin Development Guide](./plugins/site_detector_plugin_dev_guide.md)
+- [Editor Adapter Plugin Development Guide](./plugins/editor_adapter_plugin_dev_guide.md)
 - [Plugin Marketplace Bridge API](./plugins/plugin_market_api.md)
 
 ## 🧑‍💻 Development Guide
@@ -154,9 +156,10 @@ You can extend storage support in two ways:
 
 No need to modify the source code. Just write a plugin file in JSON format.
 
-- For uploader plugins, see: [Plugin System Architecture](./plugins/plugin_architecture.md)
-- For site detectors, see: [Site Detector Architecture](./plugins/site_detector_plugin_architecture.md)
-- For fields and script signatures, see: [Plugin Development Guide](./plugins/plugin_dev_guide.md)
+- For uploader plugins, see: [Uploader Plugin Development Guide](./plugins/uploader_plugin_dev_guide.md)
+- For site detectors, see: [Site Detector Plugin Development Guide](./plugins/site_detector_plugin_dev_guide.md)
+- For editor adapters, see: [Editor Adapter Plugin Development Guide](./plugins/editor_adapter_plugin_dev_guide.md)
+- For shared fields, script packaging rules, and doc navigation, see: [Plugin Development Overview](./plugins/plugin_dev_guide.md)
 - For the online marketplace payload format, see: [Plugin Marketplace Bridge API](./plugins/plugin_market_api.md)
 
 #### 2. Native Integration

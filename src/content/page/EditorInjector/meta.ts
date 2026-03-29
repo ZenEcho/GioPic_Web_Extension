@@ -3,40 +3,12 @@
  * @description 编辑器元数据定义
  * 
  * 职责：
- * 1. 定义所有支持的编辑器类型枚举
+ * 1. 定义编辑器类型和内置编辑器元数据
  * 2. 提供编辑器显示名称映射 (EDITOR_META)
- * 3. 维护编辑器列表的顺序
+ * 3. 支持与 editor-adapter 插件元数据合并
  */
 
-export type EditorType =
-    | 'nodeseek'
-    | 'V2EX'
-    | 'lowendtalk'
-    | 'Discuz'
-    | 'Typecho'
-    | 'Halo'
-    | 'phpBB'
-    | 'CodeMirror5'
-    | 'CodeMirror6'
-    | 'GutenbergEditor'
-    | 'TinyMCE'
-    | 'wangEditor'
-    | 'CKEditor4'
-    | 'CKEditor5'
-    | 'UEditor'
-    | 'ProseMirror'
-    | 'milkdown'
-    | 'Quill'
-    | 'Tiptap'
-    | 'Editorjs'
-    | 'Summernote'
-    | 'Lexical'
-    | 'Trix'
-    | 'MediumEditor'
-    | 'Platejs'
-    | 'Slatejs'
-    | 'Blocknotejs'
-    | 'unknown';
+export type EditorType = string & {}
 
 export interface EditorMeta {
     id: EditorType;
@@ -77,3 +49,33 @@ export const EDITOR_META: EditorMeta[] = [
     { id: 'Blocknotejs', name: 'Blocknotejs' },
     // { id: 'unknown', name: '未知编辑器' },
 ];
+
+interface EditorMetaPluginLike {
+    name?: string;
+    editorAdapter: {
+        editorType?: string;
+        displayName?: string;
+    };
+}
+
+export function mergeEditorMeta(plugins: EditorMetaPluginLike[] = []): EditorMeta[] {
+    const merged = new Map<string, EditorMeta>()
+
+    for (const meta of EDITOR_META) {
+        merged.set(meta.id, meta)
+    }
+
+    for (const plugin of plugins) {
+        const editorType = plugin.editorAdapter.editorType?.trim()
+        if (!editorType) {
+            continue
+        }
+
+        merged.set(editorType, {
+            id: editorType,
+            name: plugin.editorAdapter.displayName?.trim() || plugin.name?.trim() || editorType,
+        })
+    }
+
+    return Array.from(merged.values())
+}

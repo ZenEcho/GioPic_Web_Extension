@@ -1,0 +1,15 @@
+{
+  "id": "builtin.editor-adapter.CodeMirror5",
+  "kind": "editor-adapter",
+  "name": "CodeMirror 5",
+  "version": "1.0.0",
+  "author": "GioPic",
+  "description": "Built-in editor adapter for CodeMirror 5.",
+  "enabled": true,
+  "editorAdapter": {
+    "editorType": "CodeMirror5",
+    "displayName": "CodeMirror 5",
+    "detectScript": "()=>detectBySelector(\".CodeMirror\",\"CodeMirror5\")",
+    "injectScript": "function handleCodeMirror5Impl(url){let editorElement=document.querySelector(\".CodeMirror\");if(editorElement&&editorElement.CodeMirror){const content=editorElement.CodeMirror.getValue();const newContent=content+`![image](${url})`;editorElement.CodeMirror.setValue(newContent);return true}return false}"
+  }
+}

@@ -1,0 +1,15 @@
+{
+  "id": "builtin.editor-adapter.Blocknotejs",
+  "kind": "editor-adapter",
+  "name": "Blocknotejs",
+  "version": "1.0.0",
+  "author": "GioPic",
+  "description": "Built-in editor adapter for Blocknotejs.",
+  "enabled": true,
+  "editorAdapter": {
+    "editorType": "Blocknotejs",
+    "displayName": "Blocknotejs",
+    "detectScript": "()=>{const editor=findBlocknoteEditor();return editor?{type:\"Blocknotejs\",certainty:.96,source:\"Blocknotejs \\u7F16\\u8F91\\u5668\\u5B9E\\u4F8B\"}:null}",
+    "injectScript": "url=>{try{const editor=findBlocknoteEditor();if(!editor)return false;editor.insertBlocks([{type:\"image\",props:{url,caption:\"image\",showPreview:true}}],editor.getTextCursorPosition().block,\"after\");return true}catch(err){console.error(\"Blocknotejs \\u6CE8\\u5165\\u5931\\u8D25:\",err);return false}}"
+  }
+}

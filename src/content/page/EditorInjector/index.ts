@@ -9,7 +9,7 @@
  * 4. 提供编辑器加载完成的检测机制 (detectWhenReady)
  */
 
-import { adapters } from './adapters';
+import { editorAdapterRegistry } from './pluginRuntime';
 import type { InjectableDetectionResult, EditorType } from './types';
 
 export class Detector {
@@ -20,7 +20,7 @@ export class Detector {
     static detect(): InjectableDetectionResult[] {
         const results: InjectableDetectionResult[] = [];
 
-        for (const adapter of adapters) {
+        for (const adapter of editorAdapterRegistry.getAdapters()) {
             try {
                 const result = adapter.detect();
                 if (result) {
@@ -104,7 +104,7 @@ export class Detector {
     static async inject(url: string, preferredType?: EditorType): Promise<boolean> {
         // 1. 如果指定了首选编辑器，优先尝试
         if (preferredType) {
-            const adapter = adapters.find(a => a.id === preferredType);
+            const adapter = editorAdapterRegistry.getAdapters().find(a => a.id === preferredType);
             if (adapter) {
                 console.log(`[Detector] Using preferred adapter: ${preferredType}`);
                 try {
@@ -174,6 +174,12 @@ export class Detector {
             
             if (!isSafeSource) return;
 
+            if (event.data?.type === 'GIOPIC_SYNC_EDITOR_PLUGINS' && Array.isArray(event.data?.plugins)) {
+                editorAdapterRegistry.syncPlugins(event.data.plugins);
+                console.log('[Detector] Editor adapter plugins synced:', event.data.plugins.length);
+                return;
+            }
+
             if (event.data?.type === 'GIOPIC_INJECT' && event.data?.url) {
                 console.log('[Detector] 收到注入请求:', {
                     url: event.data.url, // 图片 URL
@@ -184,6 +190,11 @@ export class Detector {
                 await this.inject(event.data.url, event.data.preferredType);
             }
         });
+
+        window.postMessage({
+            type: 'GIOPIC_PAGE_READY',
+            href: window.location.href
+        }, '*');
     }
 }
 

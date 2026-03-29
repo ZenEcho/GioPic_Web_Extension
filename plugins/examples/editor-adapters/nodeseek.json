@@ -1,0 +1,15 @@
+{
+  "id": "builtin.editor-adapter.nodeseek",
+  "kind": "editor-adapter",
+  "name": "NodeSeek",
+  "version": "1.0.0",
+  "author": "GioPic",
+  "description": "Built-in editor adapter for NodeSeek.",
+  "enabled": true,
+  "editorAdapter": {
+    "editorType": "nodeseek",
+    "displayName": "NodeSeek",
+    "detectScript": "()=>detectByDomain(\"nodeseek.com\",\"nodeseek\")",
+    "injectScript": "url=>handleCodeMirror5Impl(url)"
+  }
+}

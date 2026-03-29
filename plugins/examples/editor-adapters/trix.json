@@ -1,0 +1,15 @@
+{
+  "id": "builtin.editor-adapter.Trix",
+  "kind": "editor-adapter",
+  "name": "Trix",
+  "version": "1.0.0",
+  "author": "GioPic",
+  "description": "Built-in editor adapter for Trix.",
+  "enabled": true,
+  "editorAdapter": {
+    "editorType": "Trix",
+    "displayName": "Trix",
+    "detectScript": "()=>{const editor=document.querySelector(\".trix-content\")?.editor;return editor?{type:\"Trix\",certainty:.95,source:\"Trix \\u7F16\\u8F91\\u5668\\u5B9E\\u4F8B\"}:null}",
+    "injectScript": "url=>{const el=document.querySelector(\".trix-content\");const editor=el?.editor;if(!el||!editor)return false;try{const Trix=window.Trix;if(!Trix||!Trix.Attachment){console.error(\"Trix \\u672A\\u52A0\\u8F7D\\u6216\\u7248\\u672C\\u4E0D\\u517C\\u5BB9\");return false}const attachment=new Trix.Attachment({contentType:\"image/png\",url,filename:url.split(\"/\").pop()||\"image.png\"});editor.insertAttachment(attachment);;return true}catch(err){console.error(\"Trix \\u6CE8\\u5165\\u5931\\u8D25:\",err);return false}}"
+  }
+}

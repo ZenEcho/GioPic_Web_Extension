@@ -9,7 +9,7 @@ import { setupContextMenus } from './services/contextMenu'
 import { getOpenMode, updateActionBehavior } from './services/actionManager'
 import { handleMessage, startAuthTokenMonitor } from './services/messageService'
 import { getDefaultSettings } from '../constants/defaultSettings'
-import { BUNDLED_PLUGINS, BUNDLED_SITE_DETECTOR_MIGRATION_KEY } from '@/constants/bundledPlugins'
+import { BUNDLED_PLUGIN_MIGRATION_KEY, BUNDLED_PLUGINS } from '@/constants/bundledPlugins'
 import { seedBundledPluginsOnce } from '@/utils/pluginCore'
 
 const POPUP_URL = 'index.html'
@@ -19,7 +19,7 @@ const SIDE_PANEL_PATH = 'index.html'
 updateActionBehavior()
 setupContextMenus()
 startAuthTokenMonitor()
-void seedBundledPluginsOnce(BUNDLED_PLUGINS, BUNDLED_SITE_DETECTOR_MIGRATION_KEY)
+void seedBundledPluginsOnce(BUNDLED_PLUGINS, BUNDLED_PLUGIN_MIGRATION_KEY)
 
 browser.runtime.onMessage.addListener(handleMessage)
 
@@ -99,10 +99,10 @@ browser.runtime.onInstalled.addListener(async (details) => {
     await browser.storage.local.set(getDefaultSettings())
   }
 
-  await seedBundledPluginsOnce(BUNDLED_PLUGINS, BUNDLED_SITE_DETECTOR_MIGRATION_KEY)
+  await seedBundledPluginsOnce(BUNDLED_PLUGINS, BUNDLED_PLUGIN_MIGRATION_KEY)
 })
 
 browser.runtime.onStartup.addListener(() => {
   setupContextMenus()
-  void seedBundledPluginsOnce(BUNDLED_PLUGINS, BUNDLED_SITE_DETECTOR_MIGRATION_KEY)
+  void seedBundledPluginsOnce(BUNDLED_PLUGINS, BUNDLED_PLUGIN_MIGRATION_KEY)
 })

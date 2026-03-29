@@ -96,15 +96,17 @@ GioPic 已提供站点检测器（`site-detector`）插件架构与示例。安�
 ### 插件管理与市场
 
 1. 打开主界面后，进入「设置」并打开「图床插件管理」页。
-2. 在“已安装插件”中可筛选 `uploader / site-detector`、启停插件、查看配置字段和完整 JSON。
+2. 在“已安装插件”中可筛选 `uploader / site-detector / editor-adapter`、启停插件、查看配置字段和完整 JSON。
 3. 在“在线插件市场”中可查看版本、作者、下载量，并直接安装或更新插件。
 4. 如需本地调试 detector，可直接导入 `plugins/examples/site-detectors/*.json`。
 
 ## 📚 文档索引
 
 - [统一插件架构](./plugins/plugin_architecture.md)
-- [站点检测器架构](./plugins/site_detector_plugin_architecture.md)
-- [插件开发指南](./plugins/plugin_dev_guide.md)
+- [插件开发总览](./plugins/plugin_dev_guide.md)
+- [Uploader 插件开发指南](./plugins/uploader_plugin_dev_guide.md)
+- [Site Detector 插件开发指南](./plugins/site_detector_plugin_dev_guide.md)
+- [Editor Adapter 插件开发指南](./plugins/editor_adapter_plugin_dev_guide.md)
 - [插件市场通信协议](./plugins/plugin_market_api.md)
 
 ## 🧑‍💻 开发指南
@@ -154,9 +156,10 @@ pnpm test
 
 无需修改扩展源码，只需编写一个 JSON 格式的插件文件即可。
 
-- 上传插件（`uploader`）详情请参阅: [插件系统架构文档](./plugins/plugin_architecture.md)
-- 站点检测器（`site-detector`）详情请参阅: [站点检测器架构文档](./plugins/site_detector_plugin_architecture.md)
-- 字段与脚本签名请参阅: [插件开发指南](./plugins/plugin_dev_guide.md)
+- 上传插件（`uploader`）详情请参阅: [Uploader 插件开发指南](./plugins/uploader_plugin_dev_guide.md)
+- 站点检测器（`site-detector`）详情请参阅: [Site Detector 插件开发指南](./plugins/site_detector_plugin_dev_guide.md)
+- 页面编辑器适配插件（`editor-adapter`）详情请参阅: [Editor Adapter 插件开发指南](./plugins/editor_adapter_plugin_dev_guide.md)
+- 共享字段、脚本封装规则与文档导航请参阅: [插件开发总览](./plugins/plugin_dev_guide.md)
 - 在线插件市场后端返回格式请参阅: [插件市场通信协议](./plugins/plugin_market_api.md)
 
 #### 2. 原生集成 (Native)

@@ -1,0 +1,15 @@
+{
+  "id": "builtin.editor-adapter.Halo",
+  "kind": "editor-adapter",
+  "name": "Halo",
+  "version": "1.0.0",
+  "author": "GioPic",
+  "description": "Built-in editor adapter for Halo.",
+  "enabled": true,
+  "editorAdapter": {
+    "editorType": "Halo",
+    "displayName": "Halo",
+    "detectScript": "()=>{const els=document.getElementsByClassName(\"halo-rich-text-editor\");return els.length?{type:\"Halo\",certainty:.8,source:\"class: halo-rich-text-editor\"}:null}",
+    "injectScript": "url=>{let el=document.querySelector(\".ProseMirror\");if(el){el.focus();document.execCommand(\"insertImage\",false,url);return true}return false}"
+  }
+}

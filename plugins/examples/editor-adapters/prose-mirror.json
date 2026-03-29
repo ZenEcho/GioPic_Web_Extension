@@ -1,0 +1,15 @@
+{
+  "id": "builtin.editor-adapter.ProseMirror",
+  "kind": "editor-adapter",
+  "name": "ProseMirror",
+  "version": "1.0.0",
+  "author": "GioPic",
+  "description": "Built-in editor adapter for ProseMirror.",
+  "enabled": true,
+  "editorAdapter": {
+    "editorType": "ProseMirror",
+    "displayName": "ProseMirror",
+    "detectScript": "()=>detectBySelector(\".ProseMirror\",\"ProseMirror\")",
+    "injectScript": "url=>{try{const editor=document.querySelector(\".ProseMirror\");if(editor){editor.focus();const imgHtml=`<img src=\"${url}\" alt=\"image\" />`;const markdownText=`![](${url})`;const dataTransfer=new DataTransfer;dataTransfer.setData(\"text/html\",imgHtml);dataTransfer.setData(\"text/plain\",markdownText);const event=new ClipboardEvent(\"paste\",{clipboardData:dataTransfer,bubbles:true,cancelable:true});editor.dispatchEvent(event);return true}return false}catch{return false}}"
+  }
+}

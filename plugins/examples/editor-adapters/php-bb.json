@@ -1,0 +1,15 @@
+{
+  "id": "builtin.editor-adapter.phpBB",
+  "kind": "editor-adapter",
+  "name": "phpBB",
+  "version": "1.0.0",
+  "author": "GioPic",
+  "description": "Built-in editor adapter for phpBB.",
+  "enabled": true,
+  "editorAdapter": {
+    "editorType": "phpBB",
+    "displayName": "phpBB",
+    "detectScript": "()=>{const phpBB=window.phpbb;const phpBBID=document.getElementById(\"phpbb\");return phpBB&&phpBBID?{type:\"phpBB\",certainty:1,source:\"global variable and id: phpbb\"}:null}",
+    "injectScript": "url=>{let phpbbForum=document.getElementById(\"phpbb\");if(phpbbForum){window.postMessage({type:\"phpbbForum\",data:\"[img]\"+url+\"[/img]\"},\"*\");return true}return false}"
+  }
+}

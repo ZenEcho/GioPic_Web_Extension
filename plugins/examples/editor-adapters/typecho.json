@@ -1,0 +1,15 @@
+{
+  "id": "builtin.editor-adapter.Typecho",
+  "kind": "editor-adapter",
+  "name": "Typecho",
+  "version": "1.0.0",
+  "author": "GioPic",
+  "description": "Built-in editor adapter for Typecho.",
+  "enabled": true,
+  "editorAdapter": {
+    "editorType": "Typecho",
+    "displayName": "Typecho",
+    "detectScript": "()=>{const bodyInnerText=document.body.innerText;const typecho=bodyInnerText.toLowerCase().includes(\"typecho\");const btn=document.getElementById(\"btn-submit\");return typecho&&btn?{type:\"Typecho\",certainty:.9,source:\"TextIncludes and id: btn-submit\"}:null}",
+    "injectScript": "url=>{let text=document.getElementById(\"text\");if(text){text.value+=\"![image](\"+url+\")\";let inputEvent=new Event(\"input\",{bubbles:true});text.dispatchEvent(inputEvent);return true}return false}"
+  }
+}

@@ -1,0 +1,15 @@
+{
+  "id": "builtin.editor-adapter.V2EX",
+  "kind": "editor-adapter",
+  "name": "V2EX",
+  "version": "1.0.0",
+  "author": "GioPic",
+  "description": "Built-in editor adapter for V2EX.",
+  "enabled": true,
+  "editorAdapter": {
+    "editorType": "V2EX",
+    "displayName": "V2EX",
+    "detectScript": "()=>detectByDomain(\"v2ex.com\",\"V2EX\")",
+    "injectScript": "url=>{if(document.querySelector(\".CodeMirror\")){if(handleCodeMirror5Impl(url))return true}const replyContent=document.getElementById(\"reply_content\");if(replyContent){const prefix=replyContent.value?\"\\n\":\"\";replyContent.value+=`${prefix}${url}`;const inputEvent=new Event(\"input\",{bubbles:true});replyContent.dispatchEvent(inputEvent);return true}return false}"
+  }
+}

@@ -5,7 +5,7 @@
  * 职责：
  * 1. 管理已安装的插件列表
  * 2. 处理插件的安装、卸载、启用/禁用
- * 3. 按 kind 暴露 uploader / site-detector 分类视图
+ * 3. 按 kind 暴露 uploader / site-detector / editor-adapter 分类视图
  * 4. 监听插件更新消息并自动刷新
  */
 
@@ -13,7 +13,7 @@ import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 import { db } from '@/utils/storage'
 import type { PluginKind, PluginMeta } from '@/types'
-import { isSiteDetectorPlugin, isUploaderPlugin } from '@/types'
+import { isEditorAdapterPlugin, isSiteDetectorPlugin, isUploaderPlugin } from '@/types'
 import browser from 'webextension-polyfill'
 import {
   installPluginToStorage,
@@ -28,6 +28,7 @@ export const usePluginStore = defineStore('plugin', () => {
 
   const uploaderPlugins = computed(() => plugins.value.filter(isUploaderPlugin))
   const siteDetectorPlugins = computed(() => plugins.value.filter(isSiteDetectorPlugin))
+  const editorAdapterPlugins = computed(() => plugins.value.filter(isEditorAdapterPlugin))
 
   const loadPlugins = async () => {
     loading.value = true
@@ -81,6 +82,7 @@ export const usePluginStore = defineStore('plugin', () => {
     loading,
     uploaderPlugins,
     siteDetectorPlugins,
+    editorAdapterPlugins,
     loadPlugins,
     addPlugin,
     removePlugin,

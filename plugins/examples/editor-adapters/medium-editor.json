@@ -1,0 +1,15 @@
+{
+  "id": "builtin.editor-adapter.MediumEditor",
+  "kind": "editor-adapter",
+  "name": "MediumEditor",
+  "version": "1.0.0",
+  "author": "GioPic",
+  "description": "Built-in editor adapter for MediumEditor.",
+  "enabled": true,
+  "editorAdapter": {
+    "editorType": "MediumEditor",
+    "displayName": "MediumEditor",
+    "detectScript": "()=>{const editor=window.editor||window._mediumEditors;return editor?{type:\"MediumEditor\",certainty:.9,source:\"MediumEditor \\u7F16\\u8F91\\u5668\\u5B9E\\u4F8B\"}:null}",
+    "injectScript": "url=>{const editors=window._mediumEditors;if(!editors||!Array.isArray(editors))return false;const editor=editors.find(item=>item&&item.elements&&item.elements.length>0);if(!editor)return false;try{const imageHtml=`<img src=\"${url}\" alt=\"\" style=\"max-width: 100%;\">`;if(typeof editor.pasteHTML===\"function\"){editor.pasteHTML(imageHtml);return true}}catch(err){console.error(\"MediumEditor pasteHTML \\u6CE8\\u5165\\u5931\\u8D25:\",err)}try{if(editor.elements&&editor.elements[0]){editor.elements[0].focus();document.execCommand(\"insertImage\",false,url);return true}}catch(err){console.error(\"MediumEditor \\u539F\\u751F\\u6CE8\\u5165\\u5931\\u8D25:\",err)}return false}"
+  }
+}

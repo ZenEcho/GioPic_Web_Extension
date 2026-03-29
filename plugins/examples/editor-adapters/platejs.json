@@ -1,0 +1,15 @@
+{
+  "id": "builtin.editor-adapter.Platejs",
+  "kind": "editor-adapter",
+  "name": "Platejs",
+  "version": "1.0.0",
+  "author": "GioPic",
+  "description": "Built-in editor adapter for Platejs.",
+  "enabled": true,
+  "editorAdapter": {
+    "editorType": "Platejs",
+    "displayName": "Platejs",
+    "detectScript": "()=>{const editor=findPlateEditor();return editor?{type:\"Platejs\",certainty:.9,source:\"Platejs \\u7F16\\u8F91\\u5668\\u5B9E\\u4F8B\"}:null}",
+    "injectScript": "url=>{try{const editor=findPlateEditor();if(!editor)return false;const imageNode={type:\"img\",url,children:[{text:\"\"}]};editor.insertNodes(imageNode);return true}catch(err){console.error(\"Platejs \\u6CE8\\u5165\\u5931\\u8D25:\",err);return false}}"
+  }
+}

@@ -8,7 +8,8 @@ import type { DetectorActionFieldSchema, PluginInputSchema, PluginKind, PluginMa
 import { validatePlugin } from '@/utils/pluginCore'
 
 type ViewMode = 'installed' | 'market'
-type StatusFilter = 'all' | 'enabled' | 'disabled' | 'abnormal'
+type InstalledStatusFilter = 'all' | 'enabled' | 'disabled'
+type MarketStatusFilter = 'all' | 'installed' | 'not-installed'
 
 const { t } = useI18n()
 const message = useMessage()
@@ -21,25 +22,33 @@ const searchQuery = ref('')
 const marketSearchQuery = ref('')
 const selectedKind = ref<'all' | PluginKind>('all')
 const marketSelectedKind = ref<'all' | PluginKind>('all')
-const selectedStatus = ref<StatusFilter>('all')
+const selectedStatus = ref<InstalledStatusFilter>('all')
+const marketSelectedStatus = ref<MarketStatusFilter>('all')
 const activeCodePluginId = ref<string | null>(null)
 const activeConfigPluginId = ref<string | null>(null)
 const marketLoading = ref(false)
 const marketLoadError = ref('')
 const marketPlugins = ref<PluginMarketplaceEntry[]>([])
 const installingPluginIds = ref<string[]>([])
+const togglingPluginIds = ref<string[]>([])
 
 const kindOptions = computed(() => [
   { value: 'all', label: t('settings.plugins.filterAllKinds') },
   { value: 'uploader', label: t('settings.plugins.kindUploader') },
   { value: 'site-detector', label: t('settings.plugins.kindSiteDetector') },
+  { value: 'editor-adapter', label: t('settings.plugins.kindEditorAdapter') },
 ])
 
 const statusOptions = computed(() => [
   { value: 'all', label: t('settings.plugins.filterAllStatus') },
   { value: 'enabled', label: t('common.enabled') },
   { value: 'disabled', label: t('common.disabled') },
-  { value: 'abnormal', label: t('settings.plugins.statusAbnormal') },
+])
+
+const marketStatusOptions = computed(() => [
+  { value: 'all', label: t('settings.plugins.filterAllInstallStatus') },
+  { value: 'installed', label: t('settings.plugins.marketInstalled') },
+  { value: 'not-installed', label: t('settings.plugins.marketNotInstalled') },
 ])
 
 const validationMap = computed(() => {
@@ -73,12 +82,10 @@ const filteredPlugins = computed(() => {
   const query = searchQuery.value.trim().toLowerCase()
   return pluginStore.plugins.filter((plugin) => {
     const enabled = plugin.enabled !== false
-    const abnormal = validationMap.value.get(plugin.id)?.valid === false
     const matchesKind = selectedKind.value === 'all' || plugin.kind === selectedKind.value
     const matchesStatus = selectedStatus.value === 'all'
       || (selectedStatus.value === 'enabled' && enabled)
       || (selectedStatus.value === 'disabled' && !enabled)
-      || (selectedStatus.value === 'abnormal' && abnormal)
     if (!matchesKind || !matchesStatus) {
       return false
     }
@@ -100,7 +107,11 @@ const filteredMarketPlugins = computed(() => {
   const query = marketSearchQuery.value.trim().toLowerCase()
   return marketPlugins.value.filter((plugin) => {
     const matchesKind = marketSelectedKind.value === 'all' || plugin.kind === marketSelectedKind.value
-    if (!matchesKind) {
+    const installed = installedPluginMap.value.has(plugin.id)
+    const matchesStatus = marketSelectedStatus.value === 'all'
+      || (marketSelectedStatus.value === 'installed' && installed)
+      || (marketSelectedStatus.value === 'not-installed' && !installed)
+    if (!matchesKind || !matchesStatus) {
       return false
     }
     if (!query) {
@@ -124,9 +135,15 @@ const activeConfigFields = computed<(PluginInputSchema | DetectorActionFieldSche
   if (!activeConfigPlugin.value) {
     return []
   }
-  return activeConfigPlugin.value.kind === 'uploader'
-    ? activeConfigPlugin.value.uploader.inputs
-    : (activeConfigPlugin.value.detector.actionForm || [])
+  if (activeConfigPlugin.value.kind === 'uploader') {
+    return activeConfigPlugin.value.uploader.inputs
+  }
+
+  if (activeConfigPlugin.value.kind === 'site-detector') {
+    return activeConfigPlugin.value.detector.actionForm || []
+  }
+
+  return []
 })
 
 function isAbnormal(plugin: PluginMeta) {
@@ -137,44 +154,70 @@ function isInstalling(pluginId: string) {
   return installingPluginIds.value.includes(pluginId)
 }
 
+function isToggling(pluginId: string) {
+  return togglingPluginIds.value.includes(pluginId)
+}
+
 function setInstalling(pluginId: string, value: boolean) {
   installingPluginIds.value = value
     ? Array.from(new Set([...installingPluginIds.value, pluginId]))
     : installingPluginIds.value.filter(id => id !== pluginId)
 }
 
+function setToggling(pluginId: string, value: boolean) {
+  togglingPluginIds.value = value
+    ? Array.from(new Set([...togglingPluginIds.value, pluginId]))
+    : togglingPluginIds.value.filter(id => id !== pluginId)
+}
+
 function getKindLabel(plugin: Pick<PluginMeta, 'kind'> | Pick<PluginMarketplaceEntry, 'kind'>) {
-  return plugin.kind === 'site-detector'
-    ? t('settings.plugins.kindSiteDetector')
-    : t('settings.plugins.kindUploader')
+  if (plugin.kind === 'site-detector') {
+    return t('settings.plugins.kindSiteDetector')
+  }
+
+  if (plugin.kind === 'editor-adapter') {
+    return t('settings.plugins.kindEditorAdapter')
+  }
+
+  return t('settings.plugins.kindUploader')
 }
 
 function getStatusLabel(plugin: PluginMeta) {
-  if (isAbnormal(plugin)) {
-    return t('settings.plugins.statusAbnormal')
-  }
   return plugin.enabled !== false ? t('common.enabled') : t('common.disabled')
 }
 
 function getConfigFieldCount(plugin: PluginMeta) {
-  return plugin.kind === 'uploader'
-    ? plugin.uploader.inputs.length
-    : (plugin.detector.actionForm?.length || 0)
+  if (plugin.kind === 'uploader') {
+    return plugin.uploader.inputs.length
+  }
+
+  if (plugin.kind === 'site-detector') {
+    return plugin.detector.actionForm?.length || 0
+  }
+
+  return 0
 }
 
 function hasConfig(plugin: PluginMeta) {
   return getConfigFieldCount(plugin) > 0
 }
 
+function getScriptLabel(plugin: PluginMeta) {
+  if (plugin.kind === 'uploader') {
+    return 'uploader.script'
+  }
+
+  if (plugin.kind === 'site-detector') {
+    return 'detector.detectScript / detector.extractScript'
+  }
+
+  return 'editorAdapter.detectScript / editorAdapter.injectScript'
+}
+
 function getMarketplaceStateText(plugin: PluginMarketplaceEntry) {
-  const installedPlugin = installedPluginMap.value.get(plugin.id)
-  if (!installedPlugin) {
-    return t('settings.plugins.marketNotInstalled')
-  }
-  if (installedPlugin.version === plugin.version) {
-    return t('settings.plugins.marketInstalled')
-  }
-  return t('settings.plugins.marketUpdateAvailable')
+  return installedPluginMap.value.has(plugin.id)
+    ? t('settings.plugins.marketInstalled')
+    : t('settings.plugins.marketNotInstalled')
 }
 
 function getMarketplaceActionText(plugin: PluginMarketplaceEntry) {
@@ -186,6 +229,19 @@ function getMarketplaceActionText(plugin: PluginMarketplaceEntry) {
     return t('settings.plugins.reinstall')
   }
   return t('settings.plugins.update')
+}
+
+function getToggleActionText(plugin: PluginMeta) {
+  return plugin.enabled !== false ? t('common.disable') : t('common.enable')
+}
+
+function getMarketplaceToggleActionText(plugin: PluginMarketplaceEntry) {
+  const installedPlugin = installedPluginMap.value.get(plugin.id)
+  if (!installedPlugin) {
+    return ''
+  }
+
+  return getToggleActionText(installedPlugin)
 }
 
 function formatMarketplaceDate(value?: string) {
@@ -262,11 +318,29 @@ async function handleMarketplaceInstall(plugin: PluginMarketplaceEntry) {
 }
 
 async function handleTogglePlugin(plugin: PluginMeta) {
+  if (isToggling(plugin.id)) {
+    return
+  }
+
   const willEnable = plugin.enabled === false
-  await pluginStore.togglePlugin(plugin.id)
-  message.success(willEnable
-    ? t('settings.plugins.enableSuccess', { name: plugin.name })
-    : t('settings.plugins.disableSuccess', { name: plugin.name }))
+  setToggling(plugin.id, true)
+  try {
+    await pluginStore.togglePlugin(plugin.id)
+    message.success(willEnable
+      ? t('settings.plugins.enableSuccess', { name: plugin.name })
+      : t('settings.plugins.disableSuccess', { name: plugin.name }))
+  } finally {
+    setToggling(plugin.id, false)
+  }
+}
+
+async function handleMarketplaceToggle(plugin: PluginMarketplaceEntry) {
+  const installedPlugin = installedPluginMap.value.get(plugin.id)
+  if (!installedPlugin || isToggling(plugin.id)) {
+    return
+  }
+
+  await handleTogglePlugin(installedPlugin)
 }
 
 function handleDelete(plugin: PluginMeta) {
@@ -413,13 +487,17 @@ onMounted(() => {
                     <span class="rounded-full bg-slate-100 px-2.5 py-1 text-[11px] font-bold text-slate-700 dark:bg-slate-800 dark:text-slate-300">{{ getKindLabel(plugin) }}</span>
                     <span
                       class="rounded-full px-2.5 py-1 text-[11px] font-bold"
-                      :class="isAbnormal(plugin)
-                        ? 'bg-rose-100 text-rose-600 dark:bg-rose-950/40 dark:text-rose-300'
-                        : plugin.enabled !== false
-                          ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300'
-                          : 'bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-400'"
+                      :class="plugin.enabled !== false
+                        ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300'
+                        : 'bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-400'"
                     >
                       {{ getStatusLabel(plugin) }}
+                    </span>
+                    <span
+                      v-if="isAbnormal(plugin)"
+                      class="rounded-full bg-rose-100 px-2.5 py-1 text-[11px] font-bold text-rose-600 dark:bg-rose-950/40 dark:text-rose-300"
+                    >
+                      {{ t('settings.plugins.statusAbnormal') }}
                     </span>
                   </div>
                   <div class="mt-1 font-mono text-xs text-slate-400 dark:text-slate-500">{{ plugin.id }}</div>
@@ -427,6 +505,13 @@ onMounted(() => {
               </div>
 
               <p class="text-sm leading-7 text-slate-500 dark:text-slate-400">{{ plugin.description || t('settings.plugins.noDescription') }}</p>
+
+              <div
+                v-if="isAbnormal(plugin)"
+                class="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-600 dark:border-rose-900/40 dark:bg-rose-950/20 dark:text-rose-300"
+              >
+                {{ t('settings.plugins.abnormalRuntime') }}
+              </div>
 
               <div class="grid gap-3 md:grid-cols-3">
                 <div class="rounded-2xl bg-slate-50 px-4 py-3 text-sm dark:bg-slate-800/60">
@@ -442,7 +527,7 @@ onMounted(() => {
                 <div class="rounded-2xl bg-slate-50 px-4 py-3 text-sm dark:bg-slate-800/60">
                   <div class="text-[11px] uppercase tracking-[0.18em] text-slate-400 dark:text-slate-500">{{ t('settings.plugins.fieldScript') }}</div>
                   <div class="mt-1 truncate font-mono text-xs text-slate-700 dark:text-slate-200">
-                    {{ plugin.kind === 'uploader' ? 'uploader.script' : 'detector.detectScript / detector.extractScript' }}
+                    {{ getScriptLabel(plugin) }}
                   </div>
                 </div>
               </div>
@@ -455,7 +540,12 @@ onMounted(() => {
                   <div class="text-[11px] uppercase tracking-[0.18em] text-slate-400 dark:text-slate-500">{{ t('settings.plugins.toggleLabel') }}</div>
                   <div class="mt-1 text-sm font-semibold text-slate-800 dark:text-slate-100">{{ plugin.enabled !== false ? t('common.enabled') : t('common.disabled') }}</div>
                 </div>
-                <n-switch :value="plugin.enabled !== false" @update:value="handleTogglePlugin(plugin)" />
+                <n-switch
+                  :value="plugin.enabled !== false"
+                  :loading="isToggling(plugin.id)"
+                  :disabled="isToggling(plugin.id)"
+                  @update:value="() => handleTogglePlugin(plugin)"
+                />
               </div>
 
               <div class="grid grid-cols-2 gap-2">
@@ -529,12 +619,13 @@ onMounted(() => {
           </div>
         </div>
 
-        <div class="grid gap-3 xl:grid-cols-[minmax(0,1fr)_180px]">
+        <div class="grid gap-3 xl:grid-cols-[minmax(0,1fr)_180px_180px]">
           <n-input :value="marketSearchQuery" @update:value="marketSearchQuery = $event" :placeholder="t('settings.plugins.marketSearchPlaceholder')" clearable size="large">
             <template #prefix>
               <div class="i-ph-magnifying-glass text-slate-400 text-lg" />
             </template>
           </n-input>
+          <n-select v-model:value="marketSelectedStatus" :options="marketStatusOptions" size="large" />
           <n-select v-model:value="marketSelectedKind" :options="kindOptions" size="large" />
         </div>
 
@@ -584,6 +675,17 @@ onMounted(() => {
             <div class="flex flex-wrap gap-2">
               <n-button type="primary" size="small" :loading="isInstalling(plugin.id)" @click="handleMarketplaceInstall(plugin)">
                 {{ getMarketplaceActionText(plugin) }}
+              </n-button>
+              <n-button
+                v-if="installedPluginMap.has(plugin.id)"
+                secondary
+                strong
+                size="small"
+                :loading="isToggling(plugin.id)"
+                :disabled="isInstalling(plugin.id)"
+                @click="handleMarketplaceToggle(plugin)"
+              >
+                {{ getMarketplaceToggleActionText(plugin) }}
               </n-button>
               <a
                 v-if="plugin.homepage"

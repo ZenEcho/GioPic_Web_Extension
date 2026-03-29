@@ -1,0 +1,15 @@
+{
+  "id": "builtin.editor-adapter.Lexical",
+  "kind": "editor-adapter",
+  "name": "Lexical",
+  "version": "1.0.0",
+  "author": "GioPic",
+  "description": "Built-in editor adapter for Lexical.",
+  "enabled": true,
+  "editorAdapter": {
+    "editorType": "Lexical",
+    "displayName": "Lexical",
+    "detectScript": "()=>{const editor=document.querySelector(\".ContentEditable__root\")?.__lexicalEditor;return editor?{type:\"Lexical\",certainty:.95,source:\"Lexical \\u7F16\\u8F91\\u5668\\u5B9E\\u4F8B\"}:null}",
+    "injectScript": "url=>{try{const el=document.querySelector(\".ContentEditable__root\");const editor=el?.__lexicalEditor;if(!el||!editor)return false;try{let apiSuccess=false;editor.update(()=>{const ImageNode=editor._nodes.get(\"image\")?.klass;if(!ImageNode){return}const ParagraphNode=editor._nodes.get(\"paragraph\").klass;const root=editor._editorState._nodeMap.get(\"root\");const imageNode=new ImageNode(url,\"image\");const paragraph=new ParagraphNode;paragraph.append(imageNode);root.append(paragraph);apiSuccess=true},{tag:\"history-merge\"});if(apiSuccess)return true}catch(error){console.warn(\"Lexical API \\u6CE8\\u5165\\u5931\\u8D25\\uFF0C\\u5C1D\\u8BD5\\u6A21\\u62DF\\u7C98\\u8D34:\",error)}try{el.focus();const htmlContent=`<p><img src=\"${url}\" alt=\"image\" style=\"max-width: 100%;\"></p>`;const clipboardData=new DataTransfer;clipboardData.setData(\"text/html\",htmlContent);clipboardData.setData(\"text/plain\",`[Image: ${url}]`);const pasteEvent=new ClipboardEvent(\"paste\",{clipboardData,bubbles:true,cancelable:true});el.dispatchEvent(pasteEvent);console.log(\"Lexical: \\u6A21\\u62DF\\u7C98\\u8D34\\u56FE\\u7247 HTML \\u6210\\u529F\\uFF01\");return true}catch(pasteError){console.error(\"Lexical \\u6A21\\u62DF\\u7C98\\u8D34\\u5931\\u8D25:\",pasteError);return false}}catch(err){console.error(\"Lexical \\u6CE8\\u5165\\u5931\\u8D25:\",err);return false}}"
+  }
+}

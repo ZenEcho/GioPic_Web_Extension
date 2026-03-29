@@ -1,0 +1,15 @@
+{
+  "id": "builtin.editor-adapter.Discuz",
+  "kind": "editor-adapter",
+  "name": "Discuz!",
+  "version": "1.0.0",
+  "author": "GioPic",
+  "description": "Built-in editor adapter for Discuz!.",
+  "enabled": true,
+  "editorAdapter": {
+    "editorType": "Discuz",
+    "displayName": "Discuz!",
+    "detectScript": "()=>{const isDiscuzMeta=document.querySelector(\"meta[name='generator'][content*='Discuz']\")!=null;if(isDiscuzMeta){return{type:\"Discuz\",certainty:1,source:\"MetaGenerator\"}}const bodyId=document.body.id;if(bodyId&&(bodyId.startsWith(\"nv_\")||bodyId===\"discuz_uid\")){return{type:\"Discuz\",certainty:.95,source:\"BodyID\"}}if(document.getElementById(\"discuz_tips\")||document.getElementById(\"toptb\")&&document.getElementById(\"ft\")){return{type:\"Discuz\",certainty:.9,source:\"CoreElements\"}}const footerText=(document.getElementById(\"ft\")||document.body).textContent||\"\";if(footerText.includes(\"Powered by Discuz\")||footerText.includes(\"Discuz!\")){return{type:\"Discuz\",certainty:.6,source:\"FooterTextIncludes\"}}return null}",
+    "injectScript": "url=>{const discuz=document.getElementById(\"fastpostmessage\");const discuzInteractiveReply=document.getElementById(\"postmessage\");const discuzAdvanced=document.getElementById(\"e_textarea\");if(discuzInteractiveReply){discuzInteractiveReply.value+=\"[img]\"+url+\"[/img]\";return true}else if(discuz){discuz.value+=\"[img]\"+url+\"[/img]\";return true}if(discuzAdvanced&&discuzAdvanced.parentNode){try{const iframe=discuzAdvanced.parentNode.querySelector(\"iframe\");if(iframe&&iframe.contentDocument){let bodyElement=iframe.contentDocument.body;let img=document.createElement(\"img\");img.src=url;bodyElement.appendChild(img);return true}else{discuzAdvanced.value+=\"[img]\"+url+\"[/img]\";return true}}catch(error){return false}}return false}"
+  }
+}

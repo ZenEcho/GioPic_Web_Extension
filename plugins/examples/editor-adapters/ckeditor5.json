@@ -1,0 +1,15 @@
+{
+  "id": "builtin.editor-adapter.CKEditor5",
+  "kind": "editor-adapter",
+  "name": "CKEditor 5",
+  "version": "1.0.0",
+  "author": "GioPic",
+  "description": "Built-in editor adapter for CKEditor 5.",
+  "enabled": true,
+  "editorAdapter": {
+    "editorType": "CKEditor5",
+    "displayName": "CKEditor 5",
+    "detectScript": "()=>{try{const editor=window.editor;return editor&&typeof editor.getData===\"function\"&&typeof editor.setData===\"function\"?{type:\"CKEditor5\",certainty:1,source:\"global: editor (CKEditor5)\"}:null}catch{return null}}",
+    "injectScript": "url=>{try{const editor=window.editor;if(editor&&typeof editor.getData===\"function\"&&typeof editor.setData===\"function\"){const content=editor.getData();editor.setData(content+url);return true}return false}catch{return false}}"
+  }
+}

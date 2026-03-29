@@ -1,0 +1,15 @@
+{
+  "id": "builtin.editor-adapter.Summernote",
+  "kind": "editor-adapter",
+  "name": "Summernote",
+  "version": "1.0.0",
+  "author": "GioPic",
+  "description": "Built-in editor adapter for Summernote.",
+  "enabled": true,
+  "editorAdapter": {
+    "editorType": "Summernote",
+    "displayName": "Summernote",
+    "detectScript": "()=>detectBySelector(\".note-editable\",\"Summernote\",.8)",
+    "injectScript": "url=>{try{const $=window.jQuery||window.$;if(!$)return false;const editable=document.querySelector(\".note-editable\");if(!editable)return false;const $editorContainer=$(editable).closest(\".note-editor\");const $target=$editorContainer.prev();if(typeof $target.summernote===\"function\"){$target.summernote(\"insertImage\",url);return true}$(editable).focus();document.execCommand(\"insertImage\",false,url);return true}catch(err){console.error(\"Summernote \\u6CE8\\u5165\\u5931\\u8D25:\",err);return false}}"
+  }
+}

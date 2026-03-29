@@ -1,0 +1,15 @@
+{
+  "id": "builtin.editor-adapter.UEditor",
+  "kind": "editor-adapter",
+  "name": "UEditor",
+  "version": "1.0.0",
+  "author": "GioPic",
+  "description": "Built-in editor adapter for UEditor.",
+  "enabled": true,
+  "editorAdapter": {
+    "editorType": "UEditor",
+    "displayName": "UEditor",
+    "detectScript": "()=>{try{return window.UE&&typeof window.UE.getEditor===\"function\"?{type:\"UEditor\",certainty:1,source:\"global: UE\"}:null}catch{return null}}",
+    "injectScript": "url=>{try{const UE=window.UE;let editor=UE?.getEditor(\"editor_content\");if(editor){editor.execCommand(\"insertimage\",{src:url});return true}return false}catch{return false}}"
+  }
+}

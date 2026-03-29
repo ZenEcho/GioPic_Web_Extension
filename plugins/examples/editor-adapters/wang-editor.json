@@ -1,0 +1,15 @@
+{
+  "id": "builtin.editor-adapter.wangEditor",
+  "kind": "editor-adapter",
+  "name": "wangEditor",
+  "version": "1.0.0",
+  "author": "GioPic",
+  "description": "Built-in editor adapter for wangEditor.",
+  "enabled": true,
+  "editorAdapter": {
+    "editorType": "wangEditor",
+    "displayName": "wangEditor",
+    "detectScript": "()=>{try{const editor=window.editor;return editor&&typeof editor.getEditableContainer===\"function\"?{type:\"wangEditor\",certainty:1,source:\"global: editor (wangEditor)\"}:null}catch{return null}}",
+    "injectScript": "url=>{try{const editor=window.editor;if(editor&&typeof editor.insertNode===\"function\"){editor.insertNode({type:\"image\",src:url,href:url,children:[{text:\"\"}]})}return false}catch{return false}}"
+  }
+}

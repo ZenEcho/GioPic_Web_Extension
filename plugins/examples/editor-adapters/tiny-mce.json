@@ -1,0 +1,15 @@
+{
+  "id": "builtin.editor-adapter.TinyMCE",
+  "kind": "editor-adapter",
+  "name": "TinyMCE",
+  "version": "1.0.0",
+  "author": "GioPic",
+  "description": "Built-in editor adapter for TinyMCE.",
+  "enabled": true,
+  "editorAdapter": {
+    "editorType": "TinyMCE",
+    "displayName": "TinyMCE",
+    "detectScript": "()=>{try{return window.tinymce?.activeEditor?{type:\"TinyMCE\",certainty:1,source:\"global: tinymce\"}:null}catch{return null}}",
+    "injectScript": "url=>{try{let editor=window.tinymce?.activeEditor;if(editor){editor.execCommand(\"mceInsertContent\",false,url);window.postMessage({type:\"TinyMCEResponse\",status:\"success\",data:\"true\"},\"*\");return true}return false}catch{return false}}"
+  }
+}

@@ -1,0 +1,15 @@
+{
+  "id": "builtin.editor-adapter.CKEditor4",
+  "kind": "editor-adapter",
+  "name": "CKEditor 4",
+  "version": "1.0.0",
+  "author": "GioPic",
+  "description": "Built-in editor adapter for CKEditor 4.",
+  "enabled": true,
+  "editorAdapter": {
+    "editorType": "CKEditor4",
+    "displayName": "CKEditor 4",
+    "detectScript": "()=>{try{return window.CKEDITOR?.instances&&Object.keys(window.CKEDITOR.instances).length>0?{type:\"CKEditor4\",certainty:1,source:\"global: CKEDITOR\"}:null}catch{return null}}",
+    "injectScript": "url=>{try{const instances=window.CKEDITOR?.instances;if(instances){for(const key in instances){if(instances[key]){instances[key].insertHtml(url);return true}}}return false}catch{return false}}"
+  }
+}

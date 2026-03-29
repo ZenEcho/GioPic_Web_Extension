@@ -1,4 +1,4 @@
-export type PluginKind = 'uploader' | 'site-detector'
+export type PluginKind = 'uploader' | 'site-detector' | 'editor-adapter'
 
 export type PluginFieldType =
   | 'text'
@@ -205,18 +205,34 @@ export interface SiteDetectorPlugin extends BasePlugin {
   detector: DetectorRuntime
 }
 
-export type PluginMeta = UploaderPlugin | SiteDetectorPlugin
+export interface EditorAdapterRuntime {
+  editorType: string
+  displayName: string
+  detectScript: string
+  injectScript: string
+}
+
+export interface EditorAdapterPlugin extends BasePlugin {
+  kind: 'editor-adapter'
+  editorAdapter: EditorAdapterRuntime
+}
+
+export type PluginMeta = UploaderPlugin | SiteDetectorPlugin | EditorAdapterPlugin
 
 function isRecord(value: unknown): value is Record<string, any> {
   return typeof value === 'object' && value !== null
 }
 
 export function normalizePluginKind(kind: unknown): PluginKind {
-  return kind === 'site-detector' ? 'site-detector' : 'uploader'
+  if (kind === 'site-detector' || kind === 'editor-adapter') {
+    return kind
+  }
+
+  return 'uploader'
 }
 
 export function isPluginKind(kind: unknown): kind is PluginKind {
-  return kind === 'uploader' || kind === 'site-detector'
+  return kind === 'uploader' || kind === 'site-detector' || kind === 'editor-adapter'
 }
 
 export function isUploaderPlugin(plugin: unknown): plugin is UploaderPlugin {
@@ -240,6 +256,19 @@ export function isSiteDetectorPlugin(plugin: unknown): plugin is SiteDetectorPlu
     && typeof plugin.detector.targetDriveType === 'string'
     && typeof plugin.detector.detectScript === 'string'
     && typeof plugin.detector.extractScript === 'string'
+}
+
+export function isEditorAdapterPlugin(plugin: unknown): plugin is EditorAdapterPlugin {
+  if (!isRecord(plugin)) {
+    return false
+  }
+
+  return normalizePluginKind(plugin.kind) === 'editor-adapter'
+    && isRecord(plugin.editorAdapter)
+    && typeof plugin.editorAdapter.editorType === 'string'
+    && typeof plugin.editorAdapter.displayName === 'string'
+    && typeof plugin.editorAdapter.detectScript === 'string'
+    && typeof plugin.editorAdapter.injectScript === 'string'
 }
 
 

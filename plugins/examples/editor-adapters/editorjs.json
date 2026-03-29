@@ -1,0 +1,15 @@
+{
+  "id": "builtin.editor-adapter.Editorjs",
+  "kind": "editor-adapter",
+  "name": "Editorjs",
+  "version": "1.0.0",
+  "author": "GioPic",
+  "description": "Built-in editor adapter for Editorjs.",
+  "enabled": true,
+  "editorAdapter": {
+    "editorType": "Editorjs",
+    "displayName": "Editorjs",
+    "detectScript": "()=>{const editorjs=document.querySelector(\"#editorjs\");if(!editorjs){return null}if(!editorjs.querySelector(\".codex-editor__redactor\")){return null}return{type:\"Editorjs\",certainty:.95,source:\"id: editorjs\"}}",
+    "injectScript": "async url=>{try{let targetBlock=document.activeElement;if(!targetBlock||!targetBlock.closest(\".codex-editor\")){targetBlock=document.querySelector('.ce-paragraph[contenteditable=\"true\"]')}if(!targetBlock){console.warn(\"[EditorJS] No focusable block found\");return false}targetBlock.focus();try{const response=await fetch(url);const blob=await response.blob();const file=new File([blob],\"image.png\",{type:blob.type});const dt=new DataTransfer;dt.items.add(file);const pasteEvent=new ClipboardEvent(\"paste\",{clipboardData:dt,bubbles:true,cancelable:true});targetBlock.dispatchEvent(pasteEvent);console.log(\"[EditorJS] Injected via paste simulation\");return true}catch(fetchError){console.warn(\"[EditorJS] Paste simulation failed\",fetchError)}try{const img=document.createElement(\"img\");img.src=url;const sel=window.getSelection();if(sel&&sel.rangeCount>0){const range=sel.getRangeAt(0);range.deleteContents();range.insertNode(img);range.collapse(false);console.log(\"[EditorJS] Injected via direct DOM insertion\");return true}}catch(e){console.warn(\"[EditorJS] Direct insertion failed, falling back to paste simulation\",e)}return false}catch(e){console.error(\"[EditorJS] Injection failed\",e);return false}}"
+  }
+}

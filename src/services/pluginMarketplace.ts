@@ -3,7 +3,7 @@ import type { PluginMarketplaceEntity, PluginMarketplaceEntry } from '@/types'
 import { validatePlugin } from '@/utils/pluginCore'
 
 const DEFAULT_PLUGIN_MARKET_API_BASE = import.meta.env.DEV
-  ? 'http://127.0.0.1:3000/api'
+  ? 'https://server.fileup.dev/api'
   : 'https://server.fileup.dev/api'
 
 const PLUGIN_MARKET_API_BASE = (
