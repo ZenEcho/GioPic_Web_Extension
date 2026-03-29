@@ -51,6 +51,7 @@ export default defineConfig(({ mode }) => {
           input: {
             background: fileURLToPath(new URL('./src/background/index.ts', import.meta.url)),
             'src/sandbox/sandbox': fileURLToPath(new URL('./src/sandbox/sandbox.ts', import.meta.url)),
+            'src/sandbox/site-detector': fileURLToPath(new URL('./src/sandbox/site-detector.ts', import.meta.url)),
             'src/offscreen/offscreen': fileURLToPath(new URL('./src/offscreen/offscreen.ts', import.meta.url))
           } as Record<string, string>,
           output: {
@@ -156,3 +157,4 @@ export default defineConfig(({ mode }) => {
     }
   }
 })
+

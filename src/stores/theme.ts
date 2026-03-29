@@ -60,6 +60,20 @@ export const themeColors: Record<ThemeColor, { primary: string, hover: string, p
   },
 }
 
+function hexToRgbString(hex: string) {
+  const normalized = hex.replace('#', '')
+  const safeHex = normalized.length === 3
+    ? normalized.split('').map(char => `${char}${char}`).join('')
+    : normalized
+
+  const value = Number.parseInt(safeHex, 16)
+  const r = (value >> 16) & 255
+  const g = (value >> 8) & 255
+  const b = value & 255
+
+  return `${r} ${g} ${b}`
+}
+
 /**
  * Theme Store
  * 管理全局外观设置
@@ -170,6 +184,7 @@ export const useThemeStore = defineStore('theme', () => {
     root.style.setProperty('--giopic-primary-hover', colors.hover)
     root.style.setProperty('--giopic-primary-pressed', colors.pressed)
     root.style.setProperty('--giopic-primary-suppl', isDark.value ? colors.pressed : colors.suppl)
+    root.style.setProperty('--giopic-primary-rgb', hexToRgbString(colors.primary))
   }
 
   // 当主题色或暗黑模式变化时，重新应用 CSS 变量

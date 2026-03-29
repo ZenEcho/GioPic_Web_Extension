@@ -1,0 +1,23 @@
+{
+  "id": "builtin.site-detector.telegraph-image",
+  "kind": "site-detector",
+  "name": "Telegraph Image Site Detector",
+  "version": "1.0.0",
+  "description": "Detects the Telegraph-Image project and creates a matching custom uploader config.",
+  "icon": "i-ph-paper-plane-tilt-duotone",
+  "author": "GioPic",
+  "detector": {
+    "targetDriveType": "custom",
+    "presentation": {
+      "title": "发现 Telegraph Image",
+      "description": "点击后会为当前站点生成 Telegraph-Image 兼容的 GioPic 自定义图床配置。",
+      "actionText": "添加自定义配置",
+      "ignoreText": "本站不再提示",
+      "successText": "Telegraph Image 配置已添加到 GioPic",
+      "failureText": "Telegraph Image 配置生成失败。"
+    },
+    "priority": 50,
+    "detectScript": "return async function(ctx) {\n  const target = 'https://github.com/cf-pages/Telegraph-Image';\n  const matched = await ctx.exists('.footer a[href=\"' + target + '\"]');\n  if (!matched) {\n    return { matched: false };\n  }\n\n  return { matched: true, score: 14 };\n}",
+    "extractScript": "return async function(ctx) {\n  return {\n    config: {\n      apiUrl: ctx.page.origin + '/upload',\n      method: 'POST',\n      uploadFormat: 'formData',\n      fileParamName: 'file',\n      responseUrlPath: '[0].src',\n      urlPrefix: ctx.page.origin\n    }\n  };\n}"
+  }
+}

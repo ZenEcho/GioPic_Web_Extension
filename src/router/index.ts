@@ -1,6 +1,7 @@
 import { createRouter, createWebHashHistory } from 'vue-router'
 import HomeView from '@/views/HomeView.vue'
 import HistoryView from '@/views/HistoryView.vue'
+import PluginManagerView from '@/views/PluginManagerView.vue'
 
 const router = createRouter({
   history: createWebHashHistory(),
@@ -14,6 +15,11 @@ const router = createRouter({
       path: '/history',
       name: 'history',
       component: HistoryView,
+    },
+    {
+      path: '/plugins',
+      name: 'plugins',
+      component: PluginManagerView,
     },
   ],
 })

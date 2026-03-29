@@ -1,5 +1,6 @@
 {
   "id": "org.example.plugin",
+  "kind": "uploader",
   "name": "Example Plugin",
   "version": "1.1.0",
   "author": "Your Name",
@@ -7,59 +8,61 @@
   "description": "A flexible plugin example with dynamic configuration fields.",
   "homepage": "https://example.com/plugin-homepage",
   "icon": "i-ph-puzzle-piece",
-  "inputs": [
-    {
-      "name": "apiUrl",
-      "label": "Upload API URL",
-      "type": "text",
-      "required": true,
-      "placeholder": "https://api.example.com/upload",
-      "help": "Your service upload endpoint"
-    },
-    {
-      "name": "token",
-      "label": "API Token",
-      "type": "password",
-      "required": true,
-      "help": "Get your token from https://example.com/settings"
-    },
-    {
-      "name": "storageId",
-      "label": "Storage ID",
-      "type": "select",
-      "filterable": true,
-      "tag": true,
-      "placeholder": "Select or type a storage ID",
-      "help": "The plugin can fetch available storage nodes from your service API.",
-      "dataSource": {
-        "watch": ["apiUrl", "token"],
-        "required": ["apiUrl", "token"],
-        "actionLabel": "Refresh storages",
-        "script": "return async function(config, ctx) {\n  const apiUrl = String(config.apiUrl || '').trim();\n  const token = String(config.token || '').trim();\n  if (!apiUrl || !token) return { options: [] };\n\n  const listUrl = apiUrl.replace(/\\/$/, '').replace(/\\/upload$/i, '') + '/storages';\n  const res = await ctx.fetch(listUrl, {\n    headers: {\n      'Authorization': 'Bearer ' + token,\n      'Accept': 'application/json'\n    }\n  });\n\n  if (!res.ok) throw new Error('HTTP ' + res.status);\n  const json = res.body;\n  const items = Array.isArray(json.data) ? json.data : (json.data && json.data.items) || [];\n  return {\n    options: items.map(item => ({ label: item.name, value: String(item.id) }))\n  };\n}"
-      }
-    },
-    {
-      "name": "visibility",
-      "label": "Visibility",
-      "type": "select",
-      "default": "public",
-      "options": [
-        {
-          "label": "Public",
-          "value": "public"
-        },
-        {
-          "label": "Private",
-          "value": "private"
+  "uploader": {
+    "inputs": [
+      {
+        "name": "apiUrl",
+        "label": "Upload API URL",
+        "type": "text",
+        "required": true,
+        "placeholder": "https://api.example.com/upload",
+        "help": "Your service upload endpoint"
+      },
+      {
+        "name": "token",
+        "label": "API Token",
+        "type": "password",
+        "required": true,
+        "help": "Get your token from https://example.com/settings"
+      },
+      {
+        "name": "storageId",
+        "label": "Storage ID",
+        "type": "select",
+        "filterable": true,
+        "tag": true,
+        "placeholder": "Select or type a storage ID",
+        "help": "The plugin can fetch available storage nodes from your service API.",
+        "dataSource": {
+          "watch": ["apiUrl", "token"],
+          "required": ["apiUrl", "token"],
+          "actionLabel": "Refresh storages",
+          "script": "return async function(config, ctx) {\n  const apiUrl = String(config.apiUrl || '').trim();\n  const token = String(config.token || '').trim();\n  if (!apiUrl || !token) return { options: [] };\n\n  const listUrl = apiUrl.replace(/\\/$/, '').replace(/\\/upload$/i, '') + '/storages';\n  const res = await ctx.fetch(listUrl, {\n    headers: {\n      'Authorization': 'Bearer ' + token,\n      'Accept': 'application/json'\n    }\n  });\n\n  if (!res.ok) throw new Error('HTTP ' + res.status);\n  const json = res.body;\n  const items = Array.isArray(json.data) ? json.data : (json.data && json.data.items) || [];\n  return {\n    options: items.map(item => ({ label: item.name, value: String(item.id) }))\n  };\n}"
         }
-      ]
-    },
-    {
-      "name": "optimize",
-      "label": "Optimize Image",
-      "type": "switch",
-      "default": true
-    }
-  ],
-  "script": "return async function(config, file, ctx) {\n  if (!config.apiUrl) throw new Error('Missing apiUrl');\n\n  const blob = await (await fetch(file.data)).blob();\n  const fd = new FormData();\n  fd.append('file', blob, file.name);\n  fd.append('token', config.token);\n  if (config.storageId) fd.append('storage_id', String(config.storageId));\n  if (config.visibility) fd.append('visibility', String(config.visibility));\n  if (config.optimize !== undefined) fd.append('optimize', String(config.optimize));\n\n  const res = await ctx.fetch(config.apiUrl, {\n    method: 'POST',\n    body: fd\n  });\n\n  if (!res.ok) throw new Error('HTTP ' + res.status);\n  const data = res.body;\n  if (!data || !data.success) throw new Error((data && (data.message || data.msg)) || 'Upload failed');\n\n  const url = data.url || (data.data && data.data.url);\n  if (!url) throw new Error('Upload succeeded but no URL found');\n  return url;\n}"
+      },
+      {
+        "name": "visibility",
+        "label": "Visibility",
+        "type": "select",
+        "default": "public",
+        "options": [
+          {
+            "label": "Public",
+            "value": "public"
+          },
+          {
+            "label": "Private",
+            "value": "private"
+          }
+        ]
+      },
+      {
+        "name": "optimize",
+        "label": "Optimize Image",
+        "type": "switch",
+        "default": true
+      }
+    ],
+    "script": "return async function(config, file, ctx) {\n  if (!config.apiUrl) throw new Error('Missing apiUrl');\n\n  const blob = await (await fetch(file.data)).blob();\n  const fd = new FormData();\n  fd.append('file', blob, file.name);\n  fd.append('token', config.token);\n  if (config.storageId) fd.append('storage_id', String(config.storageId));\n  if (config.visibility) fd.append('visibility', String(config.visibility));\n  if (config.optimize !== undefined) fd.append('optimize', String(config.optimize));\n\n  const res = await ctx.fetch(config.apiUrl, {\n    method: 'POST',\n    body: fd\n  });\n\n  if (!res.ok) throw new Error('HTTP ' + res.status);\n  const data = res.body;\n  if (!data || !data.success) throw new Error((data && (data.message || data.msg)) || 'Upload failed');\n\n  const url = data.url || (data.data && data.data.url);\n  if (!url) throw new Error('Upload succeeded but no URL found');\n  return url;\n}"
+  }
 }

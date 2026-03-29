@@ -1,0 +1,43 @@
+{
+  "id": "builtin.site-detector.lsky-open",
+  "kind": "site-detector",
+  "name": "Lsky Open Site Detector",
+  "version": "1.0.0",
+  "description": "Detects Lsky Open dashboards and logs in through a generic detector action form.",
+  "icon": "i-ph-sign-in-duotone",
+  "author": "GioPic",
+  "detector": {
+    "targetDriveType": "lsky",
+    "match": {
+      "pathnameEquals": [
+        "/dashboard"
+      ]
+    },
+    "presentation": {
+      "title": "发现 Lsky Open 管理台",
+      "description": "填写当前站点的管理员邮箱和密码后，即可由 detector 插件自动换取上传 Token。",
+      "actionText": "登录并添加到 GioPic",
+      "ignoreText": "本站不再提示",
+      "successText": "Lsky Open 配置已添加到 GioPic",
+      "failureText": "Lsky Open 配置提取失败，请检查邮箱、密码或站点接口是否可用。"
+    },
+    "priority": 100,
+    "actionForm": [
+      {
+        "name": "email",
+        "label": "邮箱",
+        "type": "text",
+        "required": true,
+        "placeholder": "admin@example.com"
+      },
+      {
+        "name": "password",
+        "label": "密码",
+        "type": "password",
+        "required": true
+      }
+    ],
+    "detectScript": "return async function(ctx) {\n  if (ctx.page.pathname !== '/dashboard') {\n    return { matched: false };\n  }\n\n  if (!(await ctx.exists('#capacity-progress'))) {\n    return { matched: false };\n  }\n\n  const bodyText = (await ctx.text('body')) || '';\n  if (bodyText.includes('仪表盘') && bodyText.includes('上传图片') && bodyText.includes('画廊') && bodyText.includes('接口')) {\n    return { matched: true, score: 35 };\n  }\n\n  return { matched: false };\n}",
+    "extractScript": "return async function(ctx, form) {\n  const email = String((form && form.email) || '').trim();\n  const password = String((form && form.password) || '').trim();\n  if (!email || !password) {\n    throw new Error('请输入邮箱和密码');\n  }\n\n  const payload = new FormData();\n  payload.append('email', email);\n  payload.append('password', password);\n\n  const response = await ctx.fetchJson(ctx.page.origin + '/api/v1/tokens', {\n    method: 'POST',\n    headers: {\n      Accept: 'application/json'\n    },\n    body: payload\n  });\n\n  const token = response && response.data && response.data.token ? response.data.token : '';\n  if (!token) {\n    throw new Error((response && (response.message || response.msg)) || '登录失败');\n  }\n\n  return {\n    config: {\n      apiUrl: ctx.page.origin,\n      token: String(token),\n      version: 'v1',\n      permission: '0'\n    }\n  };\n}"
+  }
+}

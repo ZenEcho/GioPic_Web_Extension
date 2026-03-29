@@ -1,3 +1,10 @@
+import {
+    DEFAULT_PLUGIN_MARKET_ALLOW_ALL_SITES,
+    DEFAULT_PLUGIN_MARKET_AUTHORIZED_SITES,
+    PLUGIN_MARKET_ALLOW_ALL_SITES_KEY,
+    PLUGIN_MARKET_AUTHORIZED_SITES_KEY,
+} from './pluginMarketAccess'
+
 export function getDefaultSettings() {
     return {
         'giopic-auto-inject': true, // 是否自动注入脚本
@@ -9,6 +16,8 @@ export function getDefaultSettings() {
         'giopic-onboarding-completed': false, // 是否完成欢迎引导
         'giopic-ui-mode': 'classic', // UI 模式
         'open-mode': 'tab', // 打开模式
+        [PLUGIN_MARKET_ALLOW_ALL_SITES_KEY]: DEFAULT_PLUGIN_MARKET_ALLOW_ALL_SITES, // 是否允许所有网站访问插件市场完整权限
+        [PLUGIN_MARKET_AUTHORIZED_SITES_KEY]: [...DEFAULT_PLUGIN_MARKET_AUTHORIZED_SITES], // 插件市场授权站点
         sidebarSettings: { // 侧边栏设置
             enabled: true, // 是否开启侧边栏
             mode: 'inject', // 侧边栏模式

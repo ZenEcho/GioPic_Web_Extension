@@ -1,47 +1,57 @@
 # GioPic 插件开发指南 (Plugin Development SDK)
 
-GioPic 允许开发者通过单个 JSON 文件扩展图床支持。插件支持两类脚本：
+GioPic 当前已升级为统一插件体系，支持两类插件：
 
-- 上传脚本：真正执行文件上传。
-- 配置脚本（`dataSource.script`）：在填写配置时动态拉取选项、回填字段、更新提示。
+- `kind: "uploader"`：上传插件（本文档 1~10 章主体内容仍然适用）。
+- `kind: "site-detector"`：站点识别插件（用于自动提取站点配置并引导一键添加）。
 
-本文档重点说明：
+在统一体系下，安装、启停、卸载、市场分发都复用同一套机制，但不同 `kind` 的字段和脚本签名不同。
 
-1. 每个字段在运行时的实际作用。
-2. 常见字段组合的行为差异。
-3. `plugins/examples` 下各示例插件的定位区别。
+## 0. 本次更新速览（后端必看）
+
+- 新插件建议必须显式声明 `kind`。
+- 历史未声明 `kind` 的插件会被兼容归一化为 `uploader`。
+- 市场与后端传输必须保留完整 `content`，不能用摘要字段重建插件对象。
+- 可执行字符串除了 `uploader.script` / `uploader.inputs[].dataSource.script`，还新增了 detector 的 `detector.detectScript` / `detector.extractScript`。
+
+详细说明请同步阅读：
+
+- `plugins/site_detector_plugin_architecture.md`
 
 ## 1. 插件结构
 
 ```json
 {
   "id": "org.example.plugin",
+  "kind": "uploader",
   "name": "Example Host",
   "version": "1.0.0",
   "author": "Your Name",
   "description": "Upload to Example Host",
   "icon": "i-ph-cloud-arrow-up",
-  "inputs": [
-    {
-      "name": "token",
-      "label": "API Token",
-      "type": "password",
-      "required": true
-    },
-    {
-      "name": "storageId",
-      "label": "Storage ID",
-      "type": "select",
-      "filterable": true,
-      "tag": true,
-      "dataSource": {
-        "watch": ["apiUrl", "token"],
-        "required": ["apiUrl", "token"],
-        "script": "return async function(config, ctx) { ... }"
+  "uploader": {
+    "inputs": [
+      {
+        "name": "token",
+        "label": "API Token",
+        "type": "password",
+        "required": true
+      },
+      {
+        "name": "storageId",
+        "label": "Storage ID",
+        "type": "select",
+        "filterable": true,
+        "tag": true,
+        "dataSource": {
+          "watch": ["apiUrl", "token"],
+          "required": ["apiUrl", "token"],
+          "script": "return async function(config, ctx) { ... }"
+        }
       }
-    }
-  ],
-  "script": "return async function(config, file, ctx) { ... }"
+    ],
+    "script": "return async function(config, file, ctx) { ... }"
+  }
 }
 ```
 
@@ -50,6 +60,7 @@ GioPic 允许开发者通过单个 JSON 文件扩展图床支持。插件支持�
 | 字段 | 必填 | 类型 | 作用 | 备注 |
 | --- | --- | --- | --- | --- |
 | `id` | 是 | string | 插件唯一标识 | 建议反向域名格式，如 `dev.fileup.lsky-universal` |
+| `kind` | 建议必填 | string | 插件类型 | `uploader` 或 `site-detector`；历史插件缺失时按 `uploader` 兼容 |
 | `name` | 是 | string | 插件显示名称 | 会出现在插件列表中 |
 | `version` | 是 | string | 插件版本 | 建议语义化版本 |
 | `author` | 否 | string | 作者名称 | 可用于展示署名 |
@@ -57,15 +68,26 @@ GioPic 允许开发者通过单个 JSON 文件扩展图床支持。插件支持�
 | `description` | 否 | string | 插件描述 | 建议简洁说明用途 |
 | `homepage` | 否 | string | 插件主页 | 可选 |
 | `icon` | 否 | string | 图标类名或远程 URL | 建议稳定可访问 |
-| `inputs` | 是 | array | 配置表单定义 | 数组元素为 `PluginInputSchema` |
-| `script` | 是 | string | 上传脚本字符串 | 运行时必须返回 `async function(config, file, ctx)` |
+| `uploader` | `uploader` 必填 | object | uploader 运行块 | 只包含 `inputs` + `script` |
+| `uploader.inputs` | `uploader` 必填 | array | 配置表单定义 | 数组元素为 `PluginInputSchema`；可为空数组 |
+| `uploader.script` | `uploader` 必填 | string | 上传脚本字符串 | 运行时必须返回 `async function(config, file, ctx)` |
+| `detector` | `site-detector` 必填 | object | detector 运行块 | 只包含 detector 专属字段 |
+| `detector.targetDriveType` | `site-detector` 必填 | string | 目标图床类型 | 用于最终 `ADD_CONFIG` 的 `type` |
+| `detector.detectScript` | `site-detector` 必填 | string | 检测脚本字符串 | 运行时必须返回 `async function(ctx)` |
+| `detector.extractScript` | `site-detector` 必填 | string | 提取脚本字符串 | 运行时必须返回 `async function(ctx, form, state)` |
+| `detector.match` | 否 | object | 静态匹配规则 | 用于预筛选 + 参与得分 |
+| `detector.presentation` | 否 | object | 探测卡片文案 | 可由 `detector.detectScript` 结果覆盖 |
+| `detector.priority` | 否 | number | 候选优先级 | 参与总分；未填按 `0` |
+| `detector.actionForm` | 否 | array | 探测卡片表单 | 数组元素为 `DetectorActionFieldSchema` |
 
 ### 2.1 需要“原样保留”的可执行字符串
 
-下面两个字段不是普通文案，而是运行时代码：
+下面这些字段不是普通文案，而是运行时代码：
 
-- `plugin.script`
-- `plugin.inputs[].dataSource.script`
+- `plugin.uploader.script`
+- `plugin.uploader.inputs[].dataSource.script`
+- `plugin.detector.detectScript`（仅 `site-detector`）
+- `plugin.detector.extractScript`（仅 `site-detector`）
 
 在发布链路（提交、审核、安装、分发）中必须原样保留，避免 parse 后再 stringify 导致转义和换行被破坏。
 
@@ -399,3 +421,142 @@ return async function(config, file, ctx) {
 - `watch` / `required` 对触发时机有实际约束。
 - `visibleWhen` / `disabledWhen` 联动与条件语义一致。
 - `select` 的 `filterable/clearable/tag/multiple` 均可观察到明显行为差异。
+
+## 11. `site-detector` 快速对接（新增）
+
+`site-detector` 与 `uploader` 不同，它不负责上传文件，而是负责“识别站点 + 提取配置”。
+
+### 11.1 最小结构
+
+```json
+{
+  "id": "builtin.site-detector.easyimages",
+  "kind": "site-detector",
+  "name": "EasyImages Site Detector",
+  "version": "1.0.0",
+  "detector": {
+    "targetDriveType": "easyimages",
+    "detectScript": "return async function(ctx) { ... }",
+    "extractScript": "return async function(ctx, form, state) { ... }"
+  }
+}
+```
+
+### 11.2 必填字段
+
+| 字段 | 说明 |
+| --- | --- |
+| `kind` | 固定为 `site-detector` |
+| `detector.targetDriveType` | 最终要写入 GioPic 的图床类型 |
+| `detector.detectScript` | 识别脚本，签名：`async function(ctx)` |
+| `detector.extractScript` | 提取脚本，签名：`async function(ctx, form, state)` |
+
+### 11.3 可选字段
+
+- `detector.match`：静态匹配规则（域名/路径/URL 模式）
+- `detector.presentation`：宿主 UI 文案
+- `detector.priority`：候选 detector 优先级
+- `detector.actionForm`：统一宿主表单字段（不支持 `kv-pairs`、`visibleWhen`、`disabledWhen`、`dataSource`）
+
+### 11.4 后端调整要点
+
+- 安装与市场分发按 `kind` 做 schema 校验分流。
+- 审核页需展示 detector 特有字段：`detector.targetDriveType`、`detector.match`、`detector.presentation`、`detector.actionForm`、`detector.detectScript`、`detector.extractScript`。
+- 继续坚持“完整 content 原样传输”，不要在服务端重新组装脚本字段。
+
+### 11.5 字段行为详解（重点）
+
+#### 11.5.1 `detector.match`：静态预筛选 + 静态加分
+
+`detector.match` 不只是“可选提示字段”，而是执行链第一道门槛：
+
+- 先执行静态匹配；不通过则不会执行 `detector.detectScript`。
+- 通过后把静态得分加到候选总分中。
+
+计算规则（按当前实现）：
+
+| 子字段 | 命中逻辑 | 分值 | 备注 |
+| --- | --- | --- | --- |
+| `domains` | `hostname` 与任一条目完全相等（忽略大小写） | +120 | 写了就必须命中 |
+| `domainSuffixes` | `hostname` 以任一后缀结尾（忽略大小写） | +80 | 写了就必须命中 |
+| `pathnameEquals` | `pathname` 与任一条目完全相等 | +40 | 写了就必须命中 |
+| `pathnameIncludes` | `pathname` 包含任一条目 | +20 | 写了就必须命中 |
+| `urlPatterns` | 任一模式命中完整 URL | +25 | 优先按 RegExp；非法正则回退为字符串包含 |
+
+匹配关系总结：
+
+- 同一子字段内是 OR（任一命中即可）。
+- 不同子字段之间是 AND（只要写了就都要命中）。
+- 完全不写 `detector.match` 时，静态分为 `0`，但仍会继续执行 `detector.detectScript`。
+
+#### 11.5.2 `detector.priority`：候选优先级权重
+
+最终候选得分：
+
+```text
+totalScore = (priority || 0) + matchScore + detectScriptScore
+```
+
+行为要点：
+
+- `priority` 越高，越容易在多 detector 同时命中时胜出。
+- 允许任意有限数字（可为负数、小数）；非有限数字会校验失败。
+- 同分时保留先遍历到的插件（比较条件是 `>` 而不是 `>=`）。
+
+#### 11.5.3 `detector.detectScript`：动态识别脚本返回约定
+
+`detector.detectScript` 运行签名：`async function(ctx)`。
+
+可返回值与归一化行为：
+
+- `true`：视为命中，`score=0`，`data={}`。
+- `false` / `null` / `undefined` / `0`：视为未命中。
+- 非对象 truthy 值：按命中处理，`score=0`。
+- 对象：支持字段  
+  - `matched?: boolean`（默认 `true`）  
+  - `score?: number`（无效值按 `0`）  
+  - `data?: Record<string, any>`  
+  - `presentation?: SiteDetectorPresentation`
+
+如果对象里没有 `data`，则会把除 `matched/score/presentation` 之外的顶层字段视为 `data`。
+
+#### 11.5.4 `detector.extractScript`：提取脚本返回约定
+
+`detector.extractScript` 运行签名：`async function(ctx, form, state)`。
+
+- `form` 来自 `detector.actionForm` 当前输入值。
+- `state` 来自 `detector.detectScript` 输出（归一化后的 `data`）。
+- 返回值可直接是配置对象，或 `{ config, successText }`。
+- 宿主最终会调用 `ADD_CONFIG`，其中 `type = detector.targetDriveType`，其余字段来自你的返回配置。
+
+#### 11.5.5 `detector.actionForm`：统一宿主表单字段
+
+支持字段类型：`text/password/checkbox/select/textarea/number/switch`。
+
+不支持能力（即使写了也不会按 uploader 那套生效）：
+
+- `kv-pairs`
+- `visibleWhen`
+- `disabledWhen`
+- `dataSource`
+- `tag`
+
+默认值策略（未填 `default` 时）：
+
+- `multiple: true` => `[]`
+- `checkbox` / `switch` => `false`
+- 其他类型 => `''`
+
+实践建议：
+
+- `required` 目前不会自动阻止提交，建议在 `detector.extractScript` 里自行校验并抛错提示。
+- `number` 字段建议在脚本内做 `Number.isFinite` 二次校验，避免空值转换带来歧义。
+
+#### 11.5.6 `detector.presentation`：宿主文案覆盖
+
+可配置字段：`title/description/actionText/ignoreText/successText/dismissText/failureText`。
+
+优先级：
+
+- 先用插件静态 `detector.presentation`
+- 再用 `detector.detectScript` 返回的 `presentation` 覆盖同名字段

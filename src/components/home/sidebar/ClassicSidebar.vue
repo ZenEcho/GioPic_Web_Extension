@@ -32,6 +32,7 @@ import { ref, onMounted } from 'vue'
 import { getStorageIcon } from '@/utils/icon'
 import { useSidebar } from '@/composables/useSidebar'
 import browser from 'webextension-polyfill'
+import { useRouter } from 'vue-router'
 
 
 const props = defineProps<{
@@ -48,6 +49,7 @@ const emit = defineEmits<{
 const { t } = useI18n()
 const configStore = useConfigStore()
 const themeStore = useThemeStore()
+const router = useRouter()
 const isHovered = ref(false)
 
 const {
@@ -79,8 +81,7 @@ onMounted(() => {
             'md:w-[288px] md:h-auto md:static md:translate-y-0 md:m-6'
         ]" @mouseenter="isHovered = true" @mouseleave="isHovered = false" @click="isHovered = true">
         <div class="flex flex-row items-center mb-8 header-section">
-            <div class="w-full text-2xl font-black tracking-tighter dark:text-white">{{ t('app.name') }}-<span
-                    class="text-primary">{{ t('app.nameSuffix') }}</span></div>
+            <div class="w-full text-2xl font-black tracking-tighter dark:text-white">{{ t('app.name') }}</div>
 
             <div class="flex flex-row items-center gap-1">
                  <button class="giopic-icon-btn text-gray-400 hover:text-primary text-xl"
@@ -91,6 +92,10 @@ onMounted(() => {
                     class="giopic-icon-btn  rounded-lg text-gray-400 hover:text-primary hover:bg-gray-50 dark:hover:bg-gray-700 transition-all"
                     @click="themeStore.setUiMode(themeStore.uiMode === 'console' ? 'classic' : 'console')">
                     <div class="i-ph-layout text-lg" />
+                </button>
+                <button class="giopic-icon-btn text-gray-400 hover:text-primary text-xl"
+                    :title="t('settings.plugins.title')" @click.stop="router.push('/plugins')">
+                    <div class="i-ph-puzzle-piece" />
                 </button>
                 <button class="giopic-icon-btn text-gray-400 hover:text-primary text-xl"
                     @click.stop="emit('openSettings')">

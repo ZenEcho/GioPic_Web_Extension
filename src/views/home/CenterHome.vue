@@ -12,6 +12,7 @@ import UploadZone from '@/components/home/upload/UploadZone.vue'
 import UploadQueue from '@/components/home/queue/UploadQueue.vue'
 import HistoryView from '@/views/HistoryView.vue'
 import NodeList from '@/components/home/node/NodeList.vue'
+import { useRouter } from 'vue-router'
 
 const props = defineProps<{
     fileQueue: any
@@ -27,6 +28,7 @@ const emit = defineEmits<{
 const { t } = useI18n()
 const configStore = useConfigStore()
 const themeStore = useThemeStore()
+const router = useRouter()
 
 // 视图状态: 'upload' | 'history' | 'config'
 const currentView = ref('upload')
@@ -85,6 +87,11 @@ function handleEditItem(id: string, payload: { file: File; preview: string }) {
                     @click="themeStore.toggleDark()"
                     :title="themeStore.isDark ? t('settings.lightMode') : t('settings.darkMode')">
                     <div class="text-lg" :class="themeStore.isDark ? 'i-ph-moon' : 'i-ph-sun'" />
+                </button>
+                <button
+                    class="giopic-icon-btn w-9 h-9 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-400 hover:text-primary transition-colors"
+                    :title="t('settings.plugins.title')" @click="router.push('/plugins')">
+                    <div class="i-ph-puzzle-piece text-lg" />
                 </button>
                 <button
                     class="giopic-icon-btn w-9 h-9 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-400 hover:text-primary transition-colors"

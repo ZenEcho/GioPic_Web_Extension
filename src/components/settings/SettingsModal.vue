@@ -23,10 +23,11 @@
 import { useI18n } from 'vue-i18n'
 import { useThemeStore, themeColors } from '@/stores/theme'
 import { computed, ref, onMounted, onBeforeUnmount } from 'vue'
+import { useRouter } from 'vue-router'
 import browser from 'webextension-polyfill'
 import FloatingBallSettings from './FloatingBallSettings.vue'
+import PluginMarketAccessSettings from './PluginMarketAccessSettings.vue'
 import SiteEditorSettings from './SiteEditorSettings.vue'
-import PluginManagerModal from './PluginManagerModal.vue'
 import { useMessage, useDialog } from 'naive-ui'
 import { db } from '@/utils/storage'
 import { getDefaultSettings } from '@/constants/defaultSettings'
@@ -42,6 +43,7 @@ const emit = defineEmits<{
 }>()
 
 const { t, locale } = useI18n()
+const router = useRouter()
 const themeStore = useThemeStore()
 const message = useMessage()
 const dialog = useDialog()
@@ -52,8 +54,8 @@ const autoInject = ref(false)
 const contextMenu = ref(true)
 const hoverPreview = ref(true)
 const showFloatingBallSettings = ref(false)
+const showPluginMarketAccessSettings = ref(false)
 const showSiteEditorSettings = ref(false)
-const showPluginManager = ref(false)
 
 const desktopEnabled = ref(false)
 const desktopStatus = ref<DesktopLinkStatusType>('disabled')
@@ -156,6 +158,11 @@ async function setHoverPreview(val: boolean) {
     hoverPreview.value = val
     await browser.storage.local.set({ 'giopic-hover-preview': val })
     // Notify content scripts? Or just let them read storage change if they listen
+}
+
+function openPluginManagerPage() {
+    emit('update:show', false)
+    void router.push('/plugins')
 }
 
 async function setOpenMode(mode: string) {
@@ -498,12 +505,20 @@ async function handleResetExtension() {
                             <div class="text-sm font-bold text-gray-500 mb-2 flex items-center gap-1">
                                 <div class="i-ph-plug" /> {{ t('settings.plugins.title') }}
                             </div>
-                            <button
-                                class="giopic-link-btn giopic-link-btn-primary w-full py-2 border font-medium text-sm flex items-center justify-center gap-2"
-                                :class="'border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'"
-                                @click="showPluginManager = true">
-                                <div class="i-ph-puzzle-piece" /> {{ t('settings.plugins.title') }}
-                            </button>
+                            <div class="space-y-2">
+                                <button
+                                    class="giopic-link-btn giopic-link-btn-primary w-full py-2 border font-medium text-sm flex items-center justify-center gap-2"
+                                    :class="'border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'"
+                                    @click="openPluginManagerPage">
+                                    <div class="i-ph-puzzle-piece" /> {{ t('settings.plugins.market') }}
+                                </button>
+                                <button
+                                    class="giopic-link-btn giopic-link-btn-primary w-full py-2 border font-medium text-sm flex items-center justify-center gap-2"
+                                    :class="'border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'"
+                                    @click="showPluginMarketAccessSettings = true">
+                                    <div class="i-ph-shield-check" /> {{ t('settings.pluginMarketAccess.manage') }}
+                                </button>
+                            </div>
                         </div>
 
                         <!-- Desktop Link -->
@@ -684,6 +699,6 @@ async function handleResetExtension() {
         </div>
     </n-modal>
     <FloatingBallSettings v-model:show="showFloatingBallSettings" />
+    <PluginMarketAccessSettings v-model:show="showPluginMarketAccessSettings" />
     <SiteEditorSettings v-model:show="showSiteEditorSettings" />
-    <PluginManagerModal v-model:show="showPluginManager" />
 </template>

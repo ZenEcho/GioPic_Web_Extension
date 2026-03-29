@@ -9,12 +9,16 @@ GioPic is a browser extension for multi-node concurrent image uploading that ena
 ## 🌟 Features
 
 - **Multi-node Distribution**: Configure multiple "distribution nodes" to push images to all targets in parallel with a single upload.
-- **Powerful Plugin System**: Support importing JavaScript plugins (.json) to extend support for any image host, running in a secure Sandbox environment.
+- **Unified Plugin System**: Support both `uploader` plugins and `site-detector` plugins with the same install, enable/disable, uninstall, and marketplace flow.
+- **Powerful Plugin System**: Support importing JSON plugins to extend image-host support, with uploader scripts running in a secure sandbox.
+- **Plugin Manager & Online Marketplace**:
+  - Review installed plugins, filter by kind/status, enable/disable them, uninstall them, and inspect full JSON payloads.
+  - Install or update plugins from the online marketplace, or import local plugin files manually.
 - **Extensive Provider Support**:
   - **Image Hosting Platforms**: Lsky Pro, EasyImages, Chevereto, ImgURL, Zpic, Hellohao, SM.MS, Imgur, ImgDD, OneImg
   - **Object Storage**: Alibaba Cloud OSS, Tencent Cloud COS, AWS S3
   - **Others**: GitHub Repository, Custom HTTP Interface
-  - **Plugin Extensions**: Support user-defined JavaScript plugins
+  - **Plugin Extensions**: Support user-defined uploader plugins
 - **Built-in Image Editor**:
   - Supports cropping, annotation (text, shapes, brush), and layer management.
   - Supports filter enhancement, undo/redo, and minimap preview.
@@ -24,6 +28,7 @@ GioPic is a browser extension for multi-node concurrent image uploading that ena
   - Right-click menu "GioPic Upload Image" on web pages.
 - **Seamless Page Integration & Smart Adaptation**:
   - **Smart Editor Detection**: Automatically detects editors like Discuz!, Markdown, RichText, and supports manual binding of site-to-editor types.
+  - **Site Detector Plugins**: Support safe page-side site recognition, config extraction, and per-site dismiss/ignore behavior through `site-detector` plugins.
   - **Enhanced Floating Ball**: Supports position memory, opacity adjustment, and auto-hiding.
   - Floating upload list shows real-time progress and supports one-click link copying or injection into page input fields.
 - **History & Batch Management**: Supports searching, filtering, sorting, and batch deletion of upload records.
@@ -58,7 +63,7 @@ GioPic is a browser extension for multi-node concurrent image uploading that ena
 
 ### One-Click Setup
 
-For supported sites (e.g., Lsky Pro, EasyImages), when you visit the site, GioPic may detect it and provide a "One-Click Add" button to automatically configure the extension.
+GioPic now includes a `site-detector` plugin architecture and example detectors. After installing a matching detector plugin, visiting the target site can show a "One-Click Add" card that extracts and saves the config automatically.
 ![image](https://i.mji.rip/2026/01/26/e7355efe889a37dca766945154e5fff8.png)
 ![image](https://i.mji.rip/2026/01/26/1e99ccbcfe5f892ae40ef4fa0f47578c.png)
 
@@ -86,7 +91,21 @@ For supported sites (e.g., Lsky Pro, EasyImages), when you visit the site, GioPi
 
 ### One-Click Setup
 
-For supported sites (e.g., Lsky Pro, EasyImages), when you visit the site, GioPic may detect it and provide a "One-Click Add" button to automatically configure the extension.
+After installing the matching `site-detector` plugin, the detector can recognize supported pages and guide you through one-click configuration.
+
+### Plugin Management & Marketplace
+
+1. Open the main UI, go to `Settings`, then enter the plugin manager page.
+2. In "Installed Plugins", you can filter `uploader / site-detector`, toggle plugins, inspect config fields, and view full JSON payloads.
+3. In "Online Marketplace", you can review versions, authors, download counts, then install or update plugins directly.
+4. For local detector testing, you can import files from `plugins/examples/site-detectors/*.json`.
+
+## 📚 Docs Index
+
+- [Unified Plugin Architecture](./plugins/plugin_architecture.md)
+- [Site Detector Architecture](./plugins/site_detector_plugin_architecture.md)
+- [Plugin Development Guide](./plugins/plugin_dev_guide.md)
+- [Plugin Marketplace Bridge API](./plugins/plugin_market_api.md)
 
 ## 🧑‍💻 Development Guide
 
@@ -133,8 +152,12 @@ You can extend storage support in two ways:
 
 #### 1. Develop a Plugin (Recommended)
 
-No need to modify the source code. Just write a plugin file in JSON format. Plugins run in a secure sandbox.
-See details: [Plugin System Architecture](./plugins/plugin_architecture.md)
+No need to modify the source code. Just write a plugin file in JSON format.
+
+- For uploader plugins, see: [Plugin System Architecture](./plugins/plugin_architecture.md)
+- For site detectors, see: [Site Detector Architecture](./plugins/site_detector_plugin_architecture.md)
+- For fields and script signatures, see: [Plugin Development Guide](./plugins/plugin_dev_guide.md)
+- For the online marketplace payload format, see: [Plugin Marketplace Bridge API](./plugins/plugin_market_api.md)
 
 #### 2. Native Integration
 

@@ -23,12 +23,12 @@
  -->
 <script setup lang="ts">
 import { ref, computed } from 'vue'
+import { useRouter } from 'vue-router'
 
 import { useThemeStore } from '@/stores/theme'
 import { useI18n } from 'vue-i18n'
 import browser from 'webextension-polyfill'
 import confetti from 'canvas-confetti'
-import PluginManagerModal from '@/components/settings/PluginManagerModal.vue'
 
 const props = defineProps<{
     show: boolean
@@ -42,11 +42,11 @@ const emit = defineEmits<{
 
 const themeStore = useThemeStore()
 const { t, locale } = useI18n()
+const router = useRouter()
 
 // 内部状态
 const isOnboardingMinimized = ref(false)
 const onboardingStep = ref<'language' | 'layout' | 'config'>('language')
-const showPluginManager = ref(false)
 
 const steps = [
     { key: 'language', icon: 'i-ph-translate' },
@@ -96,6 +96,10 @@ function handleComplete() {
     emit('complete')
 }
 
+function openPluginManager() {
+    void router.push('/plugins')
+}
+
 // 暴露给父组件的方法，用于在外部触发最小化（例如去配置节点前）
 function minimize() {
     isOnboardingMinimized.value = true
@@ -124,8 +128,6 @@ defineExpose({
     <Transition name="fade">
         <div v-if="show" class="fixed inset-0 z-50 flex items-center justify-center"
             :class="isOnboardingMinimized ? 'pointer-events-none' : ''">
-
-            <PluginManagerModal v-model:show="showPluginManager" class="z-[100]" />
 
             <!-- Backdrop -->
             <div class="absolute inset-0 bg-black/40 backdrop-blur-sm transition-opacity duration-300"
@@ -290,7 +292,7 @@ defineExpose({
 
                             <!-- Import Plugin -->
                             <div class="relative group cursor-pointer rounded-xl border-2 border-gray-100 dark:border-gray-700 hover:border-primary/50 transition-all duration-300 p-4 hover:shadow-lg flex items-center gap-4"
-                                @click="showPluginManager = true">
+                                @click="openPluginManager">
                                 <div
                                     class="w-12 h-12 rounded-lg bg-purple-500/10 flex items-center justify-center text-2xl text-purple-500">
                                     <div class="i-ph-puzzle-piece-duotone" />

@@ -200,6 +200,11 @@ const handleNodeDblClick = (config: DriveConfig) => {
             </button>
             <button
                 class="w-10 h-10 rounded-full bg-white/50 dark:bg-gray-800/50 backdrop-blur-sm hover:bg-white dark:hover:bg-gray-800 flex items-center justify-center text-gray-500 hover:text-primary transition-all shadow-sm"
+                :title="t('settings.plugins.title')" @click="router.push('/plugins')">
+                <div class="i-ph-puzzle-piece text-lg" />
+            </button>
+            <button
+                class="w-10 h-10 rounded-full bg-white/50 dark:bg-gray-800/50 backdrop-blur-sm hover:bg-white dark:hover:bg-gray-800 flex items-center justify-center text-gray-500 hover:text-primary transition-all shadow-sm"
                 @click="emit('openSettings')">
                 <div class="i-ph-gear-six text-lg" />
             </button>

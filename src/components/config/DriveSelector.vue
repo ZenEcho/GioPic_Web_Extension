@@ -23,9 +23,9 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { useRouter } from 'vue-router'
 import { type DriveCategory } from '@/constants/driveSchemas'
 import { useDriveRegistry } from '@/composables/useDriveRegistry'
-import PluginManagerModal from '@/components/settings/PluginManagerModal.vue'
 
 // 定义组件 Props
 const props = defineProps<{
@@ -39,10 +39,10 @@ const emit = defineEmits<{
 }>()
 
 const { t } = useI18n()
+const router = useRouter()
 // 使用组合式函数获取图床注册表和元数据获取器
 const { registry, getDriveMeta: getMeta } = useDriveRegistry()
 const searchQuery = ref('')
-const showPluginManager = ref(false)
 
 // 类别定义 (顺序和标题)
 const CATEGORY_DEFINITIONS: { id: DriveCategory, title: string }[] = [
@@ -131,11 +131,14 @@ function handleSelect(type: string) {
     emit('update:modelValue', type)
     emit('select', type)
 }
+
+function openPluginManager() {
+    void router.push('/plugins')
+}
 </script>
 
 <template>
     <div class="flex flex-col h-[550px] bg-gray-50/50 dark:bg-gray-900/50">
-        <PluginManagerModal v-model:show="showPluginManager" class="z-[100]" />
         <!-- 顶部搜索栏 -->
         <div class="sticky top-0 z-10 p-4 sm:p-6 bg-white/80 dark:bg-gray-800/80 backdrop-blur-md border-b border-gray-100 dark:border-gray-700">
             <div class="max-w-xl mx-auto flex items-center gap-2 sm:gap-3">
@@ -160,7 +163,7 @@ function handleSelect(type: string) {
                 <button 
                     class="p-2 sm:p-3 rounded-xl sm:rounded-2xl bg-gray-100 dark:bg-gray-900/50  dark:hover:bg-gray-800 border-2 border-transparent hover:border-primary-20 hover:text-primary -primary-5 transition-all duration-300 text-gray-500 shrink-0"
                     :title="t('settings.plugins.title')"
-                    @click="showPluginManager = true"
+                    @click="openPluginManager"
                 >
                     <div class="i-ph-puzzle-piece-duotone text-lg sm:text-xl"></div>
                 </button>

@@ -35,6 +35,7 @@ import { useDialog, useMessage } from 'naive-ui'
 import browser from 'webextension-polyfill'
 import { getStorageIcon } from '@/utils/icon'
 import { useSidebar } from '@/composables/useSidebar'
+import { useRouter } from 'vue-router'
 
 const props = defineProps<{
     selectedIds: string[],
@@ -52,6 +53,7 @@ const emit = defineEmits<{
 const { t } = useI18n()
 const configStore = useConfigStore()
 const themeStore = useThemeStore()
+const router = useRouter()
 
 const currentVersion = ref('2.0.0')
 const isConfigExpanded = ref(true)
@@ -112,7 +114,7 @@ async function toggleCollapse() {
                 </div>
                 <span v-show="!isCollapsed"
                     class="text-sm font-bold text-gray-700 dark:text-gray-200 whitespace-nowrap transition-opacity duration-200">{{
-                        t('home.myImages') }}</span>
+                        t('app.name') }}</span>
             </div>
             <div v-show="!isCollapsed" class="flex items-center">
                 <button
@@ -126,6 +128,11 @@ async function toggleCollapse() {
                     class="giopic-icon-btn w-8 h-8 rounded-lg text-gray-400 hover:text-primary hover:bg-gray-50 dark:hover:bg-gray-700 transition-all"
                     @click="themeStore.setUiMode(themeStore.uiMode === 'console' ? 'classic' : 'console')">
                     <div class="i-ph-layout text-lg" />
+                </button>
+                <button
+                    class="giopic-icon-btn w-8 h-8 rounded-lg text-gray-400 hover:text-primary hover:bg-gray-50 dark:hover:bg-gray-700 transition-all"
+                    :title="t('settings.plugins.title')" @click="router.push('/plugins')">
+                    <div class="i-ph-puzzle-piece text-lg" />
                 </button>
 
                 <button

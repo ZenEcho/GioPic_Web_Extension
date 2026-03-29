@@ -70,6 +70,10 @@ async function Out() {
     sandboxHtml = sandboxHtml.replace('.ts', '.js');
     await writeFile(`dist/src/sandbox/index.html`, sandboxHtml, 'utf-8');
 
+    let siteDetectorSandboxHtml = await readFile(`src/sandbox/site-detector.html`, 'utf-8');
+    siteDetectorSandboxHtml = siteDetectorSandboxHtml.replace('.ts', '.js');
+    await writeFile(`dist/src/sandbox/site-detector.html`, siteDetectorSandboxHtml, 'utf-8');
+
     // Copy Offscreen
     await ensureDir(`dist/src/offscreen`);
     let offscreenHtml = await readFile(`src/offscreen/offscreen.html`, 'utf-8');

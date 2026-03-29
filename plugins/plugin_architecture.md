@@ -1,12 +1,28 @@
-# GioPic 插件系统架构解析
+# GioPic 统一插件系统架构解析
 
-本文档描述 GioPic 在 Manifest V3 下的插件执行架构。当前插件系统同时支持两类任务：
-- 上传阶段脚本：处理真实文件上传
-- 配置阶段脚本：在表单填写时动态请求远端 API，生成下拉选项或回填字段
+本文档描述 GioPic 在 Manifest V3 下的统一插件架构。当前系统支持两类插件：
 
-两类任务都复用同一条安全执行链路：`UI / Background -> Offscreen Document -> Sandbox iframe`。
+- `kind: "uploader"`：执行上传与 uploader 配置脚本
+- `kind: "site-detector"`：识别站点并提取图床配置
 
-## 目录结构
+二者共享同一套安装、启停、卸载、市场分发模型，但运行链路不同。
+
+## 1. 架构总览
+
+### 1.1 统一模型
+
+- 统一类型：`PluginKind = 'uploader' | 'site-detector'`
+- 统一载荷：市场与后端都以 `PluginVersion.content` 保存和传输完整插件 JSON
+- 兼容规则：历史未声明 `kind` 的插件按 `uploader` 兼容
+
+### 1.2 双执行链路
+
+- `uploader`：`UI/Background -> PluginRunner -> Offscreen -> Sandbox iframe`
+- `site-detector`：`Content Script -> siteDetectorRunner -> SiteDetector Sandbox iframe -> TokenDetectorHost`
+
+## 2. `uploader` 执行链（保留）
+
+### 2.1 核心目录
 
 ```text
 src/
@@ -20,148 +36,87 @@ src/
     └── pluginRunner.ts
 ```
 
-## 核心模块
+### 2.2 关键职责
 
-### 1. Plugin Runner (`src/services/pluginRunner.ts`)
+- `pluginRunner`：调度上传/配置任务，维护任务状态和进度
+- `offscreen`：网络代理与消息中转
+- `sandbox`：受限执行 `uploader.script` 与 `uploader.inputs[].dataSource.script`
 
-角色：调度器
+### 2.3 脚本签名
 
-职责：
-- 确保 Offscreen Document 可用
-- 对沙箱做 `PING / PONG` 健康检查
-- 将上传任务和配置任务统一封装成 `EXECUTE_PLUGIN`
-- 跟踪任务结果与上传进度
+- 上传脚本：`async function(config, file, ctx)`
+- 配置脚本：`async function(config, ctx)`
 
-### 2. Offscreen Document (`src/offscreen/`)
+## 3. `site-detector` 执行链（新增）
 
-角色：中转代理
+### 3.1 核心目录
 
-职责：
-- 接收 `EXECUTE_PLUGIN`
-- 将任务转发给 Sandbox iframe
-- 代理 `ctx.fetch` 请求
-- 用 `XMLHttpRequest` 发送真实网络请求，以支持上传进度
-- 将 `PLUGIN_EXECUTION_RESULT` / `PLUGIN_PROGRESS` 回传给扩展运行时
-
-### 3. Sandbox (`src/sandbox/`)
-
-角色：受限执行环境
-
-职责：
-- 解析插件脚本
-- 注入受限的 `ctx` 能力
-- 执行配置脚本或上传脚本
-- 通过 `postMessage` 与 Offscreen 通信
-
-## 两类脚本的执行模型
-
-### 上传脚本
-
-函数签名：
-
-```js
-return async function(config, file, ctx) {
-  // 上传逻辑
-}
+```text
+src/
+├── content/components/
+│   └── TokenDetectorHost.vue
+├── content/services/
+│   ├── siteDetectorRunner.ts
+│   ├── siteDetectorSandbox.ts
+│   └── siteDetectorStorage.ts
+└── sandbox/
+    ├── site-detector.html
+    └── site-detector.ts
 ```
 
-特点：
-- 会收到文件的序列化数据
-- 可以使用 `ctx.fileToBlob()` 或 `fetch(file.data)` 获取二进制内容
-- 支持上传进度事件
+### 3.2 关键职责
 
-### 配置脚本
+- `siteDetectorStorage`：持久化“本站不再提示 / 当前页关闭提示”等 detector 宿主状态
+- `siteDetectorRunner`：执行 `detector.match` + `detector.detectScript`，计算最佳候选
+- `siteDetectorSandbox`：在受控 iframe 中执行 detector 脚本
+- `TokenDetectorHost.vue`：统一渲染 detector 文案和 `detector.actionForm`，触发 `detector.extractScript`
 
-函数签名：
+### 3.3 运行流程
 
-```js
-return async function(config, ctx) {
-  // 动态配置逻辑
-}
-```
+1. 通过 background 读取本地启用的 `site-detector` 插件。
+2. 先做 `detector.match` 静态筛选。
+3. 进入 sandbox 执行 `detector.detectScript`，得到命中状态和评分。
+4. 选择最佳 detector，渲染统一宿主 UI。
+5. 用户触发后执行 `detector.extractScript`，返回 `{ config }`。
+6. 通过统一消息保存配置（`ADD_CONFIG`）。
 
-特点：
-- 不接收文件对象
-- 主要用于拉取存储列表、相册列表、目录列表等
-- 可以返回 `options`、`value`、`patch`、`help`、`placeholder`
+## 4. 安全边界
 
-## 数据流
+两类插件都遵循“脚本受限执行”的原则，但边界略有差异：
 
-### 上传流程
+- `uploader` 脚本运行在 Offscreen 沙箱链路，网络统一经代理。
+- `site-detector` 脚本运行在 content-side 受控 sandbox iframe，只能通过异步 `ctx` 访问能力。
 
-```mermaid
-sequenceDiagram
-    participant UI as UI / Background
-    participant Runner as PluginRunner
-    participant Offscreen as Offscreen Document
-    participant Sandbox as Sandbox
-    participant Server as Remote API
+统一限制：
 
-    UI->>Runner: 上传图片
-    Runner->>Offscreen: EXECUTE_PLUGIN(mode=upload)
-    Offscreen->>Sandbox: EXECUTE
-    Sandbox->>Offscreen: FETCH_REQUEST
-    Offscreen->>Server: XHR / Fetch Proxy
-    Server-->>Offscreen: 响应 + 进度
-    Offscreen-->>Runner: PLUGIN_PROGRESS
-    Offscreen-->>Sandbox: FETCH_RESULT
-    Sandbox-->>Offscreen: EXECUTE_RESULT
-    Offscreen-->>Runner: PLUGIN_EXECUTION_RESULT
-    Runner-->>UI: 上传完成
-```
+- 不能直接访问 `chrome.*` / `browser.*`
+- 不能直接读写扩展存储
+- 不能绕过宿主随意扩展能力
 
-### 配置流程
+`site-detector` 额外限制：
 
-```mermaid
-sequenceDiagram
-    participant UI as Config Form
-    participant Runner as PluginRunner
-    participant Offscreen as Offscreen Document
-    participant Sandbox as Sandbox
-    participant Server as Remote API
+- 不能直接获取 live DOM，只能拿查询快照
+- `sendMessage` 受白名单约束（当前仅开放 `GET_AUTH_STATE`）
 
-    UI->>Runner: 字段依赖变化 / 点击刷新
-    Runner->>Offscreen: EXECUTE_PLUGIN(mode=config)
-    Offscreen->>Sandbox: EXECUTE
-    Sandbox->>Offscreen: FETCH_REQUEST
-    Offscreen->>Server: XHR / Fetch Proxy
-    Server-->>Offscreen: 响应
-    Offscreen-->>Sandbox: FETCH_RESULT
-    Sandbox-->>Offscreen: EXECUTE_RESULT(options/patch)
-    Offscreen-->>Runner: PLUGIN_EXECUTION_RESULT
-    Runner-->>UI: 更新 inputs / 回填字段
-```
+## 5. 后端与市场对接要求
 
-## 为什么这样设计
+- 按 `kind` 做 schema 校验分流：
+  - `uploader`：校验 `uploader.script` + `uploader.inputs`
+  - `site-detector`：校验 `detector.targetDriveType` + `detector.detectScript` + `detector.extractScript`
+- 完整 `content` 原样存储和分发，禁止根据摘要字段重建脚本
+- 审核页需展示 detector 专属字段：`detector.match`、`detector.presentation`、`detector.actionForm`、`detector.detectScript`、`detector.extractScript`
 
-1. 代码隔离
-   - 插件代码只在 `sandbox` iframe 中执行，无法直接访问扩展权限。
+## 6. 关键文件映射
 
-2. 网络收口
-   - 所有跨域请求都走 Offscreen 代理，便于统一控制和兼容 Manifest V3。
+- 统一 schema：`src/types/pluginSchema.ts`
+- 统一校验：`src/utils/pluginCore.ts`
+- 插件存储分流：`src/stores/plugin.ts`
+- 上传执行链：`src/services/pluginRunner.ts`
+- detector 执行链：`src/content/services/siteDetectorRunner.ts`
+- detector 宿主 UI：`src/content/components/TokenDetectorHost.vue`
+- detector 架构详解：`plugins/site_detector_plugin_architecture.md`
 
-3. 表单能力泛化
-   - 不再为某一个图床在前端组件中写死“请求策略列表 / 相册列表”的逻辑。
-   - 插件自己声明 `dataSource`、`visibleWhen`、`disabledWhen` 即可。
+## 7. 延伸文档
 
-4. 单一执行通道
-   - 上传和配置都复用相同的调度器、代理层和安全边界，维护成本更低。
-
-## 安全边界
-
-- 插件无法访问 `chrome.*` / `browser.*` API。
-- 插件无法直接访问扩展存储。
-- 插件不能直接控制宿主页面 DOM。
-- 任务默认有超时保护，避免脚本长时间卡死扩展。
-
-## 当前扩展点
-
-当前推荐使用的扩展能力：
-- `inputs[].visibleWhen`
-- `inputs[].disabledWhen`
-- `inputs[].dataSource`
-- `ctx.fetch`
-- `ctx.fetchJson`
-- `ctx.fileToBlob`
-
-如果后续需要支持更复杂的场景，优先在 `ctx` 或字段 schema 上扩展，而不是继续往 UI 里加平台特判。
+- 开发指南：`plugins/plugin_dev_guide.md`
+- 市场协议：`plugins/plugin_market_api.md`

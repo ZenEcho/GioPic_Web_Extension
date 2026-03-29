@@ -11,70 +11,72 @@ export async function getManifest() {
         name: pkg.displayName || pkg.name,
         version: pkg.version,
         description: pkg.description,
-        homepage_url: "https://fileup.dev/",
+        homepage_url: 'https://fileup.dev/',
         background: isFirefox ? {
             scripts: [
-                "background.js"
+                'background.js',
             ],
-            type: "module"
+            type: 'module',
         } : {
             service_worker: 'background.js',
-            "type": "module"
+            type: 'module',
         },
         content_scripts: [
             {
                 matches: [
-                    "<all_urls>"
+                    '<all_urls>',
                 ],
                 js: [
-                    "content/content.js",
+                    'content/content.js',
                 ],
-                run_at: "document_end",
+                run_at: 'document_end',
                 all_frames: true,
-            }
+            },
         ],
         web_accessible_resources: [
             {
-                "resources": [
-                    "*.html",
-                    "/assets/icons/*.png",
-                    "*.css",
-                    "*.js",
-                    "/content/*.js",
-                    "/content/*.css",
+                resources: [
+                    '*.html',
+                    '/src/sandbox/*.html',
+                    '/src/sandbox/*.js',
+                    '/assets/icons/*.png',
+                    '*.css',
+                    '*.js',
+                    '/content/*.js',
+                    '/content/*.css',
                 ],
-                "matches": [
-                    "<all_urls>"
-                ]
-            }
+                matches: [
+                    '<all_urls>',
+                ],
+            },
         ],
         action: {
             default_popup: '',
-            default_icon: "assets/icons/logo64.png",
+            default_icon: 'assets/icons/logo64.png',
         },
         icons: {
-            "16": "assets/icons/logo16.png",
-            "32": "assets/icons/logo32.png",
-            "64": "assets/icons/logo64.png",
-            "128": "assets/icons/logo128.png"
+            '16': 'assets/icons/logo16.png',
+            '32': 'assets/icons/logo32.png',
+            '64': 'assets/icons/logo64.png',
+            '128': 'assets/icons/logo128.png',
         },
         permissions: [
-            "storage",
-            "tabs",
-            "contextMenus",
-            "notifications",
-            "cookies",
-            "webRequest",
-            ...(isFirefox ? [] : ["offscreen", "declarativeNetRequest", "sidePanel"]),
+            'storage',
+            'tabs',
+            'contextMenus',
+            'notifications',
+            'cookies',
+            'webRequest',
+            ...(isFirefox ? [] : ['offscreen', 'declarativeNetRequest', 'sidePanel']),
         ],
         // @ts-ignore
         ...(isFirefox ? {} : {
             sandbox: {
-                pages: ["src/sandbox/index.html"]
-            }
+                pages: ['src/sandbox/index.html', 'src/sandbox/site-detector.html'],
+            },
         }),
         host_permissions: [
-            "*://*/*",
+            '*://*/*',
         ],
         content_security_policy: {
             extension_pages: isDev
@@ -85,20 +87,20 @@ export async function getManifest() {
 
     if (isFirefox) {
         manifest.sidebar_action = {
-            default_panel: "index.html",
-            default_icon: "assets/icons/logo64.png",
-            default_title: "GioPic",
+            default_panel: 'index.html',
+            default_icon: 'assets/icons/logo64.png',
+            default_title: 'GioPic',
         }
         manifest.browser_specific_settings = {
             gecko: {
-                id: "giopic@fileup.dev",
-                strict_min_version: "109.0"
-            }
+                id: 'giopic@fileup.dev',
+                strict_min_version: '109.0',
+            },
         }
     } else {
         // @ts-ignore
         manifest.side_panel = {
-            default_path: "index.html",
+            default_path: 'index.html',
         }
     }
 

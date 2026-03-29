@@ -1,0 +1,23 @@
+{
+  "id": "builtin.site-detector.cloudflare-imgbed",
+  "kind": "site-detector",
+  "name": "CloudFlare ImgBed Site Detector",
+  "version": "1.0.0",
+  "description": "Detects the CloudFlare-ImgBed open source project and creates a matching custom uploader config.",
+  "icon": "i-ph-cloud-sun-duotone",
+  "author": "GioPic",
+  "detector": {
+    "targetDriveType": "custom",
+    "presentation": {
+      "title": "发现 CloudFlare ImgBed",
+      "description": "点击后会为当前站点生成 CloudFlare-ImgBed 兼容的 GioPic 自定义图床配置。",
+      "actionText": "添加自定义配置",
+      "ignoreText": "本站不再提示",
+      "successText": "CloudFlare ImgBed 配置已添加到 GioPic",
+      "failureText": "CloudFlare ImgBed 配置生成失败。"
+    },
+    "priority": 55,
+    "detectScript": "return async function(ctx) {\n  const target = 'https://github.com/MarSeventh/CloudFlare-ImgBed';\n  const matched = await ctx.exists('.header h1 .main-title[href=\"' + target + '\"]');\n  if (!matched) {\n    return { matched: false };\n  }\n\n  return { matched: true, score: 16 };\n}",
+    "extractScript": "return async function(ctx) {\n  return {\n    config: {\n      apiUrl: ctx.page.origin + '/upload',\n      method: 'POST',\n      uploadFormat: 'formData',\n      fileParamName: 'file',\n      responseUrlPath: '[0].src',\n      urlPrefix: ctx.page.origin\n    }\n  };\n}"
+  }
+}

@@ -1,6 +1,7 @@
 <!--
  * @file DetectorTelegraphImg.vue
  * @description Telegraph Image 自动配置组件
+ * @deprecated 已迁移到 kind: 'site-detector' 插件实现，仅保留作历史参考
  * 
  * 职责：
  * 1. 引导用户添加 Telegraph Image 图床配置
@@ -61,3 +62,4 @@ const handleAdd = async () => {
     </NButton>
   </NSpace>
 </template>
+

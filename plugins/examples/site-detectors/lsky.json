@@ -1,0 +1,28 @@
+{
+  "id": "builtin.site-detector.lsky",
+  "kind": "site-detector",
+  "name": "Lsky Site Detector",
+  "version": "1.0.0",
+  "description": "Detects Lsky token pages and creates GioPic configs without shipping new extension code.",
+  "icon": "i-ph-cloud-arrow-up-duotone",
+  "author": "GioPic",
+  "detector": {
+    "targetDriveType": "lsky",
+    "match": {
+      "pathnameEquals": [
+        "/user/tokens"
+      ]
+    },
+    "presentation": {
+      "title": "发现 Lsky 图床配置页",
+      "description": "支持 Lsky v1 / v2。优先尝试直接读取 Token，失败时会回退到受控授权获取。",
+      "actionText": "一键添加到 GioPic",
+      "ignoreText": "本站不再提示",
+      "successText": "Lsky 配置已添加到 GioPic",
+      "failureText": "Lsky 配置提取失败，请先在当前页面完成创建 Token 操作后重试。"
+    },
+    "priority": 120,
+    "detectScript": "return async function(ctx) {\n  if (ctx.page.pathname !== '/user/tokens') {\n    return { matched: false };\n  }\n\n  await ctx.waitForSelector('#token-create, #lskyv2_giopic, .n-card__content .n-button__content', 2200);\n\n  if (await ctx.exists('#token-create')) {\n    return { matched: true, score: 40, data: { version: 'v1' } };\n  }\n\n  const buttonText = ((await ctx.text('.n-card__content .n-button__content')) || '').trim();\n  const hasThemeMarker = await ctx.exists('#lskyv2_giopic');\n  if (buttonText === '创建令牌' || hasThemeMarker) {\n    return { matched: true, score: 50, data: { version: 'v2' } };\n  }\n\n  return { matched: false };\n}",
+    "extractScript": "return async function(ctx, form, state) {\n  const version = state && state.version === 'v2' ? 'v2' : 'v1';\n  const directTokenNode = await ctx.query('#token-create-success p:nth-child(2)');\n  const directToken = (directTokenNode && (directTokenNode.textContent || directTokenNode.value || '')) || '';\n  if (directToken.trim()) {\n    return {\n      config: {\n        apiUrl: ctx.page.origin,\n        token: directToken.trim(),\n        version: version,\n        permission: '0'\n      }\n    };\n  }\n\n  const authResponse = await ctx.sendMessage('GET_AUTH_STATE');\n  const auth = authResponse && authResponse.data ? authResponse.data : authResponse;\n  const xsrfToken = auth && auth.XSRF_TOKEN ? auth.XSRF_TOKEN : '';\n  const authorization = auth && auth.Authorization ? auth.Authorization : '';\n\n  if (!xsrfToken && !authorization) {\n    throw new Error('未获取到授权信息，请在当前页面先执行一次创建 Token 操作后重试。');\n  }\n\n  const endpoint = version === 'v2' ? '/api/v2/user/tokens' : '/user/tokens';\n  const payload = version === 'v2'\n    ? {\n        name: 'GioPic',\n        abilities: [\n          'upload:write',\n          'basic',\n          'user:profile:read',\n          'user:token:read',\n          'user:capacity:read',\n          'user:group:read',\n          'user:album:read'\n        ]\n      }\n    : {\n        name: 'GioPic',\n        abilities: [\n          'user:profile',\n          'image:tokens',\n          'image:upload',\n          'image:list',\n          'image:delete',\n          'album:list',\n          'album:delete',\n          'strategy:list'\n        ]\n      };\n\n  const headers = {\n    accept: 'application/json, text/plain, */*',\n    'content-type': 'application/json',\n    'X-Requested-With': 'XMLHttpRequest'\n  };\n\n  if (xsrfToken) {\n    headers['X-XSRF-TOKEN'] = xsrfToken;\n  }\n  if (authorization) {\n    headers.Authorization = authorization;\n  }\n\n  const response = await ctx.fetchJson(ctx.page.origin + endpoint, {\n    method: 'POST',\n    credentials: 'include',\n    headers: headers,\n    body: JSON.stringify(payload)\n  });\n\n  const createdToken = response && response.data && response.data.token ? response.data.token : '';\n  if (!createdToken) {\n    throw new Error((response && (response.message || response.msg)) || '创建 Token 失败');\n  }\n\n  return {\n    config: {\n      apiUrl: ctx.page.origin,\n      token: String(createdToken),\n      version: version,\n      permission: '0'\n    }\n  };\n}"
+  }
+}

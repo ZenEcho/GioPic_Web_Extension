@@ -1,0 +1,28 @@
+{
+  "id": "builtin.site-detector.16best",
+  "kind": "site-detector",
+  "name": "16best Site Detector",
+  "version": "1.0.0",
+  "description": "Detects 16best and builds a custom uploader config from the site local token store.",
+  "icon": "i-ph-hard-drives-duotone",
+  "author": "GioPic",
+  "detector": {
+    "targetDriveType": "custom",
+    "match": {
+      "domains": [
+        "111666.best"
+      ]
+    },
+    "presentation": {
+      "title": "发现 16best 图床",
+      "description": "点击后会读取当前站点本地存储中的 16best Token，并自动生成 GioPic 自定义图床配置。",
+      "actionText": "读取 Token 并添加",
+      "ignoreText": "本站不再提示",
+      "successText": "16best 配置已添加到 GioPic",
+      "failureText": "未读取到 16best Token，请先在当前站点完成登录。"
+    },
+    "priority": 70,
+    "detectScript": "return async function(ctx) {\n  if (ctx.page.hostname !== '111666.best') {\n    return { matched: false };\n  }\n\n  return { matched: true, score: 18 };\n}",
+    "extractScript": "return async function(ctx) {\n  const records = await ctx.readExternalStore('image-hosting', 'config');\n  const tokenItem = Array.isArray(records)\n    ? records.find(item => item && item.key === 'token')\n    : null;\n  const token = tokenItem && tokenItem.value ? String(tokenItem.value).trim() : '';\n\n  if (!token) {\n    throw new Error('未读取到 16best Token，请先在当前站点完成登录。');\n  }\n\n  return {\n    config: {\n      apiUrl: 'https://i.111666.best/image',\n      method: 'POST',\n      uploadFormat: 'formData',\n      fileParamName: 'image',\n      headers: JSON.stringify({ 'Auth-Token': token }),\n      responseUrlPath: 'src',\n      urlPrefix: 'https://i.111666.best'\n    }\n  };\n}"
+  }
+}

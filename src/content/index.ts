@@ -18,6 +18,14 @@ import { mountComponent } from './utils/mount'
 import ContentOverlay from './components/ContentOverlay.vue'
 import browser from 'webextension-polyfill'
 import { broadcastInjectMessage } from './utils/injector'
+import { PLUGIN_MARKET_PERMISSION_DENIED_ERROR } from '@/constants/pluginMarketAccess'
+import type { PluginMeta } from '@/types'
+import {
+    getPluginMarketAllowAllSites,
+    getPluginMarketAuthorizedSites,
+    hasPluginMarketFullAccess,
+    toPluginPublicSummaries,
+} from '@/utils/pluginMarketAccess'
 import pkg from '../../package.json'
 import 'virtual:uno.css'
 import './style.css'
@@ -132,6 +140,39 @@ async function injectImageToPage(url: string) {
 
 }
 
+function getPageMessageOrigin(event: MessageEvent) {
+    if (typeof event.origin === 'string' && event.origin) {
+        return event.origin
+    }
+
+    return window.location.origin
+}
+
+function getPageMessageTargetOrigin(origin: string) {
+    return origin && origin !== 'null' ? origin : '*'
+}
+
+function postPageMessage(type: string, payload: Record<string, any>, targetOrigin: string) {
+    window.postMessage({
+        type,
+        ...payload,
+    }, targetOrigin)
+}
+
+async function getPluginBridgeAccess(event: MessageEvent) {
+    const origin = getPageMessageOrigin(event)
+    const [authorizedSites, allowAllSites] = await Promise.all([
+        getPluginMarketAuthorizedSites(),
+        getPluginMarketAllowAllSites(),
+    ])
+
+    return {
+        origin,
+        targetOrigin: getPageMessageTargetOrigin(origin),
+        hasFullAccess: hasPluginMarketFullAccess(origin, authorizedSites, allowAllSites),
+    }
+}
+
 // 监听来自后台的消息
 browser.runtime.onMessage.addListener(async (message: any) => {
     if (message.type === 'UPLOAD_EVENT' && message.data?.event === 'success') {
@@ -163,7 +204,7 @@ window.addEventListener('message', async (event) => {
 
     const data = event.data;
     if (!data) return;
-
+    //监听来自网页的编辑器状态更新消息 (Editor Binding)
     if (data.type === 'GIOPIC_EDITOR_SUCCESS') {
         const { hostname, editorType } = data;
         if (hostname && editorType) {
@@ -181,6 +222,16 @@ window.addEventListener('message', async (event) => {
     // 监听来自网页的插件安装请求 (Plugin Market Integration)
     else if (data.type === 'GIOPIC_INSTALL_PLUGIN') {
         const { plugin } = data;
+        const access = await getPluginBridgeAccess(event)
+
+        if (!access.hasFullAccess) {
+            postPageMessage('GIOPIC_INSTALL_PLUGIN_RESULT', {
+                success: false,
+                error: PLUGIN_MARKET_PERMISSION_DENIED_ERROR,
+                pluginId: plugin?.id,
+            }, access.targetOrigin)
+            return
+        }
 
         // 转发给 Background
         try {
@@ -190,24 +241,33 @@ window.addEventListener('message', async (event) => {
             })) as { success: boolean; error?: string };
 
             // 返回结果给网页
-            window.postMessage({
-                type: 'GIOPIC_INSTALL_PLUGIN_RESULT',
+            postPageMessage('GIOPIC_INSTALL_PLUGIN_RESULT', {
                 success: res?.success || false,
                 error: res?.error || (res ? undefined : 'No response from extension'),
                 pluginId: plugin?.id
-            }, '*');
+            }, access.targetOrigin);
         } catch (e: any) {
-            window.postMessage({
-                type: 'GIOPIC_INSTALL_PLUGIN_RESULT',
+            postPageMessage('GIOPIC_INSTALL_PLUGIN_RESULT', {
                 success: false,
                 error: e.message || 'Extension communication error',
                 pluginId: plugin?.id
-            }, '*');
+            }, access.targetOrigin);
         }
     }
     // 启用/禁用插件
     else if (data.type === 'GIOPIC_TOGGLE_PLUGIN') {
         const { pluginId, enabled } = data;
+        const access = await getPluginBridgeAccess(event)
+
+        if (!access.hasFullAccess) {
+            postPageMessage('GIOPIC_TOGGLE_PLUGIN_RESULT', {
+                success: false,
+                error: PLUGIN_MARKET_PERMISSION_DENIED_ERROR,
+                pluginId,
+            }, access.targetOrigin)
+            return
+        }
+
         try {
             const res = (await browser.runtime.sendMessage({
                 type: 'TOGGLE_PLUGIN',
@@ -215,64 +275,77 @@ window.addEventListener('message', async (event) => {
                 enabled
             })) as { success: boolean; error?: string };
 
-            window.postMessage({
-                type: 'GIOPIC_TOGGLE_PLUGIN_RESULT',
+            postPageMessage('GIOPIC_TOGGLE_PLUGIN_RESULT', {
                 success: res?.success || false,
                 error: res?.error || (res ? undefined : 'No response from extension'),
                 pluginId
-            }, '*');
+            }, access.targetOrigin);
         } catch (e: any) {
-            window.postMessage({
-                type: 'GIOPIC_TOGGLE_PLUGIN_RESULT',
+            postPageMessage('GIOPIC_TOGGLE_PLUGIN_RESULT', {
                 success: false,
                 error: e.message,
                 pluginId
-            }, '*');
+            }, access.targetOrigin);
         }
     }
     // 卸载插件
     else if (data.type === 'GIOPIC_UNINSTALL_PLUGIN') {
         const { pluginId } = data;
+        const access = await getPluginBridgeAccess(event)
+
+        if (!access.hasFullAccess) {
+            postPageMessage('GIOPIC_UNINSTALL_PLUGIN_RESULT', {
+                success: false,
+                error: PLUGIN_MARKET_PERMISSION_DENIED_ERROR,
+                pluginId,
+            }, access.targetOrigin)
+            return
+        }
+
         try {
             const res = (await browser.runtime.sendMessage({
                 type: 'UNINSTALL_PLUGIN',
                 pluginId
             })) as { success: boolean; error?: string };
 
-            window.postMessage({
-                type: 'GIOPIC_UNINSTALL_PLUGIN_RESULT',
+            postPageMessage('GIOPIC_UNINSTALL_PLUGIN_RESULT', {
                 success: res?.success || false,
                 error: res?.error || (res ? undefined : 'No response from extension'),
                 pluginId
-            }, '*');
+            }, access.targetOrigin);
         } catch (e: any) {
-            window.postMessage({
-                type: 'GIOPIC_UNINSTALL_PLUGIN_RESULT',
+            postPageMessage('GIOPIC_UNINSTALL_PLUGIN_RESULT', {
                 success: false,
                 error: e.message,
                 pluginId
-            }, '*');
+            }, access.targetOrigin);
         }
     }
     // 获取已安装插件列表
     else if (data.type === 'GIOPIC_GET_INSTALLED_PLUGINS') {
+        const access = await getPluginBridgeAccess(event)
+
         try {
             const res = (await browser.runtime.sendMessage({
                 type: 'GET_INSTALLED_PLUGINS'
             })) as { success: boolean; plugins?: any[]; error?: string };
 
-            window.postMessage({
-                type: 'GIOPIC_GET_INSTALLED_PLUGINS_RESULT',
+            const plugins = Array.isArray(res?.plugins)
+                ? (access.hasFullAccess
+                    ? res.plugins
+                    : toPluginPublicSummaries(res.plugins as PluginMeta[]))
+                : []
+
+            postPageMessage('GIOPIC_GET_INSTALLED_PLUGINS_RESULT', {
                 success: res?.success || false,
-                plugins: res?.plugins,
+                plugins,
                 error: res?.error || (res ? undefined : 'No response from extension')
-            }, '*');
+            }, access.targetOrigin);
         } catch (e: any) {
-            window.postMessage({
-                type: 'GIOPIC_GET_INSTALLED_PLUGINS_RESULT',
+            postPageMessage('GIOPIC_GET_INSTALLED_PLUGINS_RESULT', {
                 success: false,
                 error: e.message
-            }, '*');
+            }, access.targetOrigin);
         }
     }
 });

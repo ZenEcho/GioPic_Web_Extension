@@ -2,17 +2,18 @@
   "id": "com.test.json",
   "name": "Local JSON Test",
   "version": "1.0.0",
-  "author": "GioPic",
   "description": "Upload to Local Mock Server (JSON)",
   "icon": "i-ph-file-json",
-  "inputs": [
-    {
+  "author": "GioPic",
+  "kind": "uploader",
+  "uploader": {
+    "inputs": {
       "name": "apiUrl",
       "label": "API URL",
       "type": "text",
       "default": "http://localhost:3333/upload",
       "required": true
-    }
-  ],
-  "script": "return async function(config, file, ctx) { const fd = new FormData(); fd.append('file', await (await fetch(file.data)).blob(), file.name); const res = await ctx.fetch(config.apiUrl, { method: 'POST', body: fd }); if (!res.ok) throw new Error('HTTP ' + res.status); const data = res.body; if (data.code !== 200) throw new Error(data.msg || 'Error'); return data.data[0].url; }"
+    },
+    "script": "return async function(config, file, ctx) { const fd = new FormData(); fd.append('file', await (await fetch(file.data)).blob(), file.name); const res = await ctx.fetch(config.apiUrl, { method: 'POST', body: fd }); if (!res.ok) throw new Error('HTTP ' + res.status); const data = res.body; if (data.code !== 200) throw new Error(data.msg || 'Error'); return data.data[0].url; }"
+  }
 }

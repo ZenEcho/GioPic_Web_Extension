@@ -1,0 +1,28 @@
+{
+  "id": "builtin.site-detector.easyimages",
+  "kind": "site-detector",
+  "name": "EasyImages Site Detector",
+  "version": "1.0.0",
+  "description": "Detects EasyImages admin pages and generates a temporary upload token automatically.",
+  "icon": "i-ph-images-square-duotone",
+  "author": "GioPic",
+  "detector": {
+    "targetDriveType": "easyimages",
+    "match": {
+      "pathnameEquals": [
+        "/admin/admin.inc.php"
+      ]
+    },
+    "presentation": {
+      "title": "发现 EasyImages 后台",
+      "description": "点击后一键生成上传 Token，并把当前站点保存为 GioPic 的 EasyImages 配置。",
+      "actionText": "生成 Token 并添加",
+      "ignoreText": "本站不再提示",
+      "successText": "EasyImages 配置已添加到 GioPic",
+      "failureText": "EasyImages Token 生成失败，请确认当前账号拥有后台管理权限。"
+    },
+    "priority": 90,
+    "detectScript": "return async function(ctx) {\n  if (ctx.page.pathname !== '/admin/admin.inc.php') {\n    return { matched: false };\n  }\n\n  console.log('[easyimages] evaluating', ctx.page.url);\n\n  const title = (await ctx.text('title')) || '';\n  const author = await ctx.attr('meta[name=\"author\"]', 'content');\n  const hasEasyImagesLink = await ctx.exists('a[href=\"https://png.cm/\"]');\n  const hasGithubLink = await ctx.exists('a[href=\"https://github.com/icret/EasyImages2.0\"]');\n  const hasGrid = await ctx.exists('#myDataGrid');\n  const loginHint = (await ctx.text('.navbar-nav.navbar-right')) || (await ctx.text('body')) || '';\n  const looksLikeEasyImages = title.includes('EasyImage') || String(author || '').includes('EasyImage2.0') || (hasEasyImagesLink && hasGithubLink);\n\n  if (!looksLikeEasyImages) {\n    return { matched: false };\n  }\n\n  if (hasGrid) {\n    return { matched: true, score: 30, data: { loggedIn: true } };\n  }\n\n  if (loginHint.includes('请使用管理员账户登录') || loginHint.includes('登录')) {\n    return {\n      matched: true,\n      score: 10,\n      data: { loggedIn: false },\n      presentation: {\n        description: '当前页面已识别为 EasyImages 后台，但还没有管理员登录态。请先登录后台，再点击一键添加。',\n        failureText: '当前页面还没有管理员登录态，请先登录 EasyImages 后台。'\n      }\n    };\n  }\n\n  return { matched: true, score: 12, data: { loggedIn: false } };\n}",
+    "extractScript": "return async function(ctx, form, state) {\n  if (state && state.loggedIn === false) {\n    throw new Error('当前页面还没有管理员登录态，请先登录 EasyImages 后台。');\n  }\n\n  const token = (typeof crypto !== 'undefined' && crypto.randomUUID)\n    ? crypto.randomUUID().replace(/-/g, '')\n    : (Date.now().toString(36) + Math.random().toString(36).slice(2));\n\n  const payload = new URLSearchParams();\n  payload.append('add_token', token);\n  payload.append('add_token_expired', '1314');\n  payload.append('add_token_id', Date.now().toString());\n\n  const response = await ctx.fetch(ctx.page.url, {\n    method: 'POST',\n    headers: {\n      accept: 'application/json, text/plain, */*',\n      'content-type': 'application/x-www-form-urlencoded'\n    },\n    body: payload\n  });\n\n  if (!response.ok) {\n    throw new Error('HTTP ' + response.status);\n  }\n\n  return {\n    config: {\n      apiUrl: ctx.page.origin,\n      token: token\n    }\n  };\n}"
+  }
+}

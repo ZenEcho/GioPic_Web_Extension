@@ -1,0 +1,23 @@
+{
+  "id": "builtin.site-detector.chevereto",
+  "kind": "site-detector",
+  "name": "Chevereto Site Detector",
+  "version": "1.0.0",
+  "description": "Detects Chevereto admin pages and reads the generated API key from a controlled DOM snapshot.",
+  "icon": "i-ph-key-duotone",
+  "author": "GioPic",
+  "detector": {
+    "targetDriveType": "chevereto",
+    "presentation": {
+      "title": "发现 Chevereto 图床",
+      "description": "如果当前页面已经展示 API v1 key，点击后会直接保存为 GioPic 的 Chevereto 配置。",
+      "actionText": "读取 Key 并添加",
+      "ignoreText": "本站不再提示",
+      "successText": "Chevereto 配置已添加到 GioPic",
+      "failureText": "未在当前页面读取到 API key，请先在后台生成或重新生成 API key。"
+    },
+    "priority": 80,
+    "detectScript": "return async function(ctx) {\n  if (await ctx.exists('meta[name=\"generator\"][content^=\"Chevereto\"]')) {\n    return { matched: true, score: 20 };\n  }\n\n  return { matched: false };\n}",
+    "extractScript": "return async function(ctx) {\n  const input = await ctx.query('#api_v1_key');\n  const apiKey = input && (input.value || (input.attributes && input.attributes.value) || '');\n  if (!apiKey) {\n    throw new Error('未读取到 API key');\n  }\n\n  return {\n    config: {\n      apiUrl: ctx.page.origin,\n      token: apiKey,\n      expiration: 'NONE',\n      nsfw: '0'\n    }\n  };\n}"
+  }
+}
