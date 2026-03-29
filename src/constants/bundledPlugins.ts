@@ -56,7 +56,7 @@ export const BUNDLED_PLUGINS: PluginMeta[] = [
       version: '1.0.0',
       author: 'GioPic',
       description: 'Detects Lsky token pages and creates GioPic configs without shipping new extension code.',
-      icon: 'i-ph-cloud-arrow-up-duotone',
+      icon: 'https://cdn-us.imgs.moe/2026/03/29/815c8897721521afddf734bce675de0e.png',
       priority: 120,
       targetDriveType: 'lsky',
       match: {
@@ -183,7 +183,7 @@ export const BUNDLED_PLUGINS: PluginMeta[] = [
       version: '1.0.0',
       author: 'GioPic',
       description: 'Detects Lsky Open dashboards and logs in through a generic detector action form.',
-      icon: 'i-ph-sign-in-duotone',
+      icon: 'https://cdn-us.imgs.moe/2026/03/29/815c8897721521afddf734bce675de0e.png',
       priority: 100,
       targetDriveType: 'lsky',
       match: {
@@ -269,7 +269,7 @@ export const BUNDLED_PLUGINS: PluginMeta[] = [
       version: '1.0.0',
       author: 'GioPic',
       description: 'Detects EasyImages admin pages and generates a temporary upload token automatically.',
-      icon: 'i-ph-images-square-duotone',
+      icon: 'https://cdn-us.imgs.moe/2026/03/29/815c8897721521afddf734bce675de0e.png',
       priority: 90,
       targetDriveType: 'easyimages',
       match: {
@@ -362,7 +362,7 @@ export const BUNDLED_PLUGINS: PluginMeta[] = [
       version: '1.0.0',
       author: 'GioPic',
       description: 'Detects Chevereto admin pages and reads the generated API key from a controlled DOM snapshot.',
-      icon: 'i-ph-key-duotone',
+      icon: 'https://cdn-us.imgs.moe/2026/03/29/815c8897721521afddf734bce675de0e.png',
       priority: 80,
       targetDriveType: 'chevereto',
       presentation: {
@@ -404,7 +404,7 @@ export const BUNDLED_PLUGINS: PluginMeta[] = [
       version: '1.0.0',
       author: 'GioPic',
       description: 'Detects 16best and builds a custom uploader config from the site local token store.',
-      icon: 'i-ph-hard-drives-duotone',
+      icon: 'https://cdn-us.imgs.moe/2026/03/29/815c8897721521afddf734bce675de0e.png',
       priority: 70,
       targetDriveType: 'custom',
       match: {
@@ -456,7 +456,7 @@ export const BUNDLED_PLUGINS: PluginMeta[] = [
       version: '1.0.0',
       author: 'GioPic',
       description: 'Detects the CloudFlare-ImgBed open source project and creates a matching custom uploader config.',
-      icon: 'i-ph-cloud-sun-duotone',
+      icon: 'https://cdn-us.imgs.moe/2026/03/29/815c8897721521afddf734bce675de0e.png',
       priority: 55,
       targetDriveType: 'custom',
       presentation: {
@@ -496,7 +496,7 @@ export const BUNDLED_PLUGINS: PluginMeta[] = [
       version: '1.0.0',
       author: 'GioPic',
       description: 'Detects the Telegraph-Image project and creates a matching custom uploader config.',
-      icon: 'i-ph-paper-plane-tilt-duotone',
+      icon: 'https://cdn-us.imgs.moe/2026/03/29/815c8897721521afddf734bce675de0e.png',
       priority: 50,
       targetDriveType: 'custom',
       presentation: {

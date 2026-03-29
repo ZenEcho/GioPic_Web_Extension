@@ -37,6 +37,7 @@ function createBuiltInEditorAdapterPlugins(): EditorAdapterPlugin[] {
             author: 'GioPic',
             description: `Built-in editor adapter for ${displayName}.`,
             enabled: true,
+            icon: 'https://cdn-us.imgs.moe/2026/03/29/815c8897721521afddf734bce675de0e.png',
             editorAdapter: {
                 editorType: adapter.id,
                 displayName,
